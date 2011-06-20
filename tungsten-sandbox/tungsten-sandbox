@@ -1,0 +1,275 @@
+#!/bin/bash
+#
+# Script to install multiple instances of Tungsten Replicator on
+# multiple instances of MySQL in teh same host
+#
+# Copyright (c) 2011 Continuent, Inc.  All rights reserved.
+# Released under the New BSD License
+
+# ---- defaults ---- 
+HOW_MANY=3
+MYSQL_VERSION=5.5.13
+TUNGSTEN_BASE=$HOME/tsb2/
+TUNGSTEN_SERVICE=tsandbox
+MYSQL_BASE_PORT=7100
+MYSQL_GROUP_DIR=tr_dbs
+THL_BASE_PORT=12110
+RMI_BASE_PORT=10100
+TSANDBOX_PREFIX=db
+VERSION=1.0.2
+
+# --- Do not modify anhything below this line
+
+# checking for MySQL Sandbox
+MMS=$(which make_multiple_sandbox)
+if [ -z $MMS ]
+then
+    echo "Can't find  make_multiple_sandbox. Perhaps MySQL Sandbox is not installed"
+    echo "Get it from CPAN or from http://mysqlsandbox.net"
+    exit 1
+fi
+
+CURDIR=$(dirname $0)
+if [ "$CURDIR" == "." ]
+then
+    CURDIR=$PWD
+fi
+
+# shflags is a command line processor
+if  [ -f $CURDIR/shflags  ]
+then
+    SHFLAGS=$CURDIR/shflags
+else
+    echo "WARNING: shflags not found - Command line option processing is not available"
+    echo "Get it from http://code.google.com/p/shflags/"
+    echo "In the meantime, edit this script to change the defaults"
+    if [ "$1" != "" ]
+    then
+        exit 1
+    fi
+fi
+
+if [ "$SHFLAGS" != "" ]
+then
+    . $SHFLAGS
+    # macro        name            default           help text                            short name
+    # ------------ --------------- ----------------- -----------------------------------  -----------
+    DEFINE_integer 'nodes'         $HOW_MANY         'how many nodes to install'          'n'
+    DEFINE_string  'mysql_version' $MYSQL_VERSION    'which MySQL version to use'         'm'
+    DEFINE_string  'tungsten_base' $TUNGSTEN_BASE    'where to install the sandbox'       't'
+    DEFINE_string  'group_dir'     $MYSQL_GROUP_DIR  'sandbox group directory name'       'd'
+    DEFINE_string  'tsb_prefix'    $TSANDBOX_PREFIX  'Tungsten Sandbox prefix'       'x'
+    DEFINE_string  'service'       $TUNGSTEN_SERVICE 'how the service is named'           's'
+    DEFINE_integer 'base_port'     $MYSQL_BASE_PORT  'port base for MySQL sandbox nodes'  'P'
+    DEFINE_integer 'thl_port'      $THL_BASE_PORT    'port for the THL service'           'l' 
+    DEFINE_integer 'rmi_port'      $RMI_BASE_PORT    'port for the RMI service'           'r' 
+    DEFINE_boolean 'version'       false             'show Tungsten sandbox version'      'v' 
+    DEFINE_boolean 'help'          false             'show Tungsten sandbox help'         'h' 
+
+    # parse the command-line
+    FLAGS "$@" || exit 1
+    eval set -- "${FLAGS_ARGV}"
+    # -------------------------------------------------------------------------------------
+    MYSQL_VERSION=$FLAGS_mysql_version
+    TUNGSTEN_BASE=$FLAGS_tungsten_base
+    MYSQL_GROUP_DIR=$FLAGS_group_dir
+    TUNGSTEN_SERVICE=$FLAGS_service
+    MYSQL_BASE_PORT=$FLAGS_base_port
+    TSANDBOX_PREFIX=$FLAGS_tsb_prefix
+    THL_BASE_PORT=$FLAGS_thl_port
+    RMI_BASE_PORT=$FLAGS_rmi_port
+    HOW_MANY=$FLAGS_nodes
+fi
+
+if [ "$FLAGS_version" == "0" ]
+then
+    echo "tungsten-sandbox - version $VERSION"
+    echo "(C) Giuseppe Maxia, 2011 for Continuent, Inc"
+    echo "released under the New BSD License"
+    exit
+fi
+
+#
+# Setting the initial values for the ports used by the sandbox
+#
+MASTER_MYSQL_PORT=$(($MYSQL_BASE_PORT+1))
+MASTER_THL_PORT=$(($THL_BASE_PORT+1))
+MASTER_RMI_PORT=$(($RMI_BASE_PORT+1))
+
+#
+# Checking that the MySQL version exists
+#
+if [ ! -d $HOME/opt/mysql/$MYSQL_VERSION ]
+then
+    echo "$HOME/opt/mysql/$MYSQL_VERSION not found"
+    exit 1
+fi
+
+#
+# The default tungsten home must exist
+#
+if [ ! -d  $TUNGSTEN_BASE ]
+then
+    echo "directory $TUNGSTEN_BASE not found"
+    exit 1
+fi
+if [ "$TUNGSTEN_BASE" == "$HOME" ]
+then
+    echo "directory \$TUNGSTEN_BASE cannot be \$HOME"
+    exit 1
+fi
+
+#
+# Looking for tungsten-installer script
+#
+TUNGSTEN_INSTALLER=$CURDIR/tungsten-installer
+if [ ! -x $TUNGSTEN_INSTALLER ]
+then
+    if [ -d tools ]
+    then
+        TUNGSTEN_INSTALLER=./tools/tungsten-installer
+    elif [ -d tungsten ]
+    then
+        TUNGSTEN_INSTALLER=./tungsten/tools/tungsten-installer
+    fi
+fi
+
+if [ ! -x $TUNGSTEN_INSTALLER ]
+then
+    echo "Could not find tungsten-installer"
+    exit 1
+fi
+
+#
+# ------------------ POINT OF NON RETURN ---------------------
+#
+# After this line, modifications start to happen in the system
+#
+# ------------------------------------------------------------
+
+#
+# Installing the databases necessary for the sandbox
+#
+export NODE_OPTIONS='-c log-bin=mysql-bin -c innodb_flush_log_at_trx_commit=2 -c max_allowed_packet=48M'
+
+make_multiple_sandbox \
+    --how_many_nodes=$HOW_MANY --sandbox_base_port=${MYSQL_BASE_PORT} \
+    --group_directory=$MYSQL_GROUP_DIR $MYSQL_VERSION
+
+#
+# Add the privileges needed to run Tungsten
+#
+for N in $(seq 1 $HOW_MANY)
+do
+    $HOME/sandboxes/$MYSQL_GROUP_DIR/n$N -u root -e 'update mysql.user set Grant_priv="Y" where user="msandbox"; flush privileges'
+    # $HOME/sandboxes/$MYSQL_GROUP_DIR/n$N -u root -e 'set global general_log=1'
+done
+
+#
+# Clean up anything from the sandbox home
+#
+
+rm -rf $TUNGSTEN_BASE/$TSANDBOX_PREFIX*
+rm -f $TUNGSTEN_BASE/n?
+rm -f $TUNGSTEN_BASE/{replicator,trepctl,clear,use,send_kill,status,start,stop}_all
+
+mkdir $TUNGSTEN_BASE/${TSANDBOX_PREFIX}1
+
+#
+# Installs the master
+#
+
+$TUNGSTEN_INSTALLER \
+  --master-slave \
+  --cluster-hosts=127.0.0.1 \
+  --master-host=127.0.0.1 \
+  --datasource-port="${MASTER_MYSQL_PORT}" \
+  --datasource-user=msandbox \
+  --datasource-password=msandbox \
+  --home-directory=$TUNGSTEN_BASE/${TSANDBOX_PREFIX}1 \
+  --datasource-log-directory=$HOME/sandboxes/$MYSQL_GROUP_DIR/node1/data \
+  --service-name=$TUNGSTEN_SERVICE \
+  --thl-directory=$TUNGSTEN_BASE/${TSANDBOX_PREFIX}1/tlogs \
+  --thl-port=$MASTER_THL_PORT \
+  --rmi-port=$MASTER_RMI_PORT \
+  --start
+
+#
+# Define the starting numbers for slave ports
+#
+SLAVE_MYSQL_PORT=$MASTER_MYSQL_PORT
+SLAVE_THL_PORT=$MASTER_THL_PORT
+SLAVE_RMI_PORT=$MASTER_RMI_PORT
+
+#
+# Installs the slaves
+#
+
+for N in $(seq 2 $HOW_MANY)
+do
+    mkdir $TUNGSTEN_BASE/${TSANDBOX_PREFIX}$N    
+    SLAVE_THL_PORT=$(($SLAVE_THL_PORT+1))
+    SLAVE_RMI_PORT=$(($SLAVE_RMI_PORT+1))
+    SLAVE_MYSQL_PORT=$(($SLAVE_MYSQL_PORT+1))
+
+    $TUNGSTEN_INSTALLER \
+      --master-slave \
+      --cluster-hosts=127.0.0.1 \
+      --master-host=localhost \
+      --master-thl-port=$MASTER_THL_PORT \
+      --datasource-port=$SLAVE_MYSQL_PORT \
+      --datasource-user=msandbox \
+      --datasource-password=msandbox \
+      --home-directory=$TUNGSTEN_BASE/${TSANDBOX_PREFIX}$N \
+      --datasource-log-directory=$HOME/sandboxes/$MYSQL_GROUP_DIR/node$N/data \
+      --service-name=$TUNGSTEN_SERVICE \
+      --thl-directory=$TUNGSTEN_BASE/${TSANDBOX_PREFIX}$N/tlogs \
+      --thl-port=$SLAVE_THL_PORT \
+      --rmi-port=$SLAVE_RMI_PORT \
+      --start
+done 
+
+#
+# Creates convenience scripts to handle the database sandboxes
+# and the individual Tungsten instances
+#
+
+for N in $( seq 1 $HOW_MANY)
+do
+    cd $TUNGSTEN_BASE
+    if [ -e n$N ]
+    then
+        rm -f n$N
+    fi
+    ln -s $HOME/sandboxes/$MYSQL_GROUP_DIR/n$N n$N
+    cd $TUNGSTEN_BASE/${TSANDBOX_PREFIX}$N    
+    ln -s $HOME/sandboxes/$MYSQL_GROUP_DIR/node$N/use use
+    echo "vim $PWD/tungsten/tungsten-replicator/log/trepsvc.log" > show_log
+    echo "$PWD/tungsten/tungsten-replicator/bin/replicator \$@" > replicator
+    echo "$PWD/tungsten/tungsten-replicator/bin/trepctl -port 1010$N \$@" > trepctl
+    echo "$PWD/tungsten/tungsten-replicator/bin/thl \$@" > thl
+    chmod +x thl trepctl replicator show_log
+done
+cd $TUNGSTEN_BASE
+
+for SCRIPT in use stop start clear status send_kill
+do
+    if [ -e ${SCRIPT}_all ]
+    then
+        rm -f ${SCRIPT}_all
+    fi
+    ln -s $HOME/sandboxes/$MYSQL_GROUP_DIR/${SCRIPT}_all ${SCRIPT}_all
+done
+
+#
+# Creates convenience scripts to deal with the tungsten sandbox globally
+#
+for SCRIPT in trepctl replicator 
+do
+    echo '#!/bin/bash' > ${SCRIPT}_all
+    for N in $(seq 1 $HOW_MANY)
+    do
+        echo "$PWD/${TSANDBOX_PREFIX}$N/$SCRIPT \$@" >> ${SCRIPT}_all
+    done
+    chmod +x  ${SCRIPT}_all
+done
