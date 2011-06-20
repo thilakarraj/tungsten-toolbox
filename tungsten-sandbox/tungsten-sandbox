@@ -246,7 +246,7 @@ do
     ln -s $HOME/sandboxes/$MYSQL_GROUP_DIR/node$N/use use
     echo "vim $PWD/tungsten/tungsten-replicator/log/trepsvc.log" > show_log
     echo "$PWD/tungsten/tungsten-replicator/bin/replicator \$@" > replicator
-    echo "$PWD/tungsten/tungsten-replicator/bin/trepctl -port 1010$N \$@" > trepctl
+    echo "$PWD/tungsten/tungsten-replicator/bin/trepctl -port $(($RMI_BASE_PORT+$N)) \$@" > trepctl
     echo "$PWD/tungsten/tungsten-replicator/bin/thl \$@" > thl
     chmod +x thl trepctl replicator show_log
 done
