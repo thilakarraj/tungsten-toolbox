@@ -16,7 +16,7 @@ MYSQL_GROUP_DIR=tr_dbs
 THL_BASE_PORT=12110
 RMI_BASE_PORT=10100
 TSANDBOX_PREFIX=db
-VERSION=1.0.2
+VERSION=1.0.3
 
 # --- Do not modify anhything below this line
 
@@ -33,6 +33,23 @@ CURDIR=$(dirname $0)
 if [ "$CURDIR" == "." ]
 then
     CURDIR=$PWD
+fi
+
+# Check for minimum version
+
+if [ -f $CURDIR/../.manifest ]
+then
+    BUILD=$(grep BUILD_NUMBER $CURDIR/../.manifest | awk '{print $2}')
+    MIN_BUILD=167
+    if [ $BUILD -lt $MIN_BUILD ]
+    then
+        echo "Builds earlier than $MIN_BUILD can't be used with this version of tungsten-sandbox"
+        echo "Your build is $BUILD - Please download a more recent version "
+        exit 1
+    fi
+else
+    echo "could not find .manifest"
+    exit 1
 fi
 
 # shflags is a command line processor
@@ -215,7 +232,7 @@ do
     $TUNGSTEN_INSTALLER \
       --master-slave \
       --cluster-hosts=127.0.0.1 \
-      --master-host=localhost \
+      --master-host=127.0.0.1 \
       --master-thl-port=$MASTER_THL_PORT \
       --datasource-port=$SLAVE_MYSQL_PORT \
       --datasource-user=msandbox \
