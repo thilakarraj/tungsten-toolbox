@@ -5,20 +5,18 @@
 =TUNGSTEN SANDBOX=
 Tungsten Replicator in a single host
 
-This is an ongoing project that wants install multiple instances database servers with Tungsten Replicator in a single host.
+This is an ongoing project that installs multiple instances of MySQL database servers with Tungsten Replicator in a single host.
 The main purpose is testing.
 
 == INSTALLATION ==
 
 As of version 1.0.2, tungsten-sandbox is self contained in one file, which you should export to the "tools" directory of tungsten-replicator, together with the shflags command line processor.
 
-
 == REQUIREMENTS ==
 It should work with Tungsten Replicator 2.0.4-167 or later.
 All the requirements for a normal installation of Tungsten should be met. See [http://www.continuent.com/downloads/documentation the documentation] for details. But notice that the installer will tell you if the requirements are met for most of them.
 
 [http://mysqlsandbox.net MySQL Sandbox] is necessary for Tungsten Sandbox to work.
-
 
 == USAGE ==
  # Create a directory where you want to start a sandbox (by default, it should be $HOME/tsb2)
@@ -50,7 +48,10 @@ All the requirements for a normal installation of Tungsten should be met. See [h
     -v,--[no]version:  show Tungsten sandbox version (default: false)
     -h,--[no]help:  show Tungsten sandbox help (default: false)
    }}}
- # Change the defaults using command line options.
+ # Change the defaults using command line options and create your sandbox.  Here's an example to install a 2-node sandbox using MySQL 5.1.58 with port offsets changed to avoid collisions with other sandboxes on the same host. 
+  {{{
+  $ ./tools/tungsten-sandbox -n 2 -m 5.1.58 -P 7300 -l 12300 -r 10300
+  }}}
 
 == CREDITS ==
 
