@@ -16,7 +16,7 @@ MYSQL_GROUP_DIR=tr_dbs
 THL_BASE_PORT=12110
 RMI_BASE_PORT=10100
 TSANDBOX_PREFIX=db
-VERSION=1.0.3
+VERSION=1.0.4
 
 # --- Do not modify anhything below this line
 
@@ -189,6 +189,7 @@ done
 rm -rf $TUNGSTEN_BASE/$TSANDBOX_PREFIX*
 rm -f $TUNGSTEN_BASE/n?
 rm -f $TUNGSTEN_BASE/{replicator,trepctl,clear,use,send_kill,status,start,stop}_all
+rm -f $TUNGSTEN_BASE/db_{clear,use,send_kill,status,start,stop}_all
 
 mkdir $TUNGSTEN_BASE/${TSANDBOX_PREFIX}1
 
@@ -250,6 +251,13 @@ done
 # Creates convenience scripts to handle the database sandboxes
 # and the individual Tungsten instances
 #
+SCRIPT_HEADER1="#!/bin/bash"
+SCRIPT_HEADER2="# Created by tungsten-sandbox $VERSION on $(date)"
+
+function add_header {
+    echo $SCRIPT_HEADER1 > $1
+    echo $SCRIPT_HEADER2 >> $1
+}
 
 for N in $( seq 1 $HOW_MANY)
 do
@@ -261,10 +269,14 @@ do
     ln -s $HOME/sandboxes/$MYSQL_GROUP_DIR/n$N n$N
     cd $TUNGSTEN_BASE/${TSANDBOX_PREFIX}$N    
     ln -s $HOME/sandboxes/$MYSQL_GROUP_DIR/node$N/use use
-    echo "vim $PWD/tungsten/tungsten-replicator/log/trepsvc.log" > show_log
-    echo "$PWD/tungsten/tungsten-replicator/bin/replicator \$@" > replicator
-    echo "$PWD/tungsten/tungsten-replicator/bin/trepctl -port $(($RMI_BASE_PORT+$N)) \$@" > trepctl
-    echo "$PWD/tungsten/tungsten-replicator/bin/thl \$@" > thl
+    add_header show_log 
+    add_header replicator
+    add_header trepctl
+    add_header thl
+    echo "vim $PWD/tungsten/tungsten-replicator/log/trepsvc.log" >> show_log
+    echo "$PWD/tungsten/tungsten-replicator/bin/replicator \$@" >> replicator
+    echo "$PWD/tungsten/tungsten-replicator/bin/trepctl -port $(($RMI_BASE_PORT+$N)) \$@" >> trepctl
+    echo "$PWD/tungsten/tungsten-replicator/bin/thl \$@" >> thl
     chmod +x thl trepctl replicator show_log
 done
 cd $TUNGSTEN_BASE
@@ -275,15 +287,36 @@ do
     then
         rm -f ${SCRIPT}_all
     fi
-    ln -s $HOME/sandboxes/$MYSQL_GROUP_DIR/${SCRIPT}_all ${SCRIPT}_all
+    ln -s $HOME/sandboxes/$MYSQL_GROUP_DIR/${SCRIPT}_all db_${SCRIPT}_all
 done
+
+add_header clear_tsandbox
+echo "$TUNGSTEN_BASE/replicator_all stop" >> clear_tsandbox
+echo "$TUNGSTEN_BASE/db_clear_all" >> clear_tsandbox
+
+for N in $(seq 1 $HOW_MANY)
+do
+    echo "" >> clear_tsandbox
+    echo "rm -rf $TUNGSTEN_BASE/${TSANDBOX_PREFIX}$N/tlogs/$TUNGSTEN_SERVICE/*" >> clear_tsandbox
+    echo "rm -rf $TUNGSTEN_BASE/${TSANDBOX_PREFIX}$N/tungsten/tungsten-replicator/log/*" >> clear_tsandbox
+done
+
+chmod +x clear_tsandbox
+
+add_header start_tsandbox
+echo "$TUNGSTEN_BASE/clear_tsandbox" >> start_tsandbox
+echo "$TUNGSTEN_BASE/db_start_all" >> start_tsandbox
+echo "$TUNGSTEN_BASE/replicator_all start" >> start_tsandbox
+echo "$TUNGSTEN_BASE/trepctl_all services" >> start_tsandbox
+
+chmod +x start_tsandbox
 
 #
 # Creates convenience scripts to deal with the tungsten sandbox globally
 #
 for SCRIPT in trepctl replicator 
 do
-    echo '#!/bin/bash' > ${SCRIPT}_all
+    add_header ${SCRIPT}_all
     for N in $(seq 1 $HOW_MANY)
     do
         echo "$PWD/${TSANDBOX_PREFIX}$N/$SCRIPT \$@" >> ${SCRIPT}_all
