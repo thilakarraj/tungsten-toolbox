@@ -16,7 +16,7 @@ MYSQL_GROUP_DIR=tr_dbs
 THL_BASE_PORT=12110
 RMI_BASE_PORT=10100
 TSANDBOX_PREFIX=db
-VERSION=1.0.4
+VERSION=1.0.5
 
 # --- Do not modify anhything below this line
 
@@ -173,10 +173,34 @@ make_multiple_sandbox \
     --how_many_nodes=$HOW_MANY --sandbox_base_port=${MYSQL_BASE_PORT} \
     --group_directory=$MYSQL_GROUP_DIR $MYSQL_VERSION
 
+function myseq
+{
+    low_limit=$1
+    hi_limit=$2
+    step=$3
+    if [ -z $step ]
+    then
+        step=1
+    fi
+    if [  $low_limit -gt $hi_limit ]
+    then
+        echo "low limit should be smaller than high limit"
+        exit -1
+    fi
+    counter=$low_limit
+    while [ $counter -le $hi_limit ]
+    do
+        echo $counter
+        counter=$(($counter+$step))
+    done
+}
+
+
+
 #
 # Add the privileges needed to run Tungsten
 #
-for N in $(seq 1 $HOW_MANY)
+for N in $(myseq 1 $HOW_MANY)
 do
     $HOME/sandboxes/$MYSQL_GROUP_DIR/n$N -u root -e 'update mysql.user set Grant_priv="Y" where user="msandbox"; flush privileges'
     # $HOME/sandboxes/$MYSQL_GROUP_DIR/n$N -u root -e 'set global general_log=1'
@@ -223,7 +247,7 @@ SLAVE_RMI_PORT=$MASTER_RMI_PORT
 # Installs the slaves
 #
 
-for N in $(seq 2 $HOW_MANY)
+for N in $(myseq 2 $HOW_MANY)
 do
     mkdir $TUNGSTEN_BASE/${TSANDBOX_PREFIX}$N    
     SLAVE_THL_PORT=$(($SLAVE_THL_PORT+1))
@@ -259,7 +283,7 @@ function add_header {
     echo $SCRIPT_HEADER2 >> $1
 }
 
-for N in $( seq 1 $HOW_MANY)
+for N in $( myseq 1 $HOW_MANY)
 do
     cd $TUNGSTEN_BASE
     if [ -e n$N ]
@@ -294,7 +318,7 @@ add_header clear_tsandbox
 echo "$TUNGSTEN_BASE/replicator_all stop" >> clear_tsandbox
 echo "$TUNGSTEN_BASE/db_clear_all" >> clear_tsandbox
 
-for N in $(seq 1 $HOW_MANY)
+for N in $(myseq 1 $HOW_MANY)
 do
     echo "" >> clear_tsandbox
     echo "rm -rf $TUNGSTEN_BASE/${TSANDBOX_PREFIX}$N/tlogs/$TUNGSTEN_SERVICE/*" >> clear_tsandbox
@@ -317,7 +341,7 @@ chmod +x start_tsandbox
 for SCRIPT in trepctl replicator 
 do
     add_header ${SCRIPT}_all
-    for N in $(seq 1 $HOW_MANY)
+    for N in $(myseq 1 $HOW_MANY)
     do
         echo "$PWD/${TSANDBOX_PREFIX}$N/$SCRIPT \$@" >> ${SCRIPT}_all
     done
