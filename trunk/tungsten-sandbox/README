@@ -12,7 +12,7 @@ As of version 1.0.2, tungsten-sandbox is self contained in one file, which you s
 
 REQUIREMENTS
 ------------
-It should work with Tungsten Replicator 2.0.4-131 or later.
+It should work with Tungsten Replicator 2.0.4-167 or later.
 All the requirements for a normal installation of Tungsten should be met. See http://www.continuent.com/downloads/documentation for details.
 
 MySQL Sandbox (http://mysqlsandbox.net) is necessary for Tungsten Sandbox to work.

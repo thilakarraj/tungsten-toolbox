@@ -169,6 +169,11 @@ fi
 #
 export NODE_OPTIONS='-c log-bin=mysql-bin -c innodb_flush_log_at_trx_commit=2 -c max_allowed_packet=48M'
 
+if [[ $MYSQL_VERSION < '5.5' ]]
+then
+    NODE_OPTIONS="$NODE_OPTIONS -c storage-engine=innodb"
+fi
+
 make_multiple_sandbox \
     --how_many_nodes=$HOW_MANY --sandbox_base_port=${MYSQL_BASE_PORT} \
     --group_directory=$MYSQL_GROUP_DIR $MYSQL_VERSION
