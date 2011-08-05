@@ -171,7 +171,7 @@ export NODE_OPTIONS='-c log-bin=mysql-bin -c innodb_flush_log_at_trx_commit=2 -c
 
 if [[ $MYSQL_VERSION < '5.5' ]]
 then
-    NODE_OPTIONS="$NODE_OPTIONS -c storage-engine=innodb"
+    NODE_OPTIONS="$NODE_OPTIONS -c default-storage-engine=innodb"
 fi
 
 make_multiple_sandbox \
@@ -199,8 +199,6 @@ function myseq
         counter=$(($counter+$step))
     done
 }
-
-
 
 #
 # Add the privileges needed to run Tungsten
