@@ -16,7 +16,7 @@ MYSQL_GROUP_DIR=tr_dbs
 THL_BASE_PORT=12110
 RMI_BASE_PORT=10100
 TSANDBOX_PREFIX=db
-VERSION=1.0.6
+VERSION=1.0.7
 
 # --- Do not modify anhything below this line
 
@@ -40,7 +40,7 @@ fi
 if [ -f $CURDIR/../.manifest ]
 then
     BUILD=$(grep BUILD_NUMBER $CURDIR/../.manifest | awk '{print $2}')
-    MIN_BUILD=167
+    MIN_BUILD=247
     if [ $BUILD -lt $MIN_BUILD ]
     then
         echo "Builds earlier than $MIN_BUILD can't be used with this version of tungsten-sandbox"
