@@ -27,6 +27,7 @@ Syntax: ./ldg [options]
                                         Allowed: { sysbench}
     --repository = name                 Where to store the datasets
     --dataset-name = name               Name of this dataset
+    --sysbench-options = name           Options that should be passed to sysbench
     --no-binlog                         Disables binary log during generation
     --generation-flow = name            Defines whether the schemas are created one by one {serial} or all together {parallel}
                                         Allowed: { parallel|serial}
