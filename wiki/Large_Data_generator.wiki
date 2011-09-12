@@ -9,13 +9,13 @@ The *ldg* (Large Data Generator) is a tool that creates and handles large data s
 
 == Interface ==
 
-{{{
+<pre>
 
    ldg [options] 
 
    # generation
-   --schemas=N           number of schemas to create [5]
-   --records=N           number of records per table [100,000,000]
+   --schemas=N           number of schemas to create (5)
+   --records=N           number of records per table (100,000,000)
    --repository=S        where the generated data will be 
                          stored    
    --dataset-name=S      how this dataset will be named in the
@@ -38,8 +38,8 @@ The *ldg* (Large Data Generator) is a tool that creates and handles large data s
                     from_path and to_path can be remote addresses in
                     the form hostname:/path/to/repository
    --skip-logs      do not copy innodb log files
-   --mysql-init=S   path to the mysql init script [/etc/init.d/mysqld]
+   --mysql-init=S   path to the mysql init script (/etc/init.d/mysqld)
    --use-sudo       act as super user to create the data directory 
-                    [false]
+                    (false)
 
-}}}
+</pre>
