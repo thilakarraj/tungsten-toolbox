@@ -10,17 +10,17 @@ The *ldg* (Large Data Generator) is a tool that creates and handles large data s
 == Interface ==
 
 <pre>
-
+ 
     Tungsten Tools,  version 1.0
     ldg - Large Data Generator
      (C) 2011 Giuseppe Maxia, Continuent, Inc
 Syntax: ./ldg [options]  
-
-
+ 
+ 
     -o --operation = name               Operation to perform
-                                        Allowed: { generation|load}
+                                         Allowed: { generation|load}
 # Generation options
-
+   
     --schemas = number                  How many schemas to create
     --records = number                  How many records for each schema
     --generation-agent = name           Which agent will create the data
@@ -38,9 +38,9 @@ Syntax: ./ldg [options]
     --db-user = name                    database server user 
     --db-password = name                database server password
     --make-sandbox = name               Will use a sandbox to generate data.
-
+ 
 # management options
-
+ 
     --load-from = name                  Where the data is being copying from.
                                         The parameter can be either a simple path or "hostname:/path/"
     --load-to = name                    Where the data is being copying to.
