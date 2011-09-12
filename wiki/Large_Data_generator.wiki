@@ -30,6 +30,14 @@ The *ldg* (Large Data Generator) is a tool that creates and handles large data s
                          and then copied N times.
                          With 'generate-all', every database is created
                          independently
+   --db-host=S
+   --db-port=S
+   --db-user=S
+   --db-password=S
+   --db-datadir=S
+   --make-sandbox=S      Will use a sandbox with given version to 
+                         create the data set. This method will override
+                         all --db-{{{*}}} options
 
    # management
    --load=from_path:to_path  
