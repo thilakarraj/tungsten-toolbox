@@ -39,7 +39,10 @@ The *ldg* (Large Data Generator) is a tool that creates and handles large data s
                     the form hostname:/path/to/repository
    --skip-logs      do not copy innodb log files
    --mysql-init=S   path to the mysql init script (/etc/init.d/mysqld)
+                    This command will be called before loading, to
+                    stop the server, and after loading, to start it.
    --use-sudo       act as super user to create the data directory 
                     (false)
+   --run-sysbench=S Runs sysbench in the given host after loading 
 
 </pre>
