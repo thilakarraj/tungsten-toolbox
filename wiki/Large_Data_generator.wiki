@@ -1,0 +1,27 @@
+#summary large data generator
+
+= Large Data Generator =
+
+The *ldg* (Large Data Generator) is a tool that creates and handles large data sets for the purpose of testing replication, especially parallel apply.
+
+
+
+== Interface ==
+
+{{{
+
+   ldg [options] 
+
+   # generation
+   --schemas=N       number of schemas to create [5]
+   --records=N       number of records per table [100,000,000]
+   --repository=S    where the generated data will be stored           
+   --no-binlog       disables writing to binary logs during creation
+
+   # management
+   --load=from_path:to_path  
+                    replaces the data directory 'to_path' with the 
+                    data directory 'from_path'   
+   --skip-logs      do not copy innodb log files
+
+}}}
