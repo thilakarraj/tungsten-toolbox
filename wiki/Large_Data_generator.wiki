@@ -18,7 +18,7 @@ Syntax: ./ldg [options]
  
  
     -o --operation = name               Operation to perform
-                                         Allowed: { generation|load}
+                                         Allowed: { generation|load|list}
 # Generation options
    
     --schemas = number                  How many schemas to create
