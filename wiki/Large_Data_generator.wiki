@@ -11,46 +11,46 @@ The *ldg* (Large Data Generator) is a tool that creates and handles large data s
 
 <pre>
 
-   ldg {{{[options] }}}
+    Tungsten Tools,  version 1.0
+    ldg - Large Data Generator
+     (C) 2011 Giuseppe Maxia, Continuent, Inc
+Syntax: ./ldg [options]  
 
-   # generation
-   --schemas=N           number of schemas to create (5)
-   --records=N           number of records per table (100,000,000)
-   --repository=S        where the generated data will be 
-                         stored    
-   --dataset-name=S      how this dataset will be named in the
-                         repository       
-   --no-binlog           disables writing to binary logs during 
-                         creation
-   --generation-flow=S   {serial,parallel} Defines whether the
-                         schemas are created one at the time (serial)
-                         or all together (parallel)
-   --generation-method=S {clone-first,generate-all}
-                         With 'clone-first', one database is created
-                         and then copied N times.
-                         With 'generate-all', every database is created
-                         independently
-   --db-host=S
-   --db-port=S
-   --db-user=S
-   --db-password=S
-   --db-datadir=S
-   --make-sandbox=S      Will use a sandbox with given version to 
-                         create the data set. This method will override
-                         all --db-{{{*}}} options
 
-   # management
-   --load=from_path:to_path  
-                    replaces the data directory 'to_path' with the 
-                    data directory 'from_path'   
-                    from_path and to_path can be remote addresses in
-                    the form hostname:/path/to/repository
-   --skip-logs      do not copy innodb log files
-   --mysql-init=S   path to the mysql init script (/etc/init.d/mysqld)
-                    This command will be called before loading, to
-                    stop the server, and after loading, to start it.
-   --use-sudo       act as super user to create the data directory 
-                    (false)
-   --run-sysbench=S Runs sysbench in the given host after loading 
+    -o --operation = name               Operation to perform
+                                        Allowed: { generation|load}
+# Generation options
+
+    --schemas = number                  How many schemas to create
+    --records = number                  How many records for each schema
+    --generation-agent = name           Which agent will create the data
+                                        Allowed: { sysbench}
+    --repository = name                 Where to store the datasets
+    --dataset-name = name               Name of this dataset
+    --no-binlog                         Disables binary log during generation
+    --generation-flow = name            Defines whether the schemas are created one by one {serial} or all together {parallel}
+                                        Allowed: { parallel|serial}
+    --generation-method = name          With "clone-first", one database is created and then copied N times.
+                                        With "generate-all", every database is created independently
+                                        Allowed: { clone-first|generate-all}
+    --db-host = name                    name of the host to use for data generation
+    --db-port = number                  database server port 
+    --db-user = name                    database server user 
+    --db-password = name                database server password
+    --make-sandbox = name               Will use a sandbox to generate data.
+
+# management options
+
+    --load-from = name                  Where the data is being copying from.
+                                        The parameter can be either a simple path or "hostname:/path/"
+    --load-to = name                    Where the data is being copying to.
+                                        The parameter can be either a simple path or "hostname:/path/"
+    --skip-logs                         Do not copy innodb log files
+    --mysql-init = name                 path to the mysql init script (/etc/init.d/mysqld)
+                                        This command will be called before loading,
+                                        to stop the server, and after loading, to start it.
+    --use-sudo                          act as super user to create the data directory
+    --run-sysbench = name               Execute "sysbench run" in the given host after loading the data.
+    -h --help                           Shows this help page.ing 
 
 </pre>
