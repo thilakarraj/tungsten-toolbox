@@ -11,7 +11,7 @@ The *ldg* (Large Data Generator) is a tool that creates and handles large data s
 
 <pre>
 
-   ldg [options] 
+   ldg {{{[options] }}}
 
    # generation
    --schemas=N           number of schemas to create (5)
