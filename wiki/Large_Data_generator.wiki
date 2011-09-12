@@ -1,4 +1,5 @@
 #summary large data generator
+#labels Featured
 
 = Large Data Generator =
 
@@ -13,15 +14,30 @@ The *ldg* (Large Data Generator) is a tool that creates and handles large data s
    ldg [options] 
 
    # generation
-   --schemas=N       number of schemas to create [5]
-   --records=N       number of records per table [100,000,000]
-   --repository=S    where the generated data will be stored           
-   --no-binlog       disables writing to binary logs during creation
+   --schemas=N           number of schemas to create [5]
+   --records=N           number of records per table [100,000,000]
+   --repository=S        where the generated data will be 
+                         stored    
+   --dataset-name=S      how this dataset will be named in the
+                         repository       
+   --no-binlog           disables writing to binary logs during 
+                         creation
+   --generation-flow=S   {serial,parallel} Defines whether the
+                         schemas are created one at the time (serial)
+                         or all together (parallel)
+   --generation-method=S {clone-first,generate-all}
+                         With 'clone-first', one database is created
+                         and then copied N times.
+                         With 'generate-all', every database is created
+                         independently
 
    # management
    --load=from_path:to_path  
                     replaces the data directory 'to_path' with the 
                     data directory 'from_path'   
+                    from_path and to_path can be remote addresses in
+                    the form hostname:/path/to/repository
    --skip-logs      do not copy innodb log files
+   --mysql-init=S   path to the mysql init script [/etc/init.d/mysqld]
 
 }}}
