@@ -1,0 +1,616 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use Data::Dumper;
+use Getopt::Long;
+
+our $VERSION = '1.0';
+
+{
+package LDG;
+use English '-no_match_vars';
+use File::Basename;
+use Data::Dumper;
+
+sub check_mysql_init
+{
+    my ($options) = @_;
+    unless ( -x $options->{'mysql-init'})
+    {
+        die "$options->{'mysql-init'} not found or not executable\n";
+    }
+}
+
+sub get_dataset_manifest
+{
+    my ($dir) = @_;
+    open my $MANIFEST, '<', "$dir/.manifest"
+        or die "can't load '.manifest' from $dir ($OS_ERROR)\n";
+    my $manifest ='';
+    while (my $line = <$MANIFEST>)
+    {
+        $manifest .= $line;
+    }
+    close $MANIFEST;
+    my $saved_options;
+    eval $manifest;
+    unless ($saved_options)
+    {
+        die "can't load '.manifest' from $dir \n";
+    }
+    return $saved_options;
+}
+
+sub list_datasets
+{
+    my ($options) = @_;
+    #my @datasets;
+    for my $dir (glob("$options->{repository}/*/"))
+    {
+        my $repo = get_dataset_manifest($dir);
+        printf "%-20s - date: %s - schemas: %3d - records: %10d - %s\n",
+            $repo->{'dataset-name'},
+            $repo->{'data-saved'},
+            $repo->{'schemas'},
+            $repo->{'records'},
+            $repo->{'mysql-version'};
+        #push @datasets, $repo;
+    }
+    #print Dumper \@datasets;
+}
+
+sub make_sandbox 
+{
+    my ($version, $no_binlogs) = @_;
+    my $sb_options=' --no_confirm -c innodb-file-per-table=on ';
+    unless ($no_binlogs)
+    {
+        $sb_options .= '-c log-bin=mysql-bin'
+    }
+    my $result = system qq(make_sandbox $version $sb_options);
+    if ($result)
+    {
+        die "Error creating sandbox\n";
+    }
+}
+
+sub get_mysql_variable
+{
+    my ($options, $variable ) = @_;
+
+    my $mysql=qq(mysql -h $options->{'db-host'} -P $options->{'db-port'} -u $options->{'db-user'} -p$options->{'db-password'});
+    my $bare_result= qx($mysql -NB -e 'show variables like "$variable"');
+    $bare_result =~ s/^\s*\S+\s*//;
+    chomp $bare_result;
+    return $bare_result; 
+}
+
+sub generate_dataset
+{
+    my ($options) = @_;
+    unless ( -d $options->{repository})
+    {
+        die "Repository $options->{repository} does not exist. Please create the directory or indicate a different one\n";
+    }  
+
+    if ($options->{'make-sandbox'})
+    {
+        make_sandbox($options->{'make-sandbox'}, $options->{'no-binlog'});
+    }
+    elsif ( $options->{'no-binlog'})
+    {
+        die "option 'no-binlog' is currently supported only with 'make_sandbox'\n";
+    }
+    open my $HOST_PARAMS, '>', '/tmp/HOST_PARAMS.sh'
+        or die "can't create /tmp/HOST_PARAMS.sh ($OS_ERROR)";
+    printf $HOST_PARAMS "HOST=%s\n", $options->{'db-host'};
+    printf $HOST_PARAMS "PORT=%s\n", $options->{'db-port'};
+    printf $HOST_PARAMS "DB_USER=%s\n", $options->{'db-user'};
+    printf $HOST_PARAMS "DB_PASSWD=%s\n", $options->{'db-password'};
+    printf $HOST_PARAMS "ROWS=%s\n", $options->{'records'};
+    printf $HOST_PARAMS "NUM_THREADS=%s\n", $options->{'sysbench-threads'};
+    printf $HOST_PARAMS "SYSBENCH_DURATION=%s\n", $options->{'sysbench-duration'};
+    printf $HOST_PARAMS "MAX_REQUESTS=%s\n", $options->{'sysbench-requests'};
+    close $HOST_PARAMS;
+    my $sysbench_wrapper = dirname($PROGRAM_NAME) . "/sysbench_wrapper.sh";
+    # print "Working on this feature. (generate dataset) Stay tuned ....\n";
+
+    $options->{'datadir'} = get_mysql_variable($options, 'datadir');
+    $options->{'mysql-version'} = get_mysql_variable($options, 'version');
+    $options->{'innodb-data-file-path'} = get_mysql_variable($options, 'innodb_data_file_path');
+    $options->{'innodb-file-per-table'} = get_mysql_variable($options, 'innodb_file_per_table');
+    # print $mysql, "\n", Dumper $options; exit;
+    unless ( -x $sysbench_wrapper) 
+    {
+        die "sysbench_wrapper.sh not found\n";
+    }
+    for my $N ( 1 .. $options->{schemas})
+    {
+        my $number = sprintf('%02d', $N);
+        system "$sysbench_wrapper $options->{'schema-prefix'}$number prepare"; 
+    }
+
+
+    if ($options->{datadir}  && ( -d $options->{datadir} ))
+    {
+        copy_to_repository($options);
+    }
+    else 
+    {
+        print "Generation complete. But can't determine data directory\n";
+        exit;
+    }
+}
+
+sub copy_to_repository 
+{
+    my ($options) = @_;
+    my $sudo = $options->{'use-sudo'};
+    my $destination= "$options->{repository}/$options->{'dataset-name'}";
+    check_mysql_init($options);
+    system "$sudo $options->{'mysql-init'} stop";
+    mkdir "$destination"
+        or die "error creating $destination $($OS_ERROR)\n";
+    my $result = system "cp -R $options->{datadir}/ $destination/";
+    if ($result)
+    {
+        die "An error occurred during the copy from $options->{datadir} to $destination/\n";
+    }
+    else 
+    {
+        $options->{'data-saved'} = qx/date '+\%Y-\%m-\%d'/;
+        chomp $options->{'data-saved'};
+        open my $MANIFEST, '>', "$destination/.manifest" 
+            or die "can't create $destination/.manifest\n";
+        print $MANIFEST Data::Dumper->Dump([$options],['saved_options']);
+        close $MANIFEST;
+    }
+    system "$sudo $options->{'mysql-init'} start";
+}
+
+sub check_dataset
+{
+    my ($options) = @_;
+    print "Working on this feature (check dataset). Stay tuned ....\n";
+}
+
+sub load_dataset
+{
+    my ($options) = @_;
+    check_mysql_init($options);
+    print "Working on this feature (load dataset) Stay tuned ....\n";
+    exit;
+}
+
+sub run_sysbench
+{
+    my ($options) = @_;
+    print "Working on this feature (run sysbench). Stay tuned ....\n";
+}
+
+1;
+}  # end package LDG
+
+{
+package Utils;
+use English '-no_match_vars';
+
+sub get_help {
+    my ($parse_options, $layout, $msg) = @_;
+    if ($msg) {
+        warn "[***] $msg\n\n";
+    }
+
+    $layout = '' unless defined $layout;
+    my $HELP_MSG = q{};
+    for my $op (
+                sort { $parse_options->{$a}{so} <=> $parse_options->{$b}{so} }
+                grep { $parse_options->{$_}{parse}}  keys %{ $parse_options }
+               )
+    {
+        my $param =  $parse_options->{$op}{parse};
+        my $param_str = q{    };
+        my ($short, $long ) = $param =~ / (?: (\w) \| )? (\S+) /x;
+        if ($short)
+        {
+            $param_str .= q{-} . $short . q{ };
+        }
+        $long =~ s/ = s \@? / = name/x;
+        $long =~ s/ = i / = number/x;
+        $param_str .= q{--} . $long;
+        $param_str .= (q{ } x (40 - length($param_str)) );
+        my $text_items = $parse_options->{$op}{help};
+        for my $titem (@{$text_items})
+        {
+            $HELP_MSG .= $param_str . $titem . "\n";
+            $param_str = q{ } x 40;
+        }
+        if ($parse_options->{$op}{allowed}) 
+        {
+            $HELP_MSG .=  (q{ } x 40) . "  (Allowed: {@{[join '|', sort keys %{$parse_options->{$op}{allowed}}  ]}})\n"
+        }
+   }
+
+   print get_credits(),
+          "Syntax: $PROGRAM_NAME [options] $layout \n",
+          $HELP_MSG;
+    exit( defined $msg );
+}
+
+sub get_credits 
+{
+    my $CREDITS =
+          qq(    Tungsten Tools,  version $VERSION\n)
+        . qq(    ldg - Large Data Generator\n )
+        . qq(    (C) 2011 Giuseppe Maxia, Continuent, Inc\n);
+    return $CREDITS;
+}
+
+sub validate_options
+{
+    my ($options, $parse_options) = @_;
+    my @to_be_defined;
+    my @not_allowed;
+    for my $must ( grep {$parse_options->{$_}->{must_have}} keys %{$parse_options})
+    {
+        unless (defined $options->{$must})
+        {
+            my $required = 0;
+            if ($parse_options->{$must}->{must_have} eq '1')
+            # unconditional requirement
+            {
+                $required=1;
+            }
+            elsif ($parse_options->{$must}->{must_have} eq $options->{operation})
+            # required only for a given operation
+            {
+                $required = 1;
+            }
+            push @to_be_defined, $must if $required;
+        }
+    }
+
+    for my $option (keys %{$options} ) {
+        if (exists $parse_options->{$option}{allowed} && $options->{$option})
+        {
+            unless (exists $parse_options->{$option}{allowed}{$options->{$option}})
+            {
+                push @not_allowed, "Not allowed value '$options->{$option}' for option '$option' - "
+                . " (Choose among: { @{[keys %{$parse_options->{$option}{allowed}} ]} })\n";
+            }
+        }
+    }
+    if (@to_be_defined)
+    {
+        for my $must (@to_be_defined)
+        {
+            print "Option '$must' must be defined\n"
+        }
+    }
+    if (@not_allowed)
+    {
+        for my $na (@not_allowed) 
+        {
+            print $na;
+        }
+    }
+    if (@not_allowed or @to_be_defined)
+    {
+        exit 1;
+    }
+}
+
+sub which
+{
+    my ($executable) = @_;
+    for my $dir ( split /:/, $ENV{PATH} )
+    {
+        $dir =~ s{/$}{};
+        if ( -x "$dir/$executable" )
+        {
+            return "$dir/$executable";
+        }
+    }
+    return;
+}
+
+1;
+} # end package Utils
+
+package main;
+
+my %parse_options = (
+
+    #
+    # Data generation options
+    #    
+    operation => {
+            parse   => 'o|operation=s',
+            value   => 'list',
+            so      => 5,
+            must_have => 1,
+            allowed => {'generate' => 1, load => 1, 'list' => 1},
+            help    => ['Operation to perform' ]
+        },
+    schemas => {
+            parse   => 'schemas=i',
+            value   => 5,
+            so      => 10,
+            help    => ['How many schemas to create' ]
+        },
+    'schema-prefix' => {
+            parse   => 'schema-prefix=s',
+            value   => 'db',
+            must_have => 'generate',
+            so      => 15,
+            help    => ['Name prefix for each database to create' ]
+        },
+     records => {
+            parse   => 'records=i',
+            value   => 10_000_000,
+            so      => 20,
+            help    => ['How many records for each schema' ]
+        },
+#    'generation-agent' => {
+#            parse   => 'generation-agent=s',
+#            value   => 'sysbench',
+#            so      => 25,
+#            allowed => {sysbench => 1},
+#            help    => ['Which agent will create the data' ]
+#        },
+    repository => {
+            parse   => 'repository=s',
+            value   => "$ENV{HOME}/ldg_repo",
+            so      => 30,
+            help    => ['Where to store the datasets' ]
+        },
+
+    'dataset-name' => {
+            parse   => 'dataset-name=s',
+            value   => undef,
+            must_have => 1,
+            so      => 40,
+            help    => ['Name of this dataset' ]
+        },
+    'no-binlog' => {
+            parse   => 'no-binlog',
+            value   => 0,
+            so      => 50,
+            help    => ['Disables binary log during generation' ]
+        },
+# 
+# Creating the schemas in parallel is going to be extremely slow.
+# Serial by default is the way to go
+#
+#    'generation-flow' => {
+#            parse   => 'generation-flow=s',
+#            value   => 'parallel',
+#            so      => 60,
+#            allowed => {serial => 1, parallel =>1},
+#            help    => ['Defines whether the schemas are created one by one {serial} or all together {parallel}' ]
+#        },
+#
+# There is no easy way of cloning a table from a database to another in innodb
+#
+#    'generation-method' => {
+#            parse   => 'generation-method=s',
+#            value   => 'generate-all',
+#            so      => 70,
+#            allowed => {'clone-first' => 1, 'generate-all' =>1},
+#            help    => ['With "clone-first", one database is created and then copied N times.',
+#                        'With "generate-all", every database is created independently' ],
+#        },
+    'db-host' => {
+            parse   => 'db-host=s',
+            value   => undef,
+            must_have => 'generate',
+            so      => 80,
+            help    => ['name of the host to use for data generation'],
+        },
+    'db-port' => {
+            parse   => 'db-port=i',
+            value   => 3306,
+            so      => 90,
+            help    => ['database server port '],
+        },
+    'db-user' => {
+            parse   => 'db-user=s',
+            value   => undef,
+            must_have => 'generate',
+            so      => 100,
+            help    => ['database server user '],
+        },
+    'db-password' => {
+            parse   => 'db-password=s',
+            value   => undef,
+            must_have => 'generate',
+            so      => 110,
+            help    => ['database server password'],
+        },
+    'make-sandbox' => {
+            parse   => 'make-sandbox=s',
+            value   => undef,
+            so      => 120,
+            help    => ['Will use a sandbox to generate data.'],
+        },
+    'sysbench-threads' => {
+            parse   => 'sysbench-threads=i',
+            value   => 10,
+            so      => 130,
+            help    => ['How many threads for sysbench' ]
+        },
+    'sysbench-duration' => {
+            parse   => 'sysbench-duration=i',
+            value   => 3600,
+            so      => 130,
+            help    => ['How many seconds should sysbench run' ]
+        },
+     'sysbench-requests' => {
+            parse   => 'sysbench-requests=i',
+            value   => 0,
+            so      => 130,
+            help    => ['How many requests should sysbench generate' ]
+        },
+       
+    #    
+    # Management options
+    #
+    'load-from' => {
+            parse   => 'load-from=s',
+            value   => undef,
+            so      => 400,
+            must_have => 'load',
+            help    => ['Where the data is being copying from.', 
+                        'The parameter can be either a simple path or "hostname:/path/"'],
+        },
+    'load-to' => {
+            parse   => 'load-to=s',
+            value   => undef,
+            must_have => 'load',
+            so      => 410,
+            help    => ['Where the data is being copying to.', 
+                        'The parameter can be either a simple path or "hostname:/path/"'],
+        },
+    'skip-logs' => {
+            parse   => 'skip-logs',
+            value   => undef,
+            so      => 420,
+            help    => ['Do not copy innodb log files']
+        },
+    'mysql-init' => {
+            parse   => 'mysql-init=s',
+            value   => '/etc/init.d/mysqld',
+            so      => 430,
+            help    => ['path to the mysql init script (/etc/init.d/mysqld)',
+                        'This command will be called before loading,',
+                        'to stop the server, and after loading, to start it.']
+        },
+    'use-sudo' => {
+            parse   => 'use-sudo',
+            value   => undef,
+            so      => 440,
+            help    => ['act as super user to create the data directory']
+        },
+    'run-sysbench' => {
+            parse   => 'run-sysbench=s',
+            value   => undef,
+            so      => 450,
+            help    => ['Execute "sysbench run" in the given host after loading the data.']
+        },
+    'help' => {
+            parse   => 'h|help',
+            value   => undef,
+            so      => 650,
+            help    => ['Shows this help page.']
+        },
+  
+);
+
+my %options = map { $_ ,  $parse_options{$_}{'value'}}  keys %parse_options;
+
+Utils::get_help(\%parse_options,'') unless @ARGV;
+GetOptions (
+    map { $parse_options{$_}{parse}, \$options{$_} }    
+        grep { $parse_options{$_}{parse}}  keys %parse_options 
+) or Utils::get_help(\%parse_options, '');
+
+Utils::get_help(\%parse_options,'') if $options{help};
+
+if ($options{'make-sandbox'})
+{
+    my $mysql_version= $options{'make-sandbox'};
+    unless ($mysql_version =~ /^\d\.\d\.\d\d$/)
+    {
+        die "make-sandbox value must be a valid MySQL version\n";
+    }
+    my $make_sandbox= Utils::which('make_sandbox');
+    unless ($make_sandbox)
+    {
+        die "Can't find 'make_sandbox' in $ENV{PATH}\n";
+    }
+    my $binary_base = "$ENV{HOME}/opt/mysql";
+    if ($ENV{SANDBOX_BINARY})
+    {
+        $binary_base = $ENV{SANDBOX_BINARY};
+    }
+    unless ( -d "$binary_base/$mysql_version" )
+    {
+       die "To use MySQL sandbox you must expand the MySQL tarball under $binary_base, and "
+           . " pass only the version number to this application.\n"
+           . "Please refer to the MySQL Sandbox docs for more\n" 
+    }
+    $options{'db-host'} = '127.0.0.1';
+    $options{'db-user'} = 'msandbox';
+    $options{'db-password'} = 'msandbox';
+    my $mysql_port = $mysql_version;
+    my $mysql_dir = $mysql_version;
+    $mysql_port =~ s/\.//g;
+    $mysql_dir =~ s/\./_/g;
+    $options{'mysql-init'} = "$ENV{HOME}/sandboxes/msb_$mysql_dir/msb";
+    $options{'db-port'} = $mysql_port;
+}
+
+unless ($options{'dataset-name'})
+{
+    $options{'dataset-name'} = sprintf('db_%d_rec_%d',$options{schemas},$options{records} );
+}
+
+Utils::validate_options(
+    \%options, 
+    \%parse_options);
+
+if ($options{'use-sudo'})
+{
+    $options{'use-sudo'} = Util::which('sudo');
+    unless ($options{'use-sudo'})
+    {
+        die "can't find 'sudo' in $ENV{PATH}\n";
+    }
+}
+else
+{
+    $options{'use-sudo'} = '';
+}
+
+# check for sysbench
+#
+my $sysbench = Utils::which('sysbench');
+unless ($sysbench)
+{
+    die "could not find 'sysbench' in $ENV{PATH}\n";
+}
+
+if ( $options{'sysbench-requests'} && $options{'sysbench-duration'})
+{
+    die  "sysbench-requests and sysbench-duration are mutually exclusive\n"
+       . "If you set the duration, requests should be 0, and vice versa\n";
+}
+
+if ( -d "$options{repository}/$options{'dataset-name'}") 
+{
+    die "dataset already exists in $options{repository}/$options{'dataset-name'}\n";
+}
+
+# print Dumper \%options; exit;
+
+if ($options{operation} eq 'list')
+{
+    LDG::list_datasets(\%options);
+}
+elsif ($options{operation} eq 'generate')
+{
+    LDG::generate_dataset(\%options);
+    # check that MySQL database is reachable
+    # check that data directory exists
+}
+elsif ($options{operation} eq 'load')
+{
+    LDG::check_dataset(\%options); 
+    LDG::load_dataset(\%options);
+    if ($options{'run-sysbench'})
+    {
+        LDG::run_sysbench(\%options);
+    }
+}
+
+
