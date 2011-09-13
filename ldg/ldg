@@ -586,7 +586,7 @@ if ( $options{'sysbench-requests'} && $options{'sysbench-duration'})
        . "If you set the duration, requests should be 0, and vice versa\n";
 }
 
-if ( -d "$options{repository}/$options{'dataset-name'}") 
+if ((  $options{operation} eq 'generate') && (-d "$options{repository}/$options{'dataset-name'}") )
 {
     die "dataset already exists in $options{repository}/$options{'dataset-name'}\n";
 }
