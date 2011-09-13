@@ -106,7 +106,7 @@ db_3_rec_100000      - date: 2011-09-13 - schemas:   3 - records:     100000 -  
 db_3_rec_10000000    - date: 2011-09-13 - schemas:   3 - records:   10000000 -       5.1.57 - 6.8G
 db_3_rec_10M         - date: 2011-09-13 - schemas:   3 - records:   10000000 -       5.5.10 - 6.9G
 db_3_rec_50000000    - date: 2011-09-13 - schemas:   3 - records:   50000000 -       5.1.57 - 34G
-db_5_rec_10M         - date: 2011-09-13 - schemas:   3 - records:    1000000 -       5.5.10 - 750M
+db_5_rec_5000000     - date: 2011-09-13 - schemas:   5 - records:    5000000 -       5.1.57 - 5.7G
 </pre>
 
 <pre>
@@ -152,14 +152,14 @@ ldg --operation=list --verbose
                        schemas : 3
 --------------------------------------------------------------------------------
                     data-saved : 2011-09-13
-                  dataset-name : db_5_rec_10M
-                  dataset-size : 750M
+                  dataset-name : db_5_rec_5000000
+                  dataset-size : 5.7G
          innodb-data-file-path : ibdata1:10M:autoextend
          innodb-file-per-table : ON
-                 mysql-version : 5.5.10
+                 mysql-version : 5.1.57
                      no-binlog : 1
-                       records : 1000000
-                       schemas : 3
+                       records : 5000000
+                       schemas : 5
 --------------------------------------------------------------------------------
 </pre>
 
