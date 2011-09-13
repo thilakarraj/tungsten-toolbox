@@ -17,7 +17,7 @@ The *ldg* (Large Data Generator) is a tool that creates and handles large data s
 
 Syntax: ./ldg {{{[options]}}}  
     -o --operation = name               Operation to perform
-                                          (Allowed: {generate|list|load}) 
+                                          (Allowed: {generate|list|load|delete}) 
  
 # Generation options
  
@@ -49,5 +49,6 @@ Syntax: ./ldg {{{[options]}}}
     --use-sudo                          act as super user to create the data directory
     --run-sysbench = name               Execute "sysbench run" in the given host after loading the data.
     -h --help                           Shows this help page.
-
+    --i-am-sure                         Option required when asking for dangerous tasks, such as delete datasets.
+    --verbose                           Gives more information on some operations.
 </pre>
