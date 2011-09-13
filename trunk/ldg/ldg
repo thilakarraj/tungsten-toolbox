@@ -44,25 +44,37 @@ sub get_dataset_manifest
 sub list_datasets
 {
     my ($options) = @_;
-    #my @datasets;
     for my $dir (glob("$options->{repository}/*/"))
     {
         my $repo = get_dataset_manifest($dir);
-        printf "%-20s - date: %s - schemas: %3d - records: %10d - %s\n",
-            $repo->{'dataset-name'},
-            $repo->{'data-saved'},
-            $repo->{'schemas'},
-            $repo->{'records'},
-            $repo->{'mysql-version'};
-        #push @datasets, $repo;
+        if ($options->{verbose})
+        {
+            for my $op (sort keys %{ $repo } )
+            {
+                next if grep { $op eq $_ } qw( operation help run-sysbench load-from load-to verbose use-sudo 
+                        db-password sysbench-requests sysbench-duration sysbench-threads skip-logs );
+                printf "%30s : %s\n", $op, $repo->{$op} || '';
+            }
+            print '-' x 80;
+            print "\n";
+        }
+        else
+        {
+            printf "%-20s - date: %s - schemas: %3d - records: %10d - %12s - %s\n",
+                $repo->{'dataset-name'},
+                $repo->{'data-saved'},
+                $repo->{'schemas'},
+                $repo->{'records'},
+                $repo->{'mysql-version'},
+                $repo->{'dataset-size'};
+        }
     }
-    #print Dumper \@datasets;
 }
 
 sub make_sandbox 
 {
     my ($version, $no_binlogs) = @_;
-    my $sb_options=' --no_confirm -c innodb-file-per-table=on ';
+    my $sb_options=' --no_confirm -c innodb-file-per-table=1 ';
     unless ($no_binlogs)
     {
         $sb_options .= '-c log-bin=mysql-bin'
@@ -151,6 +163,7 @@ sub copy_to_repository
     system "$sudo $options->{'mysql-init'} stop";
     mkdir "$destination"
         or die "error creating $destination $($OS_ERROR)\n";
+    print "Copying to repository. Please wait ... \n";
     my $result = system "cp -R $options->{datadir}/ $destination/";
     if ($result)
     {
@@ -160,6 +173,8 @@ sub copy_to_repository
     {
         $options->{'data-saved'} = qx/date '+\%Y-\%m-\%d'/;
         chomp $options->{'data-saved'};
+        $options->{'dataset-size'} = qx(du -sh $options->{repository}/$options->{'dataset-name'} | awk '{print \$1}');
+        chomp $options->{'dataset-size'};
         open my $MANIFEST, '>', "$destination/.manifest" 
             or die "can't create $destination/.manifest\n";
         print $MANIFEST Data::Dumper->Dump([$options],['saved_options']);
@@ -503,7 +518,13 @@ my %parse_options = (
             so      => 650,
             help    => ['Shows this help page.']
         },
-  
+    'verbose' => {
+            parse   => 'verbose',
+            value   => undef,
+            so      => 660,
+            help    => ['Gives more information on some operations.']
+        },
+   
 );
 
 my %options = map { $_ ,  $parse_options{$_}{'value'}}  keys %parse_options;
