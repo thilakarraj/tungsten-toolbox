@@ -52,3 +52,117 @@ Syntax: ./ldg {{{[options]}}}
     --i-am-sure                         Option required when asking for dangerous tasks, such as delete datasets.
     --verbose                           Gives more information on some operations.
 </pre>
+
+
+== Sample usage ==
+
+=== Generate ===
+<pre>
+ldg -o generate -schemas=3  --records=50000000 --make-sandbox=5.1.57 --no-binlog
+{{{[ ... ] }}}
+
+sysbench 0.4.12:  multi-threaded system evaluation benchmark
+
+Creating table 'sbtest'...
+Creating 50000000 records in table 'sbtest'...
+2011-09-13 16:09:00
+2011-09-13 16:20:21
++-----------------------------+
+| time spent running the test |
++-----------------------------+
+| 00:11:21                    | 
++-----------------------------+
+sysbench 0.4.12:  multi-threaded system evaluation benchmark
+
+Creating table 'sbtest'...
+Creating 50000000 records in table 'sbtest'...
+2011-09-13 16:20:21
+2011-09-13 16:31:27
++-----------------------------+
+| time spent running the test |
++-----------------------------+
+| 00:11:06                    | 
++-----------------------------+
+sysbench 0.4.12:  multi-threaded system evaluation benchmark
+
+Creating table 'sbtest'...
+Creating 50000000 records in table 'sbtest'...
+2011-09-13 16:31:27
+2011-09-13 16:42:41
++-----------------------------+
+| time spent running the test |
++-----------------------------+
+| 00:11:14                    | 
++-----------------------------+
+Copying to repository. Please wait ... 
+. sandbox server started
+Generated data was copied to /home/tungsten/ldg_repo/db_3_rec_50000000
+</pre>
+=== List ===
+
+<pre>
+ldg --operation=list 
+db_3_rec_100000      - date: 2011-09-13 - schemas:   3 - records:     100000 -       5.1.57 - 115M
+db_3_rec_10000000    - date: 2011-09-13 - schemas:   3 - records:   10000000 -       5.1.57 - 6.8G
+db_3_rec_10M         - date: 2011-09-13 - schemas:   3 - records:   10000000 -       5.5.10 - 6.9G
+db_3_rec_50000000    - date: 2011-09-13 - schemas:   3 - records:   50000000 -       5.1.57 - 34G
+db_5_rec_10M         - date: 2011-09-13 - schemas:   3 - records:    1000000 -       5.5.10 - 750M
+</pre>
+
+<pre>
+ldg --operation=list --verbose
+                    data-saved : 2011-09-13
+                  dataset-name : db_3_rec_100000
+                  dataset-size : 115M
+         innodb-data-file-path : ibdata1:10M:autoextend
+         innodb-file-per-table : ON
+                 mysql-version : 5.1.57
+                     no-binlog : 1
+                       records : 100000
+                       schemas : 3
+--------------------------------------------------------------------------------
+                    data-saved : 2011-09-13
+                  dataset-name : db_3_rec_10000000
+                  dataset-size : 6.8G
+         innodb-data-file-path : ibdata1:10M:autoextend
+         innodb-file-per-table : ON
+                 mysql-version : 5.1.57
+                     no-binlog : 1
+                       records : 10000000
+                       schemas : 3
+--------------------------------------------------------------------------------
+                    data-saved : 2011-09-13
+                  dataset-name : db_3_rec_10M
+                  dataset-size : 6.9G
+         innodb-data-file-path : ibdata1:10M:autoextend
+         innodb-file-per-table : ON
+                 mysql-version : 5.5.10
+                     no-binlog : 1
+                       records : 10000000
+                       schemas : 3
+--------------------------------------------------------------------------------
+                    data-saved : 2011-09-13
+                  dataset-name : db_3_rec_50000000
+                  dataset-size : 34G
+         innodb-data-file-path : ibdata1:10M:autoextend
+         innodb-file-per-table : ON
+                 mysql-version : 5.1.57
+                     no-binlog : 1
+                       records : 50000000
+                       schemas : 3
+--------------------------------------------------------------------------------
+                    data-saved : 2011-09-13
+                  dataset-name : db_5_rec_10M
+                  dataset-size : 750M
+         innodb-data-file-path : ibdata1:10M:autoextend
+         innodb-file-per-table : ON
+                 mysql-version : 5.5.10
+                     no-binlog : 1
+                       records : 1000000
+                       schemas : 3
+--------------------------------------------------------------------------------
+</pre>
+
+=== Load ===
+
+TBD
