@@ -15,30 +15,27 @@ The *ldg* (Large Data Generator) is a tool that creates and handles large data s
     ldg - Large Data Generator
      (C) 2011 Giuseppe Maxia, Continuent, Inc
 Syntax: ./ldg [options]  
- 
- 
+
+Syntax: ./ldg [options]  
     -o --operation = name               Operation to perform
-                                         Allowed: { generation|load|list}
+                                          (Allowed: {generate|list|load}) 
+ 
 # Generation options
-   
+ 
     --schemas = number                  How many schemas to create
+    --schema-prefix = name              Name prefix for each database to create
     --records = number                  How many records for each schema
-    --generation-agent = name           Which agent will create the data
-                                        Allowed: { sysbench}
     --repository = name                 Where to store the datasets
     --dataset-name = name               Name of this dataset
-    --sysbench-options = name           Options that should be passed to sysbench
     --no-binlog                         Disables binary log during generation
-    --generation-flow = name            Defines whether the schemas are created one by one {serial} or all together {parallel}
-                                        Allowed: { parallel|serial}
-    --generation-method = name          With "clone-first", one database is created and then copied N times.
-                                        With "generate-all", every database is created independently
-                                        Allowed: { clone-first|generate-all}
     --db-host = name                    name of the host to use for data generation
     --db-port = number                  database server port 
     --db-user = name                    database server user 
     --db-password = name                database server password
     --make-sandbox = name               Will use a sandbox to generate data.
+    --sysbench-threads = number         How many threads for sysbench
+    --sysbench-duration = number        How many seconds should sysbench run
+    --sysbench-requests = number        How many requests should sysbench generate
  
 # management options
  
@@ -52,6 +49,6 @@ Syntax: ./ldg [options]
                                         to stop the server, and after loading, to start it.
     --use-sudo                          act as super user to create the data directory
     --run-sysbench = name               Execute "sysbench run" in the given host after loading the data.
-    -h --help                           Shows this help page.ing 
+    -h --help                           Shows this help page.
 
 </pre>
