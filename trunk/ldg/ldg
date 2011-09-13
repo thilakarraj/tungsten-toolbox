@@ -52,7 +52,8 @@ sub list_datasets
             for my $op (sort keys %{ $repo } )
             {
                 next if grep { $op eq $_ } qw( operation help run-sysbench load-from load-to verbose use-sudo 
-                        db-password sysbench-requests sysbench-duration sysbench-threads skip-logs );
+                        db-password sysbench-requests sysbench-duration sysbench-threads skip-logs 
+                        mysql-init datadir db-host db-port db-user make-sandbox i-am-sure);
                 printf "%30s : %s\n", $op, $repo->{$op} || '';
             }
             print '-' x 80;
@@ -125,7 +126,6 @@ sub generate_dataset
     printf $HOST_PARAMS "MAX_REQUESTS=%s\n", $options->{'sysbench-requests'};
     close $HOST_PARAMS;
     my $sysbench_wrapper = dirname($PROGRAM_NAME) . "/sysbench_wrapper.sh";
-    # print "Working on this feature. (generate dataset) Stay tuned ....\n";
 
     $options->{'datadir'} = get_mysql_variable($options, 'datadir');
     $options->{'mysql-version'} = get_mysql_variable($options, 'version');
@@ -181,6 +181,7 @@ sub copy_to_repository
         close $MANIFEST;
     }
     system "$sudo $options->{'mysql-init'} start";
+    print "Generated data was copied to $destination\n";
 }
 
 sub check_dataset
@@ -194,7 +195,28 @@ sub load_dataset
     my ($options) = @_;
     check_mysql_init($options);
     print "Working on this feature (load dataset) Stay tuned ....\n";
-    exit;
+}
+
+sub delete_dataset
+{
+    my ($options) = @_;
+    my $dataset = "$options->{repository}/$options->{'dataset-name'}";
+    if ( -d $dataset)
+    {
+        if ( $options->{'i-am-sure'}) 
+        {
+            system "rm -rf $dataset";
+        }
+        else 
+        {
+            die "To delete a dataset you must add the --i-am-sure option\n";
+        }
+    }
+    else 
+    {
+        die "Dataset $dataset not found\n"
+    }
+    print "dataset $dataset has been removed\n";
 }
 
 sub run_sysbench
@@ -344,7 +366,7 @@ my %parse_options = (
             value   => 'list',
             so      => 5,
             must_have => 1,
-            allowed => {'generate' => 1, load => 1, 'list' => 1},
+            allowed => {'generate' => 1, load => 1, 'list' => 1, 'delete' => 1},
             help    => ['Operation to perform' ]
         },
     schemas => {
@@ -518,10 +540,16 @@ my %parse_options = (
             so      => 650,
             help    => ['Shows this help page.']
         },
-    'verbose' => {
-            parse   => 'verbose',
+    'i-am-sure' => {
+            parse   => 'i-am-sure',
             value   => undef,
             so      => 660,
+            help    => ['Option required when asking for dangerous tasks, such as delete datasets.']
+        },
+     'verbose' => {
+            parse   => 'verbose',
+            value   => undef,
+            so      => 670,
             help    => ['Gives more information on some operations.']
         },
    
@@ -623,6 +651,10 @@ elsif ($options{operation} eq 'generate')
     LDG::generate_dataset(\%options);
     # check that MySQL database is reachable
     # check that data directory exists
+}
+elsif ($options{operation} eq 'delete')
+{
+    LDG::delete_dataset(\%options);
 }
 elsif ($options{operation} eq 'load')
 {
