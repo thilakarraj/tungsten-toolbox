@@ -13,10 +13,9 @@ The *ldg* (Large Data Generator) is a tool that creates and handles large data s
  
     Tungsten Tools,  version 1.0
     ldg - Large Data Generator
-     (C) 2011 Giuseppe Maxia, Continuent, Inc
-Syntax: ./ldg [options]  
+    (C) 2011 Giuseppe Maxia, Continuent, Inc
 
-Syntax: ./ldg [options]  
+Syntax: ./ldg {{{[options]}}}  
     -o --operation = name               Operation to perform
                                           (Allowed: {generate|list|load}) 
  
