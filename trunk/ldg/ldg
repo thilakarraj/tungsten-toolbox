@@ -13,8 +13,9 @@ use strict;
 use warnings;
 use Data::Dumper;
 use Getopt::Long;
+use File::Basename;
 
-our $VERSION = '1.0';
+our $VERSION = '1.0.0';
 our $DRY_RUN = 0;
 
 {
@@ -294,6 +295,7 @@ sub check_dataset
     {
         die "can't determine this host IP address\n";
     }
+    chomp $options->{source_ip};
     unless ($options->{source_ip} =~ /^(?:\d+\.){3}\d+$/)
     {
         die "unrecognized IP format. Expected #.#.#.#\n";
@@ -303,7 +305,20 @@ sub check_dataset
         $options->{islocal} = 1;
     }
     $options->{datadir} = get_mysql_variable($options, 'datadir');
-    my $repo = get_dataset_manifest("$options->{repository}/$options->{dataset}" );
+    my $repo = get_dataset_manifest("$options->{repository}/$options->{'dataset-name'}" );
+
+    my $bare_datadir= $repo->{datadir};
+    unless ($bare_datadir) 
+    {
+        die "can't find 'datadir' in $options->{'dataset-name'} manifest\n";
+    }
+    $bare_datadir =~ s{/$}{};
+    $bare_datadir = basename($bare_datadir);
+    $options->{source_path} = "$source_path/$bare_datadir";
+    unless (-d $options->{source_path})
+    {
+        die "could not find datadir $bare_datadir in $options->{'dataset-name'}\n";
+    }
 
     $options->{'mysql-version'}         = get_mysql_variable($options, 'version');
     $options->{'innodb-data-file-path'} = get_mysql_variable($options, 'innodb_data_file_path');
@@ -315,7 +330,7 @@ sub check_dataset
     {
         if ($options->{$op} ne $repo->{$op} )
         {
-            die     "Can't load dataset $options->{dataset}.\n"
+            die     "Can't load dataset $options->{'dataset-name'}.\n"
                 .   "Option '$op' is incompatible.\n"
                 .   "Found: $repo->{$op}. Current version: $options->{$op}\n";
         }
@@ -331,15 +346,18 @@ sub load_dataset
     my ($options) = @_;
     check_mysql_init($options);
     my $copy_command = '';
-   if ($options->{islocal})
+    #print Dumper $options;
+    if ($options->{islocal})
     {
-        $copy_command = "$options->{sudo} $options->{'copy-command'} $options->{'copy-options'} $options->{repository}/$options->{dataset}/ $options->{datadir}"
+        $copy_command = "$options->{'use-sudo'} $options->{'copy-command'} $options->{'copy-options'} $options->{source_path}/ $options->{datadir}"
     }
     else
     {
-        $copy_command = "ssh $options->{'db-host'} $options->{sudo} $options->{'copy-command'} $options->{'copy-options'} $options->{source_ip}:$options->{repository}/$options->{dataset}/ $options->{datadir}/"
+        $copy_command = "ssh $options->{'db-host'} $options->{'use-sudo'} $options->{'copy-command'} $options->{'copy-options'} $options->{source_ip}:$options->{source_path}/ $options->{datadir}"
     }
-    print "$copy_command\n";
+    mysystem("$options->{'mysql-init'} stop");
+    mysystem($copy_command);
+    mysystem("$options->{'mysql-init'} start");
     #print "Working on this feature (load dataset) Stay tuned ....\n";
 }
 
@@ -772,15 +790,15 @@ my %parse_options = (
             help    => ['act as super user to create the data directory']
         },
     'copy-command' => {
-            parse   => 'copy-command',
+            parse   => 'copy-command=s',
             value   => 'rsync',
             so      => 450,
             allowed => {rsync =>1, scp => 1, cp => 1},
             help    => ['which command should be used to copy']
         },
     'copy-options' => {
-            parse   => 'copy-options',
-            value   => '-c -r',
+            parse   => 'copy-options=s',
+            value   => '-c -r -v',
             so      => 460,
             help    => ['which options for the copy command']
         },
