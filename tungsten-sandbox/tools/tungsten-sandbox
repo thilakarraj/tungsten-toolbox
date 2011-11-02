@@ -16,7 +16,7 @@ MYSQL_GROUP_DIR=tr_dbs
 THL_BASE_PORT=12110
 RMI_BASE_PORT=10100
 TSANDBOX_PREFIX=db
-VERSION=1.0.7
+VERSION=1.0.8
 
 # --- Do not modify anhything below this line
 
