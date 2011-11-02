@@ -40,7 +40,7 @@ fi
 if [ -f $CURDIR/../.manifest ]
 then
     BUILD=$(grep BUILD_NUMBER $CURDIR/../.manifest | awk '{print $2}')
-    MIN_BUILD=247
+    MIN_BUILD=360
     if [ $BUILD -lt $MIN_BUILD ]
     then
         echo "Builds earlier than $MIN_BUILD can't be used with this version of tungsten-sandbox"
@@ -111,7 +111,7 @@ fi
 #
 MASTER_MYSQL_PORT=$(($MYSQL_BASE_PORT+1))
 MASTER_THL_PORT=$(($THL_BASE_PORT+1))
-MASTER_RMI_PORT=$(($RMI_BASE_PORT+1))
+MASTER_RMI_PORT=$(($RMI_BASE_PORT+2))
 
 #
 # Checking that the MySQL version exists
@@ -233,6 +233,7 @@ $TUNGSTEN_INSTALLER \
   --datasource-password=msandbox \
   --home-directory=$TUNGSTEN_BASE/${TSANDBOX_PREFIX}1 \
   --datasource-log-directory=$HOME/sandboxes/$MYSQL_GROUP_DIR/node1/data \
+  --datasource-mysql-conf=$HOME/sandboxes/$MYSQL_GROUP_DIR/node1/my.sandbox.cnf \
   --service-name=$TUNGSTEN_SERVICE \
   --thl-directory=$TUNGSTEN_BASE/${TSANDBOX_PREFIX}1/tlogs \
   --thl-port=$MASTER_THL_PORT \
@@ -254,7 +255,7 @@ for N in $(myseq 2 $HOW_MANY)
 do
     mkdir $TUNGSTEN_BASE/${TSANDBOX_PREFIX}$N    
     SLAVE_THL_PORT=$(($SLAVE_THL_PORT+1))
-    SLAVE_RMI_PORT=$(($SLAVE_RMI_PORT+1))
+    SLAVE_RMI_PORT=$(($SLAVE_RMI_PORT+2))
     SLAVE_MYSQL_PORT=$(($SLAVE_MYSQL_PORT+1))
 
     $TUNGSTEN_INSTALLER \
@@ -267,6 +268,7 @@ do
       --datasource-password=msandbox \
       --home-directory=$TUNGSTEN_BASE/${TSANDBOX_PREFIX}$N \
       --datasource-log-directory=$HOME/sandboxes/$MYSQL_GROUP_DIR/node$N/data \
+      --datasource-mysql-conf=$HOME/sandboxes/$MYSQL_GROUP_DIR/node$N/my.sandbox.cnf \
       --service-name=$TUNGSTEN_SERVICE \
       --thl-directory=$TUNGSTEN_BASE/${TSANDBOX_PREFIX}$N/tlogs \
       --thl-port=$SLAVE_THL_PORT \
@@ -302,7 +304,7 @@ do
     add_header thl
     echo "vim $PWD/tungsten/tungsten-replicator/log/trepsvc.log" >> show_log
     echo "$PWD/tungsten/tungsten-replicator/bin/replicator \$@" >> replicator
-    echo "$PWD/tungsten/tungsten-replicator/bin/trepctl -port $(($RMI_BASE_PORT+$N)) \$@" >> trepctl
+    echo "$PWD/tungsten/tungsten-replicator/bin/trepctl -port $(($RMI_BASE_PORT+$N*2)) \$@" >> trepctl
     echo "$PWD/tungsten/tungsten-replicator/bin/thl \$@" >> thl
     chmod +x thl trepctl replicator show_log
 done
