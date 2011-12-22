@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Script to install multiple instances of Tungsten Replicator on
-# multiple instances of MySQL in teh same host
+# multiple instances of MySQL in the same host
 #
 # Copyright (c) 2011 Continuent, Inc.  All rights reserved.
 # Released under the New BSD License
@@ -18,7 +18,7 @@ RMI_BASE_PORT=10100
 TSANDBOX_PREFIX=db
 VERSION=1.0.8
 
-# --- Do not modify anhything below this line
+# --- Do not modify anything below this line
 
 # checking for MySQL Sandbox
 MMS=$(which make_multiple_sandbox)
