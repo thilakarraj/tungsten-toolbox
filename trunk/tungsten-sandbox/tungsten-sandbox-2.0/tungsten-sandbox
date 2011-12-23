@@ -516,8 +516,8 @@ sub create_sandbox_scripts
         Utils::add_header('trepctl');
         Utils::add_header('thl');
         my $curdir = "$options->{tungsten_base}/$options->{tsb_prefix}$N";
-        Utils::write_to('show_log', "vim $curdir/tungsten/tungsten-replicator/log/trepsvc.log", '>>');
-        Utils::write_to('show_conf', "vim $curdir/tungsten/tungsten-replicator/conf/static-$options->{service}.properties", '>>');
+        Utils::write_to('show_log', "vim -o $curdir/tungsten/tungsten-replicator/log/*.log", '>>');
+        Utils::write_to('show_conf', "vim -o $curdir/tungsten/tungsten-replicator/conf/static-*.properties", '>>');
         Utils::write_to('replicator', "$curdir/tungsten/tungsten-replicator/bin/replicator " . '$@', '>>');
         Utils::write_to('trepctl', "$curdir/tungsten/tungsten-replicator/bin/trepctl -port $rmi_ports->{$N} " . '$@', '>>');
         Utils::write_to('thl', "$curdir/tungsten/tungsten-replicator/bin/thl " . '$@', '>>');
@@ -540,7 +540,7 @@ sub create_sandbox_scripts
     for my $N ( 1 .. $options->{nodes})
     {
         Utils::write_to('clear_tsandbox', '# ', '>>');
-        Utils::write_to('clear_tsandbox', "rm -rf $options->{tungsten_base}/$options->{tsb_prefix}$N/tlogs/$options->{service}/*", '>>');
+        Utils::write_to('clear_tsandbox', "find $options->{tungsten_base}/$options->{tsb_prefix}$N/tlogs/ -type f -exec rm {} \\;", '>>');
         Utils::write_to('clear_tsandbox', "rm -rf $options->{tungsten_base}/$options->{tsb_prefix}$N/tungsten/tungsten-replicator/log/*", '>>');
     }
     chmod 0750, 'clear_tsandbox';
@@ -825,6 +825,15 @@ if ($options{show_options})
     exit 0;
 }
 
+if ($options{hub})
+{
+    die "The value for --hub must be an integer\n" unless $options{hub} =~/^\d+$/;
+    if (($options{hub} > $options{nodes}) or ($options{hub} < 1))
+    {
+        die "The value for '--hub' must an integer between 1 and the number of nodes ($options{nodes})\n";
+    }
+}
+
 if ($options{topology} eq 'bi-dir')
 {
     if ($options{nodes} > 3) # user has requested more nodes
@@ -883,18 +892,18 @@ elsif  (($options{topology} eq 'all-masters') or  ($options{topology} eq 'bi-dir
 }
 elsif  ($options{topology} eq 'star')
 {
-    unless ($options{hub} && ($options{hub} =~ /^\d+$/))
+    unless ($options{hub})
     {
-        die "The 'star' topology requires a hub (numeric)\n";
+        die "The 'star' topology requires a hub number\n";
     }
     $rmi_ports = Tsandbox::install_all_masters(\%options, $sandbox_dir);
     Tsandbox::install_star_services(\%options);
 }
 elsif  ($options{topology} eq 'fan-in')
 {
-    unless ($options{hub} && ($options{hub} =~ /^\d+$/))
+    unless ($options{hub})
     {
-        die "The 'fan-in' topology requires a hub (numeric)\n";
+        die "The 'fan-in' topology requires a hub number \n";
     }
     $rmi_ports = Tsandbox::install_all_masters(\%options, $sandbox_dir);
     Tsandbox::install_fan_in_services(\%options);
