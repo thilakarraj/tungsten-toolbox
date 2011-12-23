@@ -13,7 +13,7 @@ use Getopt::Long;
 use File::Basename;
 use English '-no_match_vars';
 
-our $VERSION = '2.0.0';
+our $VERSION = '2.0.1';
 our $DRY_RUN = 0;
 our $VERBOSE = 0;
 
@@ -525,7 +525,7 @@ sub create_sandbox_scripts
     }
 
     chdir $options->{tungsten_base};
-    for my $script (qw(start stop clear status send_kill))
+    for my $script (qw(use start stop clear status send_kill))
     {
         if ( -e "${script}_all")
         {
@@ -621,7 +621,7 @@ my %parse_options = (
             parse   => 'topology=s',
             value   => 'master-slave',
             so      => 50,
-            allowed => {'master-slave' => 1, 'direct'=> 0, 'bi-dir' => 0, 'all-masters' => 1, 'fan-in' => 1, 'star' => 1},
+            allowed => {'master-slave' => 1, 'direct'=> 0, 'bi-dir' => 1, 'all-masters' => 1, 'fan-in' => 1, 'star' => 1},
             help    => ['Which topology to deploy' ]
         },
 
@@ -734,6 +734,21 @@ unless ($make_multiple_sandbox)
         ."Get it from CPAN or from http://mysqlsandbox.net\n";
 }
 
+my $minimum_mysql_sandbox_version = '3.0.24';
+my $mysql_sandbox_help = qx($make_multiple_sandbox --help);
+if ($mysql_sandbox_help =~ /version\s+(\d+\.\d+\.\d+)/)
+{
+    my $sb_version = $1;
+    if ($sb_version lt $minimum_mysql_sandbox_version)
+    {
+        die "This application requires MySQL Sandbox version $minimum_mysql_sandbox_version. Your version is $sb_version. Please upgrade\n";
+    }
+}
+else
+{
+    die "unable to find MySQL Sandbox version using $make_multiple_sandbox\n";
+}
+
 #
 # Find installation directory.
 #
@@ -810,6 +825,17 @@ if ($options{show_options})
     exit 0;
 }
 
+if ($options{topology} eq 'bi-dir')
+{
+    if ($options{nodes} > 3) # user has requested more nodes
+    {
+        warn "Bi-dir topology is done with two nodes only. Use the 'all-masters' topology for more nodes. \n";
+    }
+    # whith this change, bi-dir will be installed as all-masters
+    $options{nodes}=2;
+}
+
+
 #
 # ------------------ POINT OF NON RETURN ---------------------
 #
@@ -850,7 +876,7 @@ if  ($options{topology} eq 'master-slave')
 {
     $rmi_ports = Tsandbox::install_master_slave(\%options, $sandbox_dir);
 }
-elsif  ($options{topology} eq 'all-masters')
+elsif  (($options{topology} eq 'all-masters') or  ($options{topology} eq 'bi-dir'))
 {
     $rmi_ports = Tsandbox::install_all_masters(\%options, $sandbox_dir);
     Tsandbox::install_all_slave_services(\%options);
