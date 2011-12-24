@@ -10,7 +10,7 @@ The main purpose is testing.
 
 == INSTALLATION ==
 
-As of version 2.0, tungsten-sandbox is self contained in one file, which you anywhere, provided that you can indicate where is the expanded tarball to be used for installing.
+As of version 2.0, tungsten-sandbox is self contained in one file, which you can use anywhere, provided that you can indicate where is the expanded tarball to be used.
 
 == REQUIREMENTS ==
 It should work with Tungsten Replicator 2.0.4-167 or later and MySQL Sandbox 3.0.24 or later.
