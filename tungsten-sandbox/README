@@ -1,75 +1,69 @@
 TUNGSTEN SANDBOX
 Tungsten Replicator in a single host
-====================================
 
-This is an ongoing project that wants install multiple instances database servers with Tungsten Replicator in a single host.
-The main purpose is testing.
+This is an ongoing project that installs multiple instances of MySQL database servers with Tungsten Replicator in a single host. The main purpose is testing.
 
 INSTALLATION
-------------
-As of version 1.0.2, tungsten-sandbox is self contained in one file, which you should export to the "tools" directory of tungsten-replicator, together with the shflags command line processor.
-
+As of version 2.0, tungsten-sandbox is self contained in one file, which you can use anywhere, provided that you can indicate where is the expanded tarball to be used.
 
 REQUIREMENTS
-------------
-It should work with Tungsten Replicator 2.0.4-167 or later.
-All the requirements for a normal installation of Tungsten should be met. See http://www.continuent.com/downloads/documentation for details.
+It should work with Tungsten Replicator 2.0.4-167 or later and MySQL Sandbox 3.0.24 or later. All the requirements for a normal installation of Tungsten should be met. See the documentation for details. But notice that the installer will tell you if the requirements are met for most of them.
 
-MySQL Sandbox (http://mysqlsandbox.net) is necessary for Tungsten Sandbox to work.
-
+MySQL Sandbox is necessary for Tungsten Sandbox to work.
 
 USAGE
------
-1. Create a directory where you want to start a sandbox (by default, it should be $HOME/tsb2)
-2. Make sure that MySQL Sandbox is installed and working properly
-3. unpack the MySQL binary tarball that you want to use, and rename it to the bare version number. 
-   The directory must be in $HOME/opt/mysql/X.X.XX, or in a directory refined in $SANDBOX_BINARY.
-   For example, if you want to use mysql-5.1.57-linux-x86_64-glibc23.tar.gz,do the folloowing:
+Create a directory where you want to start a sandbox (by default, it should be $HOME/tsb2)
+Make sure that MySQL Sandbox is installed and working properly
+unpack the MySQL binary tarball that you want to use, and rename it to the bare version number. The directory must be in $HOME/opt/mysql/X.X.XX, or in a directory refined in $SANDBOX_BINARY.
+For example, if you want to use mysql-5.1.57-linux-x86_64-glibc23.tar.gz,do the folloowing:
    mkdir -p $HOME/opt/mysql
    cd $HOME/opt/mysql
    tar -xzf /path/to/mysql-5.1.57-linux-x86_64-glibc23.tar.gz
    mv mysql-5.1.57-linux-x86_64-glibc23 5.1.57
-4. in a separate directory, unpack Tungsten Replicator tarball
-5. copy tungsten-sandbox and shflags to the ./tools directory
-6. run ./tools/tungsten-sandbox -h
-$ ./tools/tungsten-sandbox -h
-USAGE: ./tools/tungsten-sandbox [flags] args
-flags:
-  -n,--nodes:  how many nodes to install (default: 3)
-  -m,--mysql_version:  which MySQL version to use (default: '5.5.13')
-  -t,--tungsten_base:  where to install the sandbox (default: '/home/tungsten/tsb2/')
-  -d,--group_dir:  sandbox group directory name (default: 'tr_dbs')
-  -x,--tsb_prefix:  Tungsten Sandbox prefix (default: 'db')
-  -s,--service:  how the service is named (default: 'tsandbox')
-  -P,--base_port:  port base for MySQL sandbox nodes (default: 7100)
-  -l,--thl_port:  port for the THL service (default: 12110)
-  -r,--rmi_port:  port for the RMI service (default: 10100)
-  -v,--[no]version:  show Tungsten sandbox version (default: false)
-  -h,--[no]help:  show Tungsten sandbox help (default: false)
+in a separate directory, unpack Tungsten Replicator tarball
+run tungsten-sandbox -h
+  $ tungsten-sandbox -h
+      Tungsten Tools,  version 2.0.1
+    Tungsten Sandbox - Cluster builder
+     (C) 2011 Giuseppe Maxia, Continuent, Inc
+Syntax: tungsten-sandbox-2.0/tungsten-sandbox [options] operation 
+    -n --nodes = number                 How many nodes to install
+    -m --mysql-version = name           which MySQL version to use
+    -t --tungsten-base = name           Where to install the sandbox
+    -i --installation_directory = name  Where tthe Tungsten tarball has been expanded
+    -d --group-dir = name               sandbox group directory name
+    --topology = name                   Which topology to deploy
+    --hub = number                      Which node is a hub
+    -s --service = name                 How the service is named
+    -x --tsb-prefix = name              Tungsten Sandbox prefix
+    -p --base-port = number             Base port for MySQL Sandbox nodes 
+    -l --thl-port = number              Port for the THL service 
+    -r --rmi-port = number              Port for the RMI service 
+    -v --version                        Show Tungsten sandbox version and exit 
+    --show-options                      Show Tungsten sandbox collected options and exit 
+    --verbose                           Show more information during installation and help 
+    -h --help                           display this help
+Change the defaults using command line options and create your sandbox. Here's an example to install a 2-node sandbox using MySQL 5.1.58 with port offsets changed to avoid collisions with other sandboxes on the same host.
+  $ ./tools/tungsten-sandbox -n 2 -m 5.1.58 -p 7300 -l 12300 -r 10300
+More than just master-slave
+As of version 2.0, Tungsten Sandbox can install different topologies. Supported in version 2.0.1 are
 
-7. Change the defaults using command line options.
-
+master-slave: the vanilla replication with 1 master and N slaves;
+all-masters: every node is a master and connected to all other nodes with a slave service.
+bi-dir: it's an all masters with two nodes;
+star: a central hub connected in bi-directional master-master to each node;
+fan-in: a single slave receiving updates from many masters.
 CREDITS
--------
-Thanks to Kate Ward for the "shflags" command line processor.
-http://code.google.com/p/shflags/
-
 This sandbox would have been much harder to write without the excellent Tungsten installer developed by Jeff Mace.
 
 WORK IN PROGRESS
-----------------
-This is an ongoing project, with ambitious goals. 
-More work will follow in the same area.
-A simple TODO list:
-* Complex topologies (multiple masters, fan-in)
-* Direct slave sandboxes
-* Mix of MySQL native and Tungsten replication
-* PostgreSQL integration
+This is an ongoing project, with ambitious goals. More work will follow in the same area. A simple TODO list:
 
+Direct slave sandboxes
+Mix of MySQL native and Tungsten replication
+PostgreSQL integration
 For this reason, the format of this application may change in future releases.
 
 AUTHOR
-------
-
 Giuseppe Maxia, for Continuent, Inc
 

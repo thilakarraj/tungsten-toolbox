@@ -47,6 +47,20 @@ sub get_file_lines
     return (wantarray ? @lines : \@lines);
 }
 
+sub get_manual
+{
+    my $perldoc = which('perldoc');
+    if ($perldoc)
+    {
+        exec "perldoc $PROGRAM_NAME";
+    }
+    else
+    {
+        die  "The 'perldoc' program was not found on this computer.\n"
+            ."You need to install it if you want to see the manual\n";
+    }
+}
+
 
 #
 # Prints the help, using the data contained in the parsing options
@@ -509,7 +523,11 @@ sub create_sandbox_scripts
         }
         system "ln -s $sandbox_dir/n$N n$N";
         chdir "$options->{tsb_prefix}$N";
-        system "ln -s $sandbox_dir/node$N/use use";
+        system "ln -s $sandbox_dir/node$N/use db_use";
+        system "ln -s $sandbox_dir/node$N/start db_start";
+        system "ln -s $sandbox_dir/node$N/status db_status";
+        system "ln -s $sandbox_dir/node$N/restart db_restart";
+        system "ln -s $sandbox_dir/node$N/stop db_stop";
         Utils::add_header('show_log');
         Utils::add_header('show_conf');
         Utils::add_header('replicator');
@@ -525,7 +543,7 @@ sub create_sandbox_scripts
     }
 
     chdir $options->{tungsten_base};
-    for my $script (qw(use start stop clear status send_kill))
+    for my $script (qw(use start stop clear restart status send_kill))
     {
         if ( -e "${script}_all")
         {
@@ -545,12 +563,12 @@ sub create_sandbox_scripts
     }
     chmod 0750, 'clear_tsandbox';
 
-    Utils::add_header('start_tsandbox');
-    Utils::write_to('start_tsandbox', "$options->{tungsten_base}/clear_tsandbox", '>>');
-    Utils::write_to('start_tsandbox', "$options->{tungsten_base}/db_start_all", '>>');
-    Utils::write_to('start_tsandbox', "$options->{tungsten_base}/replicator_all start", '>>');
-    Utils::write_to('start_tsandbox', "$options->{tungsten_base}/trepctl_all services", '>>');
-    chmod 0750, 'start_tsandbox';
+    Utils::add_header('restart_tsandbox');
+    # Utils::write_to('restart_tsandbox', "$options->{tungsten_base}/clear_tsandbox", '>>');
+    Utils::write_to('restart_tsandbox', "$options->{tungsten_base}/db_start_all", '>>');
+    Utils::write_to('restart_tsandbox', "$options->{tungsten_base}/replicator_all start", '>>');
+    Utils::write_to('restart_tsandbox', "$options->{tungsten_base}/trepctl_all services", '>>');
+    chmod 0750, 'restart_tsandbox';
 
     for my $script (qw(trepctl replicator))
     {
@@ -605,7 +623,7 @@ my %parse_options = (
             help    => ['Where to install the sandbox' ]
         },
      installation_directory => {
-            parse   => 'i|installation_directory=s',
+            parse   => 'i|installation-directory=s',
             value   => $ENV{PWD},
             so      => 35,
             help    => ['Where tthe Tungsten tarball has been expanded' ]
@@ -682,7 +700,13 @@ my %parse_options = (
             so      => 130,
             help    => ['Show more information during installation and help ' ]
         },
-     help => {
+     manual => {
+            parse   => 'man|manual',
+            value   => 0,
+            so      => 140,
+            help    => ['display the program manual' ]
+        },
+      help => {
             parse   => 'h|help',
             value   => 0,
             so      => 200,
@@ -719,6 +743,7 @@ if ($options{version})
     exit 0;
 }
 Utils::get_help(\%parse_options)  if $options{help};
+Utils::get_manual()  if $options{manual};
 #
 #  Makes sure that the options conform to the expectations
 #
@@ -753,9 +778,9 @@ else
 # Find installation directory.
 #
 
-if ($options{installation_directory})
+if ($options{'installation_directory'})
 {
-    chdir $options{installation_directory};
+    chdir $options{'installation_directory'};
 }
 
 
@@ -915,4 +940,296 @@ else
 
 Tsandbox::create_sandbox_scripts(\%options, $rmi_ports, $sandbox_dir);
 
+__END__
+
+=head1 NAME
+
+Tungsten Sandbox - Quickly installs Tungsten Replicator clusters with MySQL
+
+=head1 SYNOPSIS
+
+
+ tungsten-sandbox --mysql_version=5.1.60 \
+    --installation-directory=tungsten-replicator-2.0.5/  
+
+ tungsten-sandbox --mysql_version=5.1.60 \
+    --installation-directory=tungsten-replicator-2.0.5/ \
+    --topology=all-masters --nodes=5
+
+ tungsten-sandbox --help --verbose
+    Tungsten Tools,  version 2.0.1
+    Tungsten Sandbox - Cluster builder
+     (C) 2011 Giuseppe Maxia, Continuent, Inc
+ Syntax: ./tungsten-sandbox-2.0/tungsten-sandbox [options] operation 
+    -n --nodes = number                 How many nodes to install
+                                         default: 3 
+    -m --mysql-version = name           which MySQL version to use
+    -t --tungsten-base = name           Where to install the sandbox
+                                         default: /Users/gmax/tsb2 
+    -i --installation-directory = name  Where tthe Tungsten tarball has been expanded
+                                         default: /Users/gmax/workdir/continuent/tungsten-toolbox/tungsten-sandbox 
+    -d --group-dir = name               sandbox group directory name
+                                         default: tr_dbs 
+    --topology = name                   Which topology to deploy
+                                         default: master-slave 
+                                          (Allowed: {all-masters|bi-dir|direct|fan-in|master-slave|star})
+    --hub = number                      Which node is a hub
+    -s --service = name                 How the service is named
+                                         default: tsandbox 
+    -x --tsb-prefix = name              Tungsten Sandbox prefix
+                                         default: db 
+    -p --base-port = number             Base port for MySQL Sandbox nodes 
+                                         default: 7100 
+    -l --thl-port = number              Port for the THL service 
+                                         default: 12110 
+    -r --rmi-port = number              Port for the RMI service 
+                                         default: 10100 
+    -v --version                        Show Tungsten sandbox version and exit 
+    --show-options                      Show Tungsten sandbox collected options and exit 
+    --verbose                           Show more information during installation and help 
+    --man|manual                        display the program manual
+    -h --help                           display this help
+
+=head1 PURPOSE
+
+Tungsten Sandbox is a tool that installs a testing environment for database replication, using B<MySQL::Sandbox> and B<Tungsten Replicator>. Rather than using virtual machines or separate servers, this tool can deploy database servers and replication software, in simple and complex topologies, using a single host.
+Using this tool you will be able to deploy:
+
+=over 3
+
+=item *
+B<Master/ Slave> is the vanilla replication between one master and N slaves.
+
+=item *
+B<All-Masters> is a replication cluster where every node is a master and each node is a slave of all the other nodes. This is done by installing, for each node, a master service and one slave service for each of the other nodes.
+
+=item *
+B<Bi-dir> is a special case of all-masters, when the cluster has only two nodes.
+
+=item *
+B<Star> is a cluster where there is a hub wich is connected in bi-directional replication with several endpoints, each of which is a master. Compared to the all-masters topology, it requires less connections.
+
+=item *
+B<Fan-in> is a cluster where a single slave receives updates from many masters at the same time.
+
+=back
+
+=head1 REQUIREMENTS
+
+It should work with Tungsten Replicator 2.0.4-167 or later and MySQL Sandbox 3.0.24 or later. All the requirements for a normal installation of Tungsten should be met. See the online documentation for details. But notice that the installer will tell you if the requirements are met for most of them.
+
+=head1 INSTALLATION
+
+As of version 2.0, tungsten-sandbox is self contained in one file, which you can use anywhere, provided that you can indicate where is the expanded tarball to be used.
+
+=head1 Creating sandboxes
+
+To create a sandbox, you need to provide at least two pieces of information: where are the MySQL binaries and where you have expanded the Tungsten Replicator tarball. The first piece is given as a version number, and this means that a MySQL binary tarball has been expanded into the default folder for C<$SANDBOX_BINARY>, i.e C<$HOME/opt/mysql> and renamed to the version number. Please refer to the MySQL Sandbox documentation for more information:
+ perldoc MySQL::Sandbox
+ perldoc MySQL::Sandbox::Recipes
+The second piece of information is simply the directory where you have expanded the Tungsten Replicator tarball:
+
+either
+  tungsten-sandbox --mysql-version=5.1.60 \
+     --installation-directory=/tmp/tungsten-replicator-2.0.5-452/
+
+or
+  tungsten-sandbox -m 5.1.60 -i /tmp/tungsten-replicator-2.0.5-452/
+
+If your current working directory is inside that tarball, you don't need to specify the installation directory option
+
+  cd /tmp/tungsten-replicator-2.0.5-452/
+  tungsten-sandbox -m 5.1.60
+
+=head2 Defaults
+
+To avoid typing too much, there are defaults defined for most everything that can be reasonably expected. Here's what you get:
+
+ nodes                  : 3
+ mysql-version          : NULL
+ tungsten-base          : $HOME/tsb2
+ installation-directory : NULL
+ group-dir              : tr_dbs
+ topology               : master-slave
+ hub                    : NULL
+ service                : tsandbox
+ tsb-prefix             : db
+ base-port              : 7100
+ thl-port               : 12110
+ rmi-port               : 10100
+ verbose                : 0
+
+Some explanation is needed: 
+
+C<tungsten-base> is where the sandbox will be installed. 
+
+C<group-dir> is how the multiple MySQL sandbox will be named (it will contain N single sandboxes)
+
+C<tsb-prefix> is how the single Tungsten sandboxes will be called inside C<tungsten-base>.
+
+=head2 Master/slave
+
+If you don't define explicitly any topology, the default is C<master-slave>, and since the default number of nodes is 3, you will get one master and two slaves.
+Thus, indicating a MySQL version and Tungsten installation directory will give you a plain master/slave topology, with a service named C<tsandbox>.
+
+  tungsten-sandbox -m 5.1.60 \
+     -i /tmp/tungsten-replicator-2.0.5-452/
+
+=head2 All-masters
+
+This topology installs one master for each node, and then, for each node, it defines a slave service for each of the remaining nodes. This means that each node is directly replicating to all the other nodes. The number of services will soon become difficult to maintain.
+Theremust be a service name for each node. Tungsten-sandbox uses the international spelling alphabet for this purpose (alpha, bravo, charlie ...) and this is why you can't have more than 26 nodes, which is probably too much to set in a single host already, but feel free to try.
+
+  tungsten-sandbox -m 5.1.60 \
+    -i /tmp/tungsten-replicator-2.0.5-452/  \
+    --nodes=4 --topology=all-masters
+
+=head2 Bi-Dir
+
+This is an all-master topology with only two nodes. The following two commands are equivalent
+
+  tungsten-sandbox -m 5.1.60 \
+    -i /tmp/tungsten-replicator-2.0.5-452/  \
+    --topology=bi-dir
+
+  tungsten-sandbox -m 5.1.60 \
+    -i /tmp/tungsten-replicator-2.0.5-452/  \
+    --nodes=2 --topology=all-masters
+
+=head2 Star
+
+For this topology, you are required to provide a 'hub' node number. 
+Given a cluster with 4 nodes where node 3 is the hub, there will be a master-master relationship between 3 and 1, 3 and 2, 3 and 4. This way, changes entered in any node will be propagated to the rest of the cluster, but with a lower number of services than the all-masters topology. 
+
+  tungsten-sandbox -m 5.1.60 \
+    -i /tmp/tungsten-replicator-2.0.5-452/  \
+    --nodes=4 --topology=star --hub=3
+
+
+=head2 Fan-in
+
+In this topology, you define a slave node (using the 'hub' option), and all the other nodes will be masters of that node.
+
+  tungsten-sandbox -m 5.1.60 \
+    -i /tmp/tungsten-replicator-2.0.5-452/  \
+    --nodes=4 --topology=fan-in --hub=3
+
+In this example, nodes 1,2, and 4 will be masters, all of them replicating to node 3.
+
+=head1 Using a sandbox
+
+Creating a sandbox is not even half the task. You need to use it to get some benefits. Tungsten-sandbox provides customized tools that let you use a sandbox easily. First, an overview of what you will find in $TUNGSTEN_BASE
+
+  $TUNGSTEN_BASE
+    |          global scripts to use MySQL databases
+    |          global scripts to use Tungsten replicators
+    | db1
+    |    scripts to use the replicator in this sandbox
+    |  
+    | db2
+    |    scripts to use the replicator in this sandbox
+    |
+    | db3
+    |    scripts to use the replicator in this sandbox
+    
+It is worth repeating: Tungsten sandboxes are installed in the directory defined by C<--tungsten_base>, which by default isC<$HOME/tsb2>.
+
+=head2 All at once
+
+In the tungsten base directory, there are several convenience scripts
+
+=over 3
+
+=item *
+B<clear_tsandbox>
+An useful and dangerous command. It stops the replicators and shuts down the databases, erasing everything, making the sandbox ready for clean use.
+
+=item * 
+B<restart_tsandbox>   
+Starts all the sandboxes at once. It is useful after using clear_tsandbox.
+
+=item *
+B<replicator_all>   
+Runs a given command to all the replicators in the underlying sandboxes.
+
+  $HOME/tsb2/replicator_all status
+  $HOME/tsb2/replicator_all stop
+  $HOME/tsb2/replicator_all start
+  $HOME/tsb2/replicator_all status
+
+=item *
+B<trepctl_all>
+Runs a given C<trepctl> command in all the sandboxes
+  
+  $HOME/tsb2/trepctl_all services
+  $HOME/tsb2/trepctl_all status
+
+=item * 
+B<db_restart_all>, B<db_start_all>, B<db_stop_all>, B<db_clear_all>, B<db_send_kill_all>, B<db_status_all>, B<db_use_all> send the corresponding commands to MySQL Sandbox.
+
+=item * 
+B<n1>, B<n2>, B<n3> (and more if more nodes were defined) will use the database at the corresponding node. It is equivalent to run
+
+  mysql -h 127.0.0.1 -u msandbox -pmsandbox -P 7101  # = n1
+  mysql -h 127.0.0.1 -u msandbox -pmsandbox -P 7102  # = n2
+  mysql -h 127.0.0.1 -u msandbox -pmsandbox -P 7103  # = n3
+
+=item * 
+B<db1/>, B<db2/>, B<db3/> are the directory where each Tungsten replicator is installed. See L<Each sandbox> below.
+Notice that the name may change, depending on the value of C<--tsb_prefix>.
+
+=back
+
+=head2 Each sandbox
+
+In each sandbox inside C<$TUNGSTEn_BASE>, there are several convenience scripts that mirror the ones seen for the base, but act in the limited scope of their sandbox.
+
+=over 3
+
+=item * 
+B<db_restart>, B<db_status>, B<db_start>, B<db_stop>, B<db_use> will send the corresponding command to the database associated with this replicator. So, inside db1, the db_use command will give access to $HOME/sandboxes/tr_dbs/node1/use.
+
+=item * 
+B<trepctl> is the main tool to inspect the replicator. This script give access to the proper path, with the port defined for the replicator
+
+  $HOME/tsb2/db1/trepctl status
+  # corresponds to:
+  $HOME/tsb2/db1/tungsten/tungsten-replicator/bin/trepctl -port 10100 status
+
+=item * 
+B<thl>: gives access to the thl utility
+
+  $HOME/tsb2/db1/thl index
+
+=item * 
+B<replicator> is the Tungsten Replicator itself
+
+  $HOME/tsb2/db1/replicator status
+
+=item * 
+B<show_log> is a shortcut to read the replicator logs. 
+
+=item * 
+B<show_conf> is a shortcut to access the replicator properties files
+
+=item *
+B<tungsten/> This directory is where the replicator binaries are installed. It is a symbolic link to $HOME/tsb2/db1/releases/tungsten-replicator-x.x.x-xxx
+
+=item *
+B<releases/> is the place where the tungsten binatries are installed.
+
+=item *
+B<configs/> is where the configuration files created by the installer are stored.
+
+=item *
+
+B<tlogs/> is where the THL files are kept. The default name in regular instalations is 'thl', but it was changed for Tungsten sandbox, because we have a 'thl' script on the same directory.
+
+=head1 COPYRIGHT
+
+Version 2.0
+
+Copyright (C) 2011 Giuseppe Maxia, Continuent, Inc
+
+Home Page  L<http://code.google.com/p/tungsten-toolbox>
 
