@@ -6,6 +6,14 @@ use strict;
 # (C) 2011, Giuseppe Maxia, Continuent, Inc
 # Released under the New BSD License
 #
+
+# TODO
+#
+#  - Add prefetch service
+#  - direct slave services
+#  - mixed replication (MySQL and Tungsten slaves)
+# 
+
 use strict;
 use warnings;
 use Data::Dumper;
@@ -13,7 +21,7 @@ use Getopt::Long;
 use File::Basename;
 use English '-no_match_vars';
 
-our $VERSION = '2.0.1';
+our $VERSION = '2.0.3';
 our $DRY_RUN = 0;
 our $VERBOSE = 0;
 
@@ -93,12 +101,20 @@ sub get_help {
         my $item_no=0;
         for my $titem (@{$text_items})
         {
-            $HELP_MSG .= $param_str . $titem . "\n";
+            $HELP_MSG .= $param_str . $titem ;
+            if (++$item_no == @{$text_items})
+            {
+                if ($VERBOSE && $parse_options->{$op}{value}) 
+                {
+                    if (length($parse_options->{$op}{value}) > 40)
+                    {
+                        $HELP_MSG .= "\n" . q{ } x 40;
+                    }
+                    $HELP_MSG .=  " ($parse_options->{$op}{value})";
+                }
+            }
+            $HELP_MSG .= "\n";
             $param_str = q{ } x 40;
-        }
-        if ($VERBOSE && $parse_options->{$op}{value}) 
-        {
-            $HELP_MSG .=  (q{ } x 40) . " default: $parse_options->{$op}{value} \n";
         }
         if ($VERBOSE && $parse_options->{$op}{allowed}) 
         {
@@ -256,46 +272,44 @@ sub add_header
 package Tsandbox;
 use English '-no_match_vars';
 
+my @service_names = qw(
+    alpha   bravo   charlie delta    echo 
+    foxtrot golf    hotel   india    juliet 
+    kilo    lima    mike    november oscar 
+    papa    quebec  romeo   sierra   tango 
+    whisky  xray    yankee  zulu 
+);
 
-    my @service_names = qw(
-            alpha   bravo   charlie delta    echo 
-            foxtrot golf    hotel   india    juliet 
-            kilo    lima    mike    november oscar 
-            papa    quebec  romeo   sierra   tango 
-            whisky  xray    yankee  zulu 
-    );
-
- 
-
-sub install_replicator 
+sub install_master_slave_replicator 
 {
-    my ($params) = @_;
+    my ($params, $extra) = @_;
     my $master_thl_port='';
     if ($params->{master_thl_port}) 
     {
         $master_thl_port = "--master-thl-port=$params->{master_thl_port}";
     }
-    my $command = <<END_COMMAND;
-    ./tools/tungsten-installer \\
-    --master-slave \\
-    --master-host=$params->{master_host} \\
-    --cluster-hosts=$params->{cluster_hosts} \\
-    --datasource-port=$params->{mysql_port} \\
-    --datasource-user=msandbox \\
-    --datasource-password=msandbox \\
-    --home-directory=$params->{home_directory} \\
-    --datasource-log-directory=$params->{log_directory} \\
-    --datasource-mysql-conf=$params->{my_conf} \\
-    --service-name=$params->{service} \\
-    --thl-directory=$params->{home_directory}/tlogs \\
-    --thl-port=$params->{thl_port} $master_thl_port \\
-    --rmi-port=$params->{rmi_port} \\
-    --start
+    $extra = '' unless defined $extra;
+    my $command = "./tools/tungsten-installer";
+    my $args = 
+      " --master-slave "
+    . " --master-host=$params->{master_host}"
+    . " --cluster-hosts=$params->{cluster_hosts}"
+    . " --datasource-port=$params->{mysql_port}"
+    . " --datasource-user=msandbox"
+    . "  --datasource-password=msandbox"
+    . " --home-directory=$params->{home_directory}"
+    . " --datasource-log-directory=$params->{log_directory}"
+    . " --datasource-mysql-conf=$params->{my_conf}"
+    . " --service-name=$params->{service}"
+    . " --thl-directory=$params->{home_directory}/tlogs"
+    . " --thl-port=$params->{thl_port} $master_thl_port"
+    . " --rmi-port=$params->{rmi_port}"
+    . " $extra "
+    . " --start"
+    ;
 
-END_COMMAND
-
-    print "$command \n" if $params->{verbose};
-    my $result = system $command;
+    print pretty_command($command, $args) if $params->{verbose};
+    my $result = system "$command $args";
     if ($result) 
     {
         die "installation failed ($OS_ERROR)\n";
@@ -314,39 +328,40 @@ sub install_master_slave
     # installs the master
     #
     my %master_params = (
-        master_host        => '127.0.0.1',
-        cluster_hosts      => '127.0.0.1',
-        mysql_port         => $options->{base_port}   +1,
-        thl_port           => $options->{thl_port},
-        rmi_port           => $options->{rmi_port},
-        home_directory     => "$options->{tungsten_base}/$options->{tsb_prefix}1",
-        log_directory      => "$sandbox_dir/node1/data",
-        my_conf            => "$sandbox_dir/node1/my.sandbox.cnf",
-        service            => "$options->{service}",
-        master_thl_port    => undef,
-        verbose            => $options->{verbose},
+        master_host          => '127.0.0.1',
+        cluster_hosts        => '127.0.0.1',
+        mysql_port           => $options->{base_port}   +1,
+        thl_port             => $options->{thl_port},
+        rmi_port             => $options->{rmi_port},
+        home_directory       => "$options->{tungsten_base}/$options->{tsb_prefix}1",
+        log_directory        => "$sandbox_dir/node1/data",
+        my_conf              => "$sandbox_dir/node1/my.sandbox.cnf",
+        service              => "$options->{service}",
+        master_thl_port      => undef,
+        verbose              => $options->{verbose},
     );
 
     $rmi_ports{1} = $options->{rmi_port};
 
     mkdir $master_params{home_directory};
-    Tsandbox::install_replicator(\%master_params);
+    Tsandbox::install_master_slave_replicator(\%master_params, $ENV{TUNGSTEN_MASTER_OPTIONS} || '');
 
     my %slave_params = %master_params;
 
     for my $N (2 .. $options->{nodes} )
     {
-        $slave_params{master_thl_port} = $master_params{thl_port};
-        $slave_params{mysql_port}   += 1 ;
-        $slave_params{thl_port}     += 1 ;
-        $slave_params{rmi_port}     += 2 ;
-        $slave_params{home_directory} = "$options->{tungsten_base}/$options->{tsb_prefix}$N";
-        $slave_params{log_directory}  = "$sandbox_dir/node$N/data";
-        $slave_params{my_conf}        = "$sandbox_dir/node$N/my.sandbox.cnf";
+        $slave_params{master_thl_port}      = $master_params{thl_port};
+        $slave_params{mysql_port}           += 1 ;
+        $slave_params{thl_port}             += 1 ;
+        $slave_params{rmi_port}             += 2 ;
+        $slave_params{master_extra_options} = '';
+        $slave_params{home_directory}       = "$options->{tungsten_base}/$options->{tsb_prefix}$N";
+        $slave_params{log_directory}        = "$sandbox_dir/node$N/data";
+        $slave_params{my_conf}              = "$sandbox_dir/node$N/my.sandbox.cnf";
 
         $rmi_ports{$N} = $slave_params{rmi_port};
         mkdir $slave_params{home_directory};
-        Tsandbox::install_replicator(\%slave_params); 
+        Tsandbox::install_master_slave_replicator(\%slave_params, $ENV{TUNGSTEN_SLAVE_OPTIONS} || '' ); 
     }
     return \%rmi_ports;
 }
@@ -388,39 +403,63 @@ sub install_all_masters
         $rmi_ports{$N} = $node_params{rmi_port};
 
         mkdir $node_params{home_directory};
-        Tsandbox::install_replicator(\%node_params);
+        Tsandbox::install_master_slave_replicator(\%node_params);
     }
 
     return \%rmi_ports;
+}
+
+sub install_service ($$$)
+{
+    my ($options, $command, $node) =@_;
+    my $configure_service = "$options->{tungsten_base}/$options->{tsb_prefix}$node/tungsten/tools/configure-service";
+    unless (-x $configure_service)
+    {
+        die "Could not find executable for configure-service at $configure_service\n";
+    }
+    if ($ENV{TUNGSTEN_SERVICE_OPTIONS})
+    {
+        $command .= ' ' . $ENV{TUNGSTEN_SERVICE_OPTIONS};
+    }
+    if ($options->{verbose})
+    {
+        print pretty_command($configure_service, $command);
+    }
+    my $result = system "$configure_service $command";
+    if ($result) 
+    {
+        die "installation failed ($OS_ERROR)\n";
+    }
+}
+
+sub pretty_command
+{
+    my ($cmd, $args) = @_;
+    my $indent = ' ' x 4;
+    $args =~ s{\s+-}{ \\\n$indent-}g;
+    return "$cmd$args\n";
 }
 
 sub install_all_slave_services
 {
     my ($options) = @_;
 
-    my $params =   ' -C --quiet --host=127.0.0.1 --datasource=127_0_0_1 --role=slave '
+    my $params =   ' -C --quiet --host=127.0.0.1 '
+                     . ' --datasource=127_0_0_1 '
+                     . ' --role=slave '
                      . ' --service-type=remote --master-thl-host=127.0.0.1 --svc-start '
                      . '--local-service-name=%s --master-thl-port=%d %s';
     for my $master (1 .. $options->{nodes} )
     {
-        my $configure_service = "$options->{tungsten_base}/$options->{tsb_prefix}$master/tungsten/tools/configure-service";
-        unless (-x $configure_service)
-        {
-            die "Could not find executable for configure-service at $configure_service\n";
-        }
         for my $slave ( 1 .. $options->{nodes})
         {
             if ($master != $slave)
             {
-                my $command = sprintf("$configure_service $params", 
+                my $command = sprintf($params, 
                         $service_names[$master -1], 
                         $options->{thl_port} + $slave -1, 
                         $service_names[$slave -1]) ;
-                if ($options->{verbose})
-                {
-                    print "$command\n";
-                }
-                system $command;
+                Tsandbox::install_service($options, $command, $master);
             }
         }
     }
@@ -442,39 +481,22 @@ sub install_star_services
                        . ' --skip-validation-check=THLStorageCheck '
                        . '--local-service-name=%s --master-thl-port=%d %s';
 
-    my $hub_configure_service = "$options->{tungsten_base}/$options->{tsb_prefix}$options->{hub}/tungsten/tools/configure-service";
-    unless (-x $hub_configure_service)
-    {
-        die "Could not find executable for hub configure-service at $hub_configure_service\n";
-    }
-
     for my $master (1 .. $options->{nodes} )
     {
         next if $master == $options->{hub};
 
-        my $remote_configure_service = "$options->{tungsten_base}/$options->{tsb_prefix}$master/tungsten/tools/configure-service";
-        unless (-x $remote_configure_service)
-        {
-            die "Could not find executable for configure-service at $remote_configure_service\n";
-        }
-        my $command = sprintf("$remote_configure_service $remote_params", 
+        my $command = sprintf($remote_params, 
               $service_names[$master -1], 
               $options->{thl_port} + $options->{hub} -1, 
               $service_names[$options->{hub} -1]) ;
-        if ($options->{verbose})
-        {
-            print "$command\n";
-        }
-        system $command;
-        $command = sprintf("$hub_configure_service $hub_params", 
+        $command .= $ENV{TUNGSTEN_REMOTE_SERVICE_OPTIONS} || '';
+        Tsandbox::install_service($options, $command, $master);
+        $command = sprintf( $hub_params, 
               $service_names[$options->{hub} -1], 
               $options->{thl_port} + $master -1, 
               $service_names[$master -1]) ;
-        if ($options->{verbose})
-        {
-            print "$command\n";
-        }
-        system $command;
+        $command .= $ENV{TUNGSTEN_HUB_SERVICE_OPTIONS} || '';
+        Tsandbox::install_service($options, $command, $options->{hub});
      }
 }
 
@@ -488,25 +510,15 @@ sub install_fan_in_services
                         . ' --skip-validation-check=THLStorageCheck '
                         . '--local-service-name=%s --master-thl-port=%d %s';
 
-    my $fan_in_configure_service = "$options->{tungsten_base}/$options->{tsb_prefix}$options->{hub}/tungsten/tools/configure-service";
-    unless (-x $fan_in_configure_service)
-    {
-        die "Could not find executable for fan-in configure-service at $fan_in_configure_service\n";
-    }
-
     for my $master (1 .. $options->{nodes} )
     {
         next if $master == $options->{hub};
 
-        my $command = sprintf("$fan_in_configure_service $fan_in_params", 
+        my $command = sprintf($fan_in_params, 
               $service_names[$options->{hub} -1], 
               $options->{thl_port} + $master -1, 
               $service_names[$master -1]) ;
-        if ($options->{verbose})
-        {
-            print "$command\n";
-        }
-        system $command;
+        Tsandbox::install_service($options, $command, $options->{hub});
      }
 }
 
@@ -580,6 +592,48 @@ sub create_sandbox_scripts
         }
         chmod 0750, "${script}_all";
     }
+
+    my @tables =();
+    Utils::add_header('test_topology');
+    my $hub = '';
+    if ($options->{topology} eq 'star') 
+    {
+        $hub = ' (hub: ' . $options->{hub} . ')'; 
+    }
+    Utils::write_to('test_topology', "echo 'Testing topology $options->{topology}$hub with $options->{nodes} nodes.'", '>>');
+    Utils::write_to('test_topology', 
+                "echo 'Master nodes: [@{$options->{masters}}] - Slave nodes: [@{ $options->{slaves}}]'", 
+                '>>');
+    for my $N (@{$options->{masters}})
+    {
+        Utils::write_to('test_topology',
+            "$options->{tungsten_base}/n$N -N -B -e 'drop table if exists test.t$N'",
+            '>>');
+        Utils::write_to('test_topology',
+            "$options->{tungsten_base}/n$N -N -B -e 'create table test.t$N(i int not null primary key, c char(20)) engine= innodb'",
+            '>>');
+        Utils::write_to('test_topology',
+            qq[$options->{tungsten_base}/n$N -N -B -e 'insert into test.t$N VALUES ($N, "inserted by node #$N")'],
+            '>>');
+        push @tables, $N;
+    }
+    
+    Utils::write_to('test_topology', "sleep 2" , '>>');
+    my %trepctl_seen;
+    for my $N (@{$options->{slaves}})
+    {
+        Utils::write_to('test_topology', "echo '# node $N'" , '>>');
+        for my $T (@tables)
+        {
+            Utils::write_to('test_topology',
+                "$options->{tungsten_base}/n$N -N -B -e 'select * from test.t$T'",
+                '>>');
+        }
+        Utils::write_to('test_topology',
+            "$options->{tungsten_base}/$options->{tsb_prefix}$N/trepctl services | grep 'state\\|Seqno\\|serviceName'",
+            '>>');
+    }
+    chmod 0750, 'test_topology';
 }
 
 
@@ -626,7 +680,7 @@ my %parse_options = (
             parse   => 'i|installation-directory=s',
             value   => $ENV{PWD},
             so      => 35,
-            help    => ['Where tthe Tungsten tarball has been expanded' ]
+            help    => ['Where the Tungsten tarball has been expanded' ]
         },
      group_dir => {
             parse   => 'd|group-dir=s',
@@ -706,10 +760,52 @@ my %parse_options = (
             so      => 140,
             help    => ['display the program manual' ]
         },
+     master_options => {
+            parse   => 'master-options=s',
+            value   => undef,
+            variable=>'TUNGSTEN_MASTER_OPTION',
+            so      => 150,
+            help    => ['options to be passed to the master installer' ]
+        },
+     node_options => {
+            parse   => 'node-options=s',
+            value   => undef,
+            variable=>'TUNGSTEN_NODE_OPTION',
+            so      => 160,
+            help    => ['options to be passed to each node installer' ]
+        },
+     slave_options => {
+            parse   => 'slave-options=s',
+            value   => undef,
+            variable=>'TUNGSTEN_SLAVE_OPTION',
+            so      => 170,
+            help    => ['options to be passed to the slave installer' ]
+        },
+     service_options => {
+            parse   => 'service-options=s',
+            value   => undef,
+            variable=>'TUNGSTEN_SERVICE_OPTION',
+            so      => 180,
+            help    => ['options to be passed to each service installer' ]
+        },
+     hub_service_options => {
+            parse   => 'hub-service-options=s',
+            value   => undef,
+            variable=>'TUNGSTEN_HUB_SERVICE_OPTION',
+            so      => 190,
+            help    => ['options to be passed to the hub service installer' ]
+        },
+     remote_service_options => {
+            parse   => 'remote-service-options=s',
+            value   => undef,
+            variable=>'TUNGSTEN_REMOTE_SERVICE_OPTION',
+            so      => 200,
+            help    => ['options to be passed to each remote service installer' ]
+        },
       help => {
             parse   => 'h|help',
             value   => 0,
-            so      => 200,
+            so      => 300,
             help    => ['display this help' ]
         },
 );
@@ -757,6 +853,14 @@ unless ($make_multiple_sandbox)
     die "Can't find make_multiple_sandbox in PATH ($ENV{PATH}).\n"
         ."Perhaps MySQL Sandbox is not installed.\n"
         ."Get it from CPAN or from http://mysqlsandbox.net\n";
+}
+
+for my $opt (grep { $parse_options{$_}{variable} } keys %options)
+{
+    if ($options{$opt})
+    {
+        $ENV{$parse_options{$opt}{variable}} = $options{$opt};
+    }
 }
 
 my $minimum_mysql_sandbox_version = '3.0.24';
@@ -909,11 +1013,15 @@ my $rmi_ports;
 if  ($options{topology} eq 'master-slave')
 {
     $rmi_ports = Tsandbox::install_master_slave(\%options, $sandbox_dir);
+    $options{masters} = [1];
+    $options{slaves} = [grep {$_ != 1} ( 1 .. $options{nodes})];
 }
 elsif  (($options{topology} eq 'all-masters') or  ($options{topology} eq 'bi-dir'))
 {
     $rmi_ports = Tsandbox::install_all_masters(\%options, $sandbox_dir);
     Tsandbox::install_all_slave_services(\%options);
+    $options{masters} = [(1 .. $options{nodes})];
+    $options{slaves} = [(1 .. $options{nodes})];
 }
 elsif  ($options{topology} eq 'star')
 {
@@ -923,6 +1031,8 @@ elsif  ($options{topology} eq 'star')
     }
     $rmi_ports = Tsandbox::install_all_masters(\%options, $sandbox_dir);
     Tsandbox::install_star_services(\%options);
+    $options{masters} = [(1 .. $options{nodes})];
+    $options{slaves} = [(1 .. $options{nodes})];
 }
 elsif  ($options{topology} eq 'fan-in')
 {
@@ -932,6 +1042,8 @@ elsif  ($options{topology} eq 'fan-in')
     }
     $rmi_ports = Tsandbox::install_all_masters(\%options, $sandbox_dir);
     Tsandbox::install_fan_in_services(\%options);
+    $options{masters} = [ grep {$_ != $options{hub}} (1 .. $options{nodes})];
+    $options{slaves} = [$options{hub}];
 }
 else
 {
@@ -961,32 +1073,29 @@ Tungsten Sandbox - Quickly installs Tungsten Replicator clusters with MySQL
     Tungsten Sandbox - Cluster builder
      (C) 2011 Giuseppe Maxia, Continuent, Inc
  Syntax: ./tungsten-sandbox-2.0/tungsten-sandbox [options] operation 
-    -n --nodes = number                 How many nodes to install
-                                         default: 3 
+    -n --nodes = number                 How many nodes to install ( default: 3 )
     -m --mysql-version = name           which MySQL version to use
-    -t --tungsten-base = name           Where to install the sandbox
-                                         default: /Users/gmax/tsb2 
+    -t --tungsten-base = name           Where to install the sandbox ( default: /Users/gmax/tsb2 )
     -i --installation-directory = name  Where tthe Tungsten tarball has been expanded
                                          default: /Users/gmax/workdir/continuent/tungsten-toolbox/tungsten-sandbox 
-    -d --group-dir = name               sandbox group directory name
-                                         default: tr_dbs 
-    --topology = name                   Which topology to deploy
-                                         default: master-slave 
+    -d --group-dir = name               sandbox group directory name ( default: tr_dbs )
+    --topology = name                   Which topology to deploy (default: master-slave )
                                           (Allowed: {all-masters|bi-dir|direct|fan-in|master-slave|star})
     --hub = number                      Which node is a hub
-    -s --service = name                 How the service is named
-                                         default: tsandbox 
-    -x --tsb-prefix = name              Tungsten Sandbox prefix
-                                         default: db 
-    -p --base-port = number             Base port for MySQL Sandbox nodes 
-                                         default: 7100 
-    -l --thl-port = number              Port for the THL service 
-                                         default: 12110 
-    -r --rmi-port = number              Port for the RMI service 
-                                         default: 10100 
+    -s --service = name                 How the service is named ( default: tsandbox )
+    -x --tsb-prefix = name              Tungsten Sandbox prefix ( default: db )
+    -p --base-port = number             Base port for MySQL Sandbox nodes ( default: 7100 )
+    -l --thl-port = number              Port for the THL service (default: 12110 )
+    -r --rmi-port = number              Port for the RMI service (default: 10100 )
     -v --version                        Show Tungsten sandbox version and exit 
     --show-options                      Show Tungsten sandbox collected options and exit 
     --verbose                           Show more information during installation and help 
+    --master-options = name             options to be passed to the master installer
+    --node-options = name               options to be passed to each node installer
+    --slave-options = name              options to be passed to the slave installer
+    --service-options = name            options to be passed to each service installer
+    --hub-service-options = name        options to be passed to the hub service installer
+    --remote-service-options = name     options to be passed to each remote service installer
     --man|manual                        display the program manual
     -h --help                           display this help
 
@@ -1225,11 +1334,15 @@ B<configs/> is where the configuration files created by the installer are stored
 
 B<tlogs/> is where the THL files are kept. The default name in regular instalations is 'thl', but it was changed for Tungsten sandbox, because we have a 'thl' script on the same directory.
 
+=back
+
 =head1 COPYRIGHT
 
 Version 2.0
 
 Copyright (C) 2011 Giuseppe Maxia, Continuent, Inc
+
+Released under the New BSD license.
 
 Home Page  L<http://code.google.com/p/tungsten-toolbox>
 
