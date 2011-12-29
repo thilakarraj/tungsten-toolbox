@@ -21,7 +21,7 @@ use Getopt::Long;
 use File::Basename;
 use English '-no_match_vars';
 
-our $VERSION = '2.0.3';
+our $VERSION = '2.0.4';
 our $DRY_RUN = 0;
 our $VERBOSE = 0;
 
@@ -277,7 +277,8 @@ my @service_names = qw(
     foxtrot golf    hotel   india    juliet 
     kilo    lima    mike    november oscar 
     papa    quebec  romeo   sierra   tango 
-    whisky  xray    yankee  zulu 
+    uniform victor  whisky  xray     yankee  
+    zulu 
 );
 
 sub install_master_slave_replicator 
@@ -565,6 +566,7 @@ sub create_sandbox_scripts
     }
 
     Utils::add_header('clear_tsandbox');
+    Utils::add_header('erase_tsandbox');
     Utils::write_to('clear_tsandbox', "$options->{tungsten_base}/replicator_all stop", '>>');
     Utils::write_to('clear_tsandbox', "$options->{tungsten_base}/db_clear_all stop", '>>');
     for my $N ( 1 .. $options->{nodes})
@@ -574,6 +576,9 @@ sub create_sandbox_scripts
         Utils::write_to('clear_tsandbox', "rm -rf $options->{tungsten_base}/$options->{tsb_prefix}$N/tungsten/tungsten-replicator/log/*", '>>');
     }
     chmod 0750, 'clear_tsandbox';
+    Utils::write_to('erase_tsandbox', "$options->{tungsten_base}/clear_tsandbox", '>>');
+    Utils::write_to('erase_tsandbox', "rm -rf $options->{tungsten_base}/*", '>>');
+    chmod 0750, 'erase_tsandbox';
 
     Utils::add_header('restart_tsandbox');
     # Utils::write_to('restart_tsandbox', "$options->{tungsten_base}/clear_tsandbox", '>>');
@@ -591,6 +596,17 @@ sub create_sandbox_scripts
             Utils::write_to("${script}_all", "$options->{tungsten_base}/$options->{tsb_prefix}$N/$script \$\@", '>>');
         }
         chmod 0750, "${script}_all";
+    }
+
+    $options->{sandbox_directory} = $sandbox_dir;
+    Utils::write_to('tungsten_sandbox.info', 'Tungsten Sandbox created at ' . scalar(localtime), '>');
+    Utils::write_to('tungsten_sandbox.info', Utils::get_credits(), '>');
+    
+    for my $opt ( grep {$options->{$_}} ('nodes','mysql_version','installation_directory', 
+                   'tungsten_release', 'sandbox_directory', 'topology', 
+                   'hub', 'base_port', 'thl_port','rmi_port'  ))
+    {
+        Utils::write_to('tungsten_sandbox.info', sprintf('%-30s => %s',$opt, $options->{$opt} || '') ,'>>');
     }
 
     my @tables =();
@@ -747,7 +763,15 @@ my %parse_options = (
             so      => 125,
             help    => ['Show Tungsten sandbox collected options and exit ' ]
         },
-
+     ignore_manifest => {
+            parse   => 'ignore-manifest',
+            value   => 0,
+            so      => 126,
+            help    => [
+                        'Ignore build values in .manifest when determining if the Tungsten package',
+                        'can be used with this sandbox' 
+                       ]
+        },
      verbose => {
             parse   => 'verbose',
             value   => 0,
@@ -847,6 +871,14 @@ Utils::validate_options(
     \%options, 
     \%parse_options);
 
+if  (($options{topology} eq 'star') or ($options{topology} eq 'all-masters'))
+{
+    if ($options{mysql_version} ge '5.5')
+    {
+        die "The '$options{topology}' topology is not safe to run with MySQL 5.5. This restriction will be lifted in further versions\n";
+    }
+}
+
 my $make_multiple_sandbox = Utils::which('make_multiple_sandbox');
 unless ($make_multiple_sandbox) 
 {
@@ -884,9 +916,9 @@ else
 
 if ($options{'installation_directory'})
 {
+    $options{'installation_directory'} =~ s/^\./$ENV{PWD}/;
     chdir $options{'installation_directory'};
 }
-
 
 if ( -f ".manifest" ) 
 {
@@ -895,15 +927,22 @@ if ( -f ".manifest" )
     my $minimum_build=360;
     for my $line (@manifest_lines) 
     {
-        if ($line =~ /BUILD_NUMBER:\s*(\d+)/) {
+        if ($line =~ /RELEASE:\s*(\S+)/) 
+        {
+            $options{tungsten_release} = $1;
+        }
+        if ($line =~ /BUILD_NUMBER:\s*(\d+)/) 
+        {
             $build_no=$1;
+            $options{tungsten_build} = $build_no;
             last;
         }
     }
-    if ($build_no < $minimum_build) 
+    if (($build_no < $minimum_build) && ( ! $options{'ignore_manifest'}))
     {
         die "Builds earlier than $minimum_build can't be used with this version of tungsten-sandbox\n"
-            ."Your build is $build_no - Please download a more recent version\n";
+            ."Your build is $build_no - Please download a more recent version\n"
+            ."If you have built the software yourself, you may use the --ignore-manifest option to continue\n";
     }
 } 
 else 
@@ -1258,6 +1297,10 @@ B<restart_tsandbox>
 Starts all the sandboxes at once. It is useful after using clear_tsandbox.
 
 =item *
+B<erase_tsandbox>
+An even more dangerous command than clear_tsandbox. In addition to clearing everything, this command will remove everything under $HOME/tsb2.
+
+=item *
 B<replicator_all>   
 Runs a given command to all the replicators in the underlying sandboxes.
 
@@ -1286,6 +1329,9 @@ B<n1>, B<n2>, B<n3> (and more if more nodes were defined) will use the database 
 =item * 
 B<db1/>, B<db2/>, B<db3/> are the directory where each Tungsten replicator is installed. See L<Each sandbox> below.
 Notice that the name may change, depending on the value of C<--tsb_prefix>.
+
+=item *
+B<test_topology> is a customized script that tests the topology by creating tables and records in all the masters defined in the topology, and retrieving such objects from all the slaves. In this context, "master" and "slave" mean master and slave services. Thus if a node includes both, it will be used for generating data and for retrieving it.
 
 =back
 
