@@ -21,7 +21,7 @@ use Getopt::Long;
 use File::Basename;
 use English '-no_match_vars';
 
-our $VERSION = '2.0.4';
+our $VERSION = '2.0.05';
 our $DRY_RUN = 0;
 our $VERBOSE = 0;
 
@@ -322,6 +322,9 @@ sub install_master_slave
     my ($options, $sandbox_dir) = @_;
 
     my %rmi_ports;
+    my $env_node_options    = $ENV{TR_NODE_OPTIONS}   || '';
+    my $env_master_options  = $ENV{TR_MASTER_OPTIONS} || '';
+    my $env_slave_options   = $ENV{TR_SLAVE_OPTIONS}  || '';
 
     mkdir "$options->{tungsten_base}/$options->{tsb_prefix}1";
 
@@ -345,7 +348,7 @@ sub install_master_slave
     $rmi_ports{1} = $options->{rmi_port};
 
     mkdir $master_params{home_directory};
-    Tsandbox::install_master_slave_replicator(\%master_params, $ENV{TUNGSTEN_MASTER_OPTIONS} || '');
+    Tsandbox::install_master_slave_replicator(\%master_params, $env_node_options . ' ' . $env_master_options );
 
     my %slave_params = %master_params;
 
@@ -362,7 +365,7 @@ sub install_master_slave
 
         $rmi_ports{$N} = $slave_params{rmi_port};
         mkdir $slave_params{home_directory};
-        Tsandbox::install_master_slave_replicator(\%slave_params, $ENV{TUNGSTEN_SLAVE_OPTIONS} || '' ); 
+        Tsandbox::install_master_slave_replicator(\%slave_params, $env_node_options . ' ' . $env_slave_options ); 
     }
     return \%rmi_ports;
 }
@@ -374,7 +377,9 @@ sub install_all_masters
 
     my %rmi_ports;
 
-   if ($options->{nodes} > @service_names)
+    my $env_node_options    = $ENV{TR_NODE_OPTIONS}   || '';
+    my $env_master_options  = $ENV{TR_MASTER_OPTIONS} || '';
+    if ($options->{nodes} > @service_names)
     {
         die "Can't install so many services. The maximum allowed is " . scalar(@service_names) . " \n";
     }
@@ -404,7 +409,7 @@ sub install_all_masters
         $rmi_ports{$N} = $node_params{rmi_port};
 
         mkdir $node_params{home_directory};
-        Tsandbox::install_master_slave_replicator(\%node_params);
+        Tsandbox::install_master_slave_replicator(\%node_params, $env_master_options . ' ' . $env_node_options );
     }
 
     return \%rmi_ports;
@@ -418,9 +423,9 @@ sub install_service ($$$)
     {
         die "Could not find executable for configure-service at $configure_service\n";
     }
-    if ($ENV{TUNGSTEN_SERVICE_OPTIONS})
+    if ($ENV{TRS_NODE_OPTIONS})
     {
-        $command .= ' ' . $ENV{TUNGSTEN_SERVICE_OPTIONS};
+        $command .= ' ' . $ENV{TRS_NODE_OPTIONS};
     }
     if ($options->{verbose})
     {
@@ -490,13 +495,13 @@ sub install_star_services
               $service_names[$master -1], 
               $options->{thl_port} + $options->{hub} -1, 
               $service_names[$options->{hub} -1]) ;
-        $command .= $ENV{TUNGSTEN_REMOTE_SERVICE_OPTIONS} || '';
+        $command .= $ENV{TRS_ENDPOINT_OPTIONS} || '';
         Tsandbox::install_service($options, $command, $master);
         $command = sprintf( $hub_params, 
               $service_names[$options->{hub} -1], 
               $options->{thl_port} + $master -1, 
               $service_names[$master -1]) ;
-        $command .= $ENV{TUNGSTEN_HUB_SERVICE_OPTIONS} || '';
+        $command .= $ENV{TRS_HUB_OPTIONS} || '';
         Tsandbox::install_service($options, $command, $options->{hub});
      }
 }
@@ -784,48 +789,80 @@ my %parse_options = (
             so      => 140,
             help    => ['display the program manual' ]
         },
-     master_options => {
-            parse   => 'master-options=s',
+     install_options => {
+            parse   => 'install-options=s@',
             value   => undef,
-            variable=>'TUNGSTEN_MASTER_OPTION',
             so      => 150,
-            help    => ['options to be passed to the master installer' ]
+            help    => [
+                            'Options to be passed to the underlying installer, with the format' ,
+                            '{TR|MSB}:ROLE:options',
+                            'Where TR is Tungsten Replicator, MSB is MySQL Sandbox, and ROLE can be',
+                            'one of MASTER, SLAVE, DIRECT, NODE, HUB, ENDPOINT, GLOBAL'
+                       ]
         },
-     node_options => {
-            parse   => 'node-options=s',
-            value   => undef,
-            variable=>'TUNGSTEN_NODE_OPTION',
-            so      => 160,
-            help    => ['options to be passed to each node installer' ]
-        },
-     slave_options => {
-            parse   => 'slave-options=s',
-            value   => undef,
-            variable=>'TUNGSTEN_SLAVE_OPTION',
-            so      => 170,
-            help    => ['options to be passed to the slave installer' ]
-        },
-     service_options => {
-            parse   => 'service-options=s',
-            value   => undef,
-            variable=>'TUNGSTEN_SERVICE_OPTION',
-            so      => 180,
-            help    => ['options to be passed to each service installer' ]
-        },
-     hub_service_options => {
-            parse   => 'hub-service-options=s',
-            value   => undef,
-            variable=>'TUNGSTEN_HUB_SERVICE_OPTION',
-            so      => 190,
-            help    => ['options to be passed to the hub service installer' ]
-        },
-     remote_service_options => {
-            parse   => 'remote-service-options=s',
-            value   => undef,
-            variable=>'TUNGSTEN_REMOTE_SERVICE_OPTION',
-            so      => 200,
-            help    => ['options to be passed to each remote service installer' ]
-        },
+     #tmaster_options => {
+     #       parse   => 'tmaster-options=s',
+     #       value   => undef,
+     #       variable=>'TR_MASTER_OPTIONS',
+     #       so      => 150,
+     #       help    => ['options to be passed to the Tungsten master installer' ]
+     #   },
+     #mmaster_options => {
+     #       parse   => 'mmaster-options=s',
+     #       value   => undef,
+     #       variable=>'MYSQL_MASTER_OPTIONS',
+     #       so      => 150,
+     #       help    => ['options to be passed to the MySQL master installer' ]
+     #   },
+     #tnode_options => {
+     #       parse   => 'tnode-options=s',
+     #       value   => undef,
+     #       variable=>'TR_NODE_OPTIONS',
+     #       so      => 160,
+     #       help    => ['options to be passed to each Tungsten node installer' ]
+     #   },
+     #mnode_options => {
+     #       parse   => 'mnode-options=s',
+     #       value   => undef,
+     #       variable=>'MYSQL_NODE_OPTIONS',
+     #       so      => 161,
+     #       help    => ['options to be passed to each MySQL node installer' ]
+     #   },
+     # tslave_options => {
+     #       parse   => 'tslave-options=s',
+     #       value   => undef,
+     #       variable=>'TR_SLAVE_OPTIONS',
+     #       so      => 170,
+     #       help    => ['options to be passed to the Tungsten slave installer' ]
+     #   },
+     # mslave_options => {
+     #       parse   => 'mslave-options=s',
+     #       value   => undef,
+     #       variable=>'MYSQL_SLAVE_OPTIONS',
+     #       so      => 171,
+     #       help    => ['options to be passed to the MySQL slave installer' ]
+     #   },
+     #service_options => {
+     #       parse   => 'service-options=s',
+     #       value   => undef,
+     #       variable=>'TR_SERVICE_OPTIONS',
+     #       so      => 180,
+     #       help    => ['options to be passed to each Tungsten service installer' ]
+     #   },
+     #hub_service_options => {
+     #       parse   => 'hub-service-options=s',
+     #       value   => undef,
+     #       variable=>'TR_HUB_SERVICE_OPTIONS',
+     #       so      => 190,
+     #       help    => ['options to be passed to the hub service installer' ]
+     #   },
+     #remote_service_options => {
+     #       parse   => 'remote-service-options=s',
+     #       value   => undef,
+     #       variable=>'TR_REMOTE_SERVICE_OPTIONS',
+     #       so      => 200,
+     #       help    => ['options to be passed to each remote service installer' ]
+     #   },
       help => {
             parse   => 'h|help',
             value   => 0,
@@ -887,13 +924,78 @@ unless ($make_multiple_sandbox)
         ."Get it from CPAN or from http://mysqlsandbox.net\n";
 }
 
-for my $opt (grep { $parse_options{$_}{variable} } keys %options)
+#for my $opt (grep { $parse_options{$_}{variable} } keys %options)
+#{
+#    my $var = $parse_options{$opt}{variable};
+#
+#    #ensure that variables are safe to embed in other strings
+#    $ENV{$var} = '' unless $ENV{$var};
+#
+#    my $mysql_var = undef;
+#    if ($var =~ /^MYSQL_(.+)/)
+#    {
+#        $mysql_var = $1;
+#        $ENV{$mysql_var} = '' unless $ENV{$mysql_var};
+#    }
+#    if ($options{$opt})
+#    {
+#        $ENV{$var} = $options{$opt};
+#        if ($mysql_var)
+#        {
+#            $ENV{$mysql_var} = $options{$opt}; 
+#        }
+#
+#    }
+#}
+
+my @applications_options_list= qw( TR TRS MSB );
+my @role_options_list = qw( MASTER SLAVE DIRECT NODE HUB ENDPOINT GLOBAL ); 
+
+my %customer_install_options= (
+);
+for my $app (@applications_options_list)
 {
-    if ($options{$opt})
+    for my $role (@role_options_list)
     {
-        $ENV{$parse_options{$opt}{variable}} = $options{$opt};
+        $customer_install_options{$app}{$role} =  "${app}_${role}_OPTIONS";
+        my $env_variable = $customer_install_options{$app}{$role};
+        $ENV{$env_variable} = '' unless $ENV{$env_variable};
     }
 }
+
+if ($options{install_options} )
+{
+    unless (ref $options{install_options} && ref($options{install_options}) eq 'ARRAY')
+    {
+        $options{install_options} = [ $options{install_options} ];
+    }
+    for my $option ( @{ $options{install_options} } )
+    {
+        my ($app, $role, $value);
+        if ($option =~ /^(\w+):(\w+):(.+)/)
+        {
+            ($app, $role, $value) = ($1, $2, $3);
+            unless (exists $customer_install_options{$app}{$role})
+            {
+                die "invalid APP:ROLE combination '$app:$role'\n";
+            }
+        }
+        else
+        {
+            die   "Invalid option '$option'\n"
+                . "A valid sequence is made of APP:ROLE:option\n"
+                . "Where APP is one of (@applications_options_list) \n"
+                . "and ROLE is one of (@role_options_list)\n";
+        }
+        $ENV{$customer_install_options{$app}{$role}} .= $value;
+        if ($options{verbose})
+        {
+            print "\$ENV{$customer_install_options{$app}{$role}} = $ENV{$customer_install_options{$app}{$role}}\n";
+        }
+    }
+}
+
+# print Dumper \%options; exit;
 
 my $minimum_mysql_sandbox_version = '3.0.24';
 my $mysql_sandbox_help = qx($make_multiple_sandbox --help);
@@ -1021,7 +1123,7 @@ if ($options{topology} eq 'bi-dir')
 # ------------------------------------------------------------
 
 my $mms_cmd =   "$make_multiple_sandbox "
-              . " --node_options='-c log-bin=mysql-bin -c innodb_flush_log_at_trx_commit=2 -c max_allowed_packet=48M'"
+              . " --node_options='$ENV{MSB_NODE_OPTIONS} -c log-bin=mysql-bin -c innodb_flush_log_at_trx_commit=2 -c max_allowed_packet=48M'"
               . " --how_many_nodes=$options{nodes}"
               . " --sandbox_base_port=$options{base_port}"
               . " --group_directory=$options{group_dir}"
@@ -1129,12 +1231,10 @@ Tungsten Sandbox - Quickly installs Tungsten Replicator clusters with MySQL
     -v --version                        Show Tungsten sandbox version and exit 
     --show-options                      Show Tungsten sandbox collected options and exit 
     --verbose                           Show more information during installation and help 
-    --master-options = name             options to be passed to the master installer
-    --node-options = name               options to be passed to each node installer
-    --slave-options = name              options to be passed to the slave installer
-    --service-options = name            options to be passed to each service installer
-    --hub-service-options = name        options to be passed to the hub service installer
-    --remote-service-options = name     options to be passed to each remote service installer
+    --install-options = name            Options to be passed to the underlying installer, with the format
+                                        {TR|MSB}:ROLE:options
+                                        Where TR is Tungsten Replicator, MSB is MySQL Sandbox, and ROLE can be
+                                        one of MASTER, SLAVE, DIRECT, NODE, HUB, ENDPOINT, GLOBAL
     --man|manual                        display the program manual
     -h --help                           display this help
 
@@ -1263,6 +1363,29 @@ In this topology, you define a slave node (using the 'hub' option), and all the 
     --nodes=4 --topology=fan-in --hub=3
 
 In this example, nodes 1,2, and 4 will be masters, all of them replicating to node 3.
+
+=head1 Fine tuning installation
+
+Tungsten-Sandbox offers some hooks to modify the installation, should you need it. 
+There is a B<--install_options> parameter that you can use to pass installation options in several phases of the sandbox build.
+The syntax is 
+
+  --install-options=APP:ROLE:parameters
+
+Where B<APP> is any of TR (= Tungtsen Replicator installer), TRS (= service installer with tools/configure-service), or MSB (= MySQl Sandbox installer).
+
+B<ROLE> is where you want to do the change: MASTER, SLAVE, HUB, ENDPOINT, DIRECT.
+
+So, for example, if you want to add parallel replication to the slaves, you can do this
+
+  tungsten-sandbox -m 5.1.60 \
+  --install-options='TR:SLAVE:--channels=5'
+
+Likewise, to add parallel replication only on endpoint services of a star schema topology, you may do this:
+
+  tungsten-sandbox -m 5.1.60 \
+     --schema=star --hub=1 \
+     --install-options='TRS:ENDPOINT:--channels=5 --buffer-size=100'
 
 =head1 Using a sandbox
 
