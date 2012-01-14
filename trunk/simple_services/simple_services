@@ -1,0 +1,49 @@
+#!/usr/bin/perl
+# simple_services
+# Shows the output of 'trepctl services' in compact way
+# (C) Continuent, Inc - 2012
+# Released under the New BSD license
+#
+use strict;
+use warnings;
+
+my @services        = ();
+my $count           = -1;
+my $name_len = 0;
+while (my $line = <STDIN>)
+{
+    next if $line =~ /Processing|NAME|Finished/;
+    if ($line =~ /----/ )
+    {
+        $count++;
+    }
+    elsif ($line =~ /(\w+)\s*:\s+(.*)/) 
+    {
+        my ($key,$value) = ($1, $2);
+        $services[$count]{$key} = $value;
+        if (($key eq 'serviceName') and (length($value) > $name_len))
+        { 
+            $name_len = length($2) ;
+        }
+    }
+    else 
+    {
+        die "unhandled input $line";
+    }
+}
+
+my $service_template = 
+      "%-${name_len}s  [%s]\n"                      # name role
+    . "seqno: %7d  - latency: %7.3f - %s\n\n";     # seqno latency state    
+
+for my $serv (@services)
+{
+    printf $service_template, 
+        $serv->{serviceName},
+        $serv->{role},
+        $serv->{appliedLastSeqno},
+        $serv->{appliedLatency},
+        $serv->{state};
+}
+
+# use Data::Dumper; print Dumper \@services;
