@@ -21,7 +21,7 @@ use Getopt::Long;
 use File::Basename;
 use English '-no_match_vars';
 
-our $VERSION = '2.0.05';
+our $VERSION = '2.0.06';
 our $DRY_RUN = 0;
 our $VERBOSE = 0;
 
@@ -272,13 +272,20 @@ sub add_header
 package Tsandbox;
 use English '-no_match_vars';
 
+# Service names used for multiple masters deployments.
+# You can't create more service than the number 
+# of items in this array. Although you probably
+# don't want to hit that limit, especially in all-masters 
+# topology.
 my @service_names = qw(
     alpha   bravo   charlie delta    echo 
     foxtrot golf    hotel   india    juliet 
     kilo    lima    mike    november oscar 
     papa    quebec  romeo   sierra   tango 
     uniform victor  whisky  xray     yankee  
-    zulu 
+    zulu    zero    one     two     three    
+    four    five    six     seven   eight
+    nine
 );
 
 sub install_master_slave_replicator 
@@ -438,6 +445,7 @@ sub install_service ($$$)
     }
 }
 
+# Returns a nicely formatted set of options for a command with a long list of arguments
 sub pretty_command
 {
     my ($cmd, $args) = @_;
@@ -476,7 +484,7 @@ sub install_star_services
 {
     my ($options) = @_;
 
-    my $remote_params =  ' -C --quiet --host=127.0.0.1 --datasource=127_0_0_1 --role=slave '
+    my $endpoint_params =  ' -C --quiet --host=127.0.0.1 --datasource=127_0_0_1 --role=slave '
                        . ' --service-type=remote --master-thl-host=127.0.0.1 --svc-start '
                        . ' -a --svc-allow-any-remote-service=true '
                        . ' --skip-validation-check=THLStorageCheck '
@@ -491,7 +499,7 @@ sub install_star_services
     {
         next if $master == $options->{hub};
 
-        my $command = sprintf($remote_params, 
+        my $command = sprintf($endpoint_params, 
               $service_names[$master -1], 
               $options->{thl_port} + $options->{hub} -1, 
               $service_names[$options->{hub} -1]) ;
@@ -505,7 +513,6 @@ sub install_star_services
         Tsandbox::install_service($options, $command, $options->{hub});
      }
 }
-
 
 sub install_fan_in_services
 {
@@ -528,10 +535,22 @@ sub install_fan_in_services
      }
 }
 
+#
+# Creates utility and admin scripts
+#
 sub create_sandbox_scripts
 {
     my ($options, $rmi_ports, $sandbox_dir) = @_;
 
+    my $services_filter = Utils::which('simple_services') || '';
+    if ($services_filter)
+    {
+        $services_filter = " | $services_filter";
+    }
+
+    # 
+    # Creates utility scripts in each indivisual sandbox
+    #
     for my $N ( 1 .. $options->{nodes})
     {
         chdir $options->{tungsten_base};
@@ -541,25 +560,37 @@ sub create_sandbox_scripts
         }
         system "ln -s $sandbox_dir/n$N n$N";
         chdir "$options->{tsb_prefix}$N";
+        #
+        # Creates a symlink to the utility scripts of the corresponding MySQL Sandbox 
+        #
         system "ln -s $sandbox_dir/node$N/use db_use";
         system "ln -s $sandbox_dir/node$N/start db_start";
         system "ln -s $sandbox_dir/node$N/status db_status";
         system "ln -s $sandbox_dir/node$N/restart db_restart";
         system "ln -s $sandbox_dir/node$N/stop db_stop";
-        Utils::add_header('show_log');
-        Utils::add_header('show_conf');
-        Utils::add_header('replicator');
-        Utils::add_header('trepctl');
-        Utils::add_header('thl');
+        #
+        # Creates utility scripts to deal with the replicator in this sandbox
+        #
+        Utils::add_header('show_log');   # shows the logs
+        Utils::add_header('show_conf');  # show the properties files
+        Utils::add_header('replicator'); # runs the replicator
+        Utils::add_header('trepctl');    # runs trepctl
+        Utils::add_header('services');   # runs trepctl services
+        Utils::add_header('thl');        # runs thl
+
         my $curdir = "$options->{tungsten_base}/$options->{tsb_prefix}$N";
         Utils::write_to('show_log', "vim -o $curdir/tungsten/tungsten-replicator/log/*.log", '>>');
         Utils::write_to('show_conf', "vim -o $curdir/tungsten/tungsten-replicator/conf/static-*.properties", '>>');
         Utils::write_to('replicator', "$curdir/tungsten/tungsten-replicator/bin/replicator " . '$@', '>>');
         Utils::write_to('trepctl', "$curdir/tungsten/tungsten-replicator/bin/trepctl -port $rmi_ports->{$N} " . '$@', '>>');
+        Utils::write_to('services', "$curdir/tungsten/tungsten-replicator/bin/trepctl -port $rmi_ports->{$N} services $services_filter" , '>>');
         Utils::write_to('thl', "$curdir/tungsten/tungsten-replicator/bin/thl " . '$@', '>>');
-        chmod 0750, qw(show_conf show_log replicator trepctl thl);
+        chmod 0750, qw(show_conf show_log replicator trepctl services thl);
     }
 
+    #
+    # Creates symlinks to the sandbox group utilities
+    #
     chdir $options->{tungsten_base};
     for my $script (qw(use start stop clear restart status send_kill))
     {
@@ -570,6 +601,9 @@ sub create_sandbox_scripts
         system "ln -s $sandbox_dir/${script}_all db_${script}_all";
     }
 
+    #
+    # Create utilities that clean up or remove a Tungsten Sandbox
+    #
     Utils::add_header('clear_tsandbox');
     Utils::add_header('erase_tsandbox');
     Utils::write_to('clear_tsandbox', "$options->{tungsten_base}/replicator_all stop", '>>');
@@ -592,7 +626,10 @@ sub create_sandbox_scripts
     Utils::write_to('restart_tsandbox', "$options->{tungsten_base}/trepctl_all services", '>>');
     chmod 0750, 'restart_tsandbox';
 
-    for my $script (qw(trepctl replicator))
+    #
+    # Creates scripts that can invoke all replicators or trepctls with a single command.
+    #
+    for my $script (qw(trepctl replicator services))
     {
         Utils::add_header("${script}_all");
         for my $N (1 .. $options->{nodes})
@@ -603,6 +640,9 @@ sub create_sandbox_scripts
         chmod 0750, "${script}_all";
     }
 
+    #
+    # Writes information about how the sandbox was created.
+    #
     $options->{sandbox_directory} = $sandbox_dir;
     Utils::write_to('tungsten_sandbox.info', 'Tungsten Sandbox created at ' . scalar(localtime), '>');
     Utils::write_to('tungsten_sandbox.info', Utils::get_credits(), '>');
@@ -614,6 +654,9 @@ sub create_sandbox_scripts
         Utils::write_to('tungsten_sandbox.info', sprintf('%-30s => %s',$opt, $options->{$opt} || '') ,'>>');
     }
 
+    #
+    # Creates a test script that will probe the data flow.
+    #
     my @tables =();
     Utils::add_header('test_topology');
     my $hub = '';
@@ -660,8 +703,6 @@ sub create_sandbox_scripts
 
 1;
 }
-
-
 
 #
 # Definition of the options for this application.
@@ -800,69 +841,6 @@ my %parse_options = (
                             'one of MASTER, SLAVE, DIRECT, NODE, HUB, ENDPOINT, GLOBAL'
                        ]
         },
-     #tmaster_options => {
-     #       parse   => 'tmaster-options=s',
-     #       value   => undef,
-     #       variable=>'TR_MASTER_OPTIONS',
-     #       so      => 150,
-     #       help    => ['options to be passed to the Tungsten master installer' ]
-     #   },
-     #mmaster_options => {
-     #       parse   => 'mmaster-options=s',
-     #       value   => undef,
-     #       variable=>'MYSQL_MASTER_OPTIONS',
-     #       so      => 150,
-     #       help    => ['options to be passed to the MySQL master installer' ]
-     #   },
-     #tnode_options => {
-     #       parse   => 'tnode-options=s',
-     #       value   => undef,
-     #       variable=>'TR_NODE_OPTIONS',
-     #       so      => 160,
-     #       help    => ['options to be passed to each Tungsten node installer' ]
-     #   },
-     #mnode_options => {
-     #       parse   => 'mnode-options=s',
-     #       value   => undef,
-     #       variable=>'MYSQL_NODE_OPTIONS',
-     #       so      => 161,
-     #       help    => ['options to be passed to each MySQL node installer' ]
-     #   },
-     # tslave_options => {
-     #       parse   => 'tslave-options=s',
-     #       value   => undef,
-     #       variable=>'TR_SLAVE_OPTIONS',
-     #       so      => 170,
-     #       help    => ['options to be passed to the Tungsten slave installer' ]
-     #   },
-     # mslave_options => {
-     #       parse   => 'mslave-options=s',
-     #       value   => undef,
-     #       variable=>'MYSQL_SLAVE_OPTIONS',
-     #       so      => 171,
-     #       help    => ['options to be passed to the MySQL slave installer' ]
-     #   },
-     #service_options => {
-     #       parse   => 'service-options=s',
-     #       value   => undef,
-     #       variable=>'TR_SERVICE_OPTIONS',
-     #       so      => 180,
-     #       help    => ['options to be passed to each Tungsten service installer' ]
-     #   },
-     #hub_service_options => {
-     #       parse   => 'hub-service-options=s',
-     #       value   => undef,
-     #       variable=>'TR_HUB_SERVICE_OPTIONS',
-     #       so      => 190,
-     #       help    => ['options to be passed to the hub service installer' ]
-     #   },
-     #remote_service_options => {
-     #       parse   => 'remote-service-options=s',
-     #       value   => undef,
-     #       variable=>'TR_REMOTE_SERVICE_OPTIONS',
-     #       so      => 200,
-     #       help    => ['options to be passed to each remote service installer' ]
-     #   },
       help => {
             parse   => 'h|help',
             value   => 0,
@@ -876,12 +854,6 @@ my %parse_options = (
 #
 my %options = map { $_ ,  $parse_options{$_}{'value'}}  keys %parse_options;
 
-
-##
-##  Calls help if no arguments were passed
-##
-## Utils::get_help(\%parse_options,'') unless @ARGV;
-
 #
 # Parses the options, using the 'parse' element of each parse_option item
 # Calls the help if there is a parsing error.
@@ -890,7 +862,8 @@ GetOptions (
         grep { $parse_options{$_}{parse}}  keys %parse_options 
 ) or Utils::get_help(\%parse_options, '');
 
-if ($options{verbose}) {
+if ($options{verbose}) 
+{
     $VERBOSE = $options{verbose};
 }
 
@@ -901,6 +874,7 @@ if ($options{version})
 }
 Utils::get_help(\%parse_options)  if $options{help};
 Utils::get_manual()  if $options{manual};
+
 #
 #  Makes sure that the options conform to the expectations
 #
@@ -916,6 +890,12 @@ if  (($options{topology} eq 'star') or ($options{topology} eq 'all-masters'))
     }
 }
 
+unless ($parse_options{topology}{allowed}{$options{topology}})
+{
+    die "Topology $options{topology} has not been implemented yet\n";
+}
+
+
 my $make_multiple_sandbox = Utils::which('make_multiple_sandbox');
 unless ($make_multiple_sandbox) 
 {
@@ -923,30 +903,6 @@ unless ($make_multiple_sandbox)
         ."Perhaps MySQL Sandbox is not installed.\n"
         ."Get it from CPAN or from http://mysqlsandbox.net\n";
 }
-
-#for my $opt (grep { $parse_options{$_}{variable} } keys %options)
-#{
-#    my $var = $parse_options{$opt}{variable};
-#
-#    #ensure that variables are safe to embed in other strings
-#    $ENV{$var} = '' unless $ENV{$var};
-#
-#    my $mysql_var = undef;
-#    if ($var =~ /^MYSQL_(.+)/)
-#    {
-#        $mysql_var = $1;
-#        $ENV{$mysql_var} = '' unless $ENV{$mysql_var};
-#    }
-#    if ($options{$opt})
-#    {
-#        $ENV{$var} = $options{$opt};
-#        if ($mysql_var)
-#        {
-#            $ENV{$mysql_var} = $options{$opt}; 
-#        }
-#
-#    }
-#}
 
 my @applications_options_list= qw( TR TRS MSB );
 my @role_options_list = qw( MASTER SLAVE DIRECT NODE HUB ENDPOINT GLOBAL ); 
@@ -962,6 +918,10 @@ for my $app (@applications_options_list)
         $ENV{$env_variable} = '' unless $ENV{$env_variable};
     }
 }
+
+#
+# Checks the options that Tungsten Sandbox may pass to MySQL Sandbox and Tungsten installer. 
+#
 
 if ($options{install_options} )
 {
@@ -1077,7 +1037,6 @@ if ( $options{tungsten_base} eq $ENV{HOME})
     die "directory \$HOME cannot be \$TUNGSTEN_BASE\n";
 }
 
-
 unless ( -x './tools/tungsten-installer') 
 {
     die   "Can't find an executable './tools/tungsten-installer' \n"
@@ -1113,7 +1072,6 @@ if ($options{topology} eq 'bi-dir')
     # whith this change, bi-dir will be installed as all-masters
     $options{nodes}=2;
 }
-
 
 #
 # ------------------ POINT OF NON RETURN ---------------------
@@ -1326,7 +1284,7 @@ Thus, indicating a MySQL version and Tungsten installation directory will give y
 =head2 All-masters
 
 This topology installs one master for each node, and then, for each node, it defines a slave service for each of the remaining nodes. This means that each node is directly replicating to all the other nodes. The number of services will soon become difficult to maintain.
-Theremust be a service name for each node. Tungsten-sandbox uses the international spelling alphabet for this purpose (alpha, bravo, charlie ...) and this is why you can't have more than 26 nodes, which is probably too much to set in a single host already, but feel free to try.
+There must be a service name for each node. Tungsten-sandbox uses the international spelling alphabet for this purpose (alpha, bravo, charlie ... plust the ten digits) and this is why you can't have more than 36 nodes, which is probably too much to set in a single host already, but feel free to try.
 
   tungsten-sandbox -m 5.1.60 \
     -i /tmp/tungsten-replicator-2.0.5-452/  \
@@ -1439,6 +1397,23 @@ Runs a given C<trepctl> command in all the sandboxes
   $HOME/tsb2/trepctl_all services
   $HOME/tsb2/trepctl_all status
 
+=item *
+B<services_all>
+Runs the C<services> command in all the sandboxes. See the 'services' command below for more information.
+  
+  $HOME/tsb2/services_all
+  #1
+  tsandbox  [master]
+  seqno:       0  - latency:   0.394 - ONLINE
+
+  #2
+  tsandbox  [slave]
+  seqno:       0  - latency:   4.506 - ONLINE
+
+  #3
+  tsandbox  [slave]
+  seqno:       0  - latency:  13.285 - ONLINE
+
 =item * 
 B<db_restart_all>, B<db_start_all>, B<db_stop_all>, B<db_clear_all>, B<db_send_kill_all>, B<db_status_all>, B<db_use_all> send the corresponding commands to MySQL Sandbox.
 
@@ -1473,6 +1448,31 @@ B<trepctl> is the main tool to inspect the replicator. This script give access t
   $HOME/tsb2/db1/trepctl status
   # corresponds to:
   $HOME/tsb2/db1/tungsten/tungsten-replicator/bin/trepctl -port 10100 status
+
+=item * 
+B<services> runs "trepctl services" for this replicator. It may seem a little improvement to have a dedicated script that saves 8 keystrokes. That too, but the main improvement is that this command invokes the 'simple_services' script, it it exists. 
+'simple services' is a filter script that displays 'services' information in a compact way.
+
+ $HOME/tsb2/db1/services
+  tsandbox  [master]
+  seqno:       0  - latency:   0.394 - ONLINE
+
+Compare to the unfiltered output:
+
+ $HOME/tsb2/db1/trepctl services
+  Processing services command...
+  NAME              VALUE
+  ----              -----
+  appliedLastSeqno: 0
+  appliedLatency  : 0.394
+  role            : master
+  serviceName     : tsandbox
+  serviceType     : local
+  started         : true
+  state           : ONLINE
+  Finished services command...
+
+This script (in combination with simple_services), is particularly useful for topologies that deploy many services.
 
 =item * 
 B<thl>: gives access to the thl utility

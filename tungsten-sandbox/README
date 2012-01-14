@@ -21,16 +21,17 @@ For example, if you want to use mysql-5.1.57-linux-x86_64-glibc23.tar.gz,do the 
    tar -xzf /path/to/mysql-5.1.57-linux-x86_64-glibc23.tar.gz
    mv mysql-5.1.57-linux-x86_64-glibc23 5.1.57
 in a separate directory, unpack Tungsten Replicator tarball
+
 run tungsten-sandbox -h
   $ tungsten-sandbox -h
-      Tungsten Tools,  version 2.0.1
+    Tungsten Tools,  version 2.0.06
     Tungsten Sandbox - Cluster builder
      (C) 2011 Giuseppe Maxia, Continuent, Inc
-Syntax: tungsten-sandbox-2.0/tungsten-sandbox [options] operation 
+Syntax: /Users/gmax/bin/tungsten-sandbox [options] operation 
     -n --nodes = number                 How many nodes to install
     -m --mysql-version = name           which MySQL version to use
     -t --tungsten-base = name           Where to install the sandbox
-    -i --installation_directory = name  Where tthe Tungsten tarball has been expanded
+    -i --installation-directory = name  Where the Tungsten tarball has been expanded
     -d --group-dir = name               sandbox group directory name
     --topology = name                   Which topology to deploy
     --hub = number                      Which node is a hub
@@ -41,18 +42,27 @@ Syntax: tungsten-sandbox-2.0/tungsten-sandbox [options] operation
     -r --rmi-port = number              Port for the RMI service 
     -v --version                        Show Tungsten sandbox version and exit 
     --show-options                      Show Tungsten sandbox collected options and exit 
+    --ignore-manifest                   Ignore build values in .manifest when determining if the Tungsten package
+                                        can be used with this sandbox
     --verbose                           Show more information during installation and help 
+    --man|manual                        display the program manual
+    --install-options = name            Options to be passed to the underlying installer, with the format
+                                        {TR|MSB}:ROLE:options
+                                        Where TR is Tungsten Replicator, MSB is MySQL Sandbox, and ROLE can be
+                                        one of MASTER, SLAVE, DIRECT, NODE, HUB, ENDPOINT, GLOBAL
     -h --help                           display this help
+
 Change the defaults using command line options and create your sandbox. Here's an example to install a 2-node sandbox using MySQL 5.1.58 with port offsets changed to avoid collisions with other sandboxes on the same host.
   $ ./tools/tungsten-sandbox -n 2 -m 5.1.58 -p 7300 -l 12300 -r 10300
 More than just master-slave
 As of version 2.0, Tungsten Sandbox can install different topologies. Supported in version 2.0.1 are
 
-master-slave: the vanilla replication with 1 master and N slaves;
-all-masters: every node is a master and connected to all other nodes with a slave service.
-bi-dir: it's an all masters with two nodes;
-star: a central hub connected in bi-directional master-master to each node;
-fan-in: a single slave receiving updates from many masters.
+* master-slave: the vanilla replication with 1 master and N slaves;
+* all-masters: every node is a master and connected to all other nodes with a slave service.
+* bi-dir: it's an all masters with two nodes;
+* star: a central hub connected in bi-directional master-master to each node;
+* fan-in: a single slave receiving updates from many masters.
+
 CREDITS
 This sandbox would have been much harder to write without the excellent Tungsten installer developed by Jeff Mace.
 
