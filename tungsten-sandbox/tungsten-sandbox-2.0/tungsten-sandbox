@@ -21,7 +21,7 @@ use Getopt::Long;
 use File::Basename;
 use English '-no_match_vars';
 
-our $VERSION = '2.0.06';
+our $VERSION = '2.0.07';
 our $DRY_RUN = 0;
 our $VERBOSE = 0;
 
@@ -324,6 +324,131 @@ sub install_master_slave_replicator
     }
 }
 
+
+sub install_direct_slave_replicator 
+{
+    my ($params, $extra) = @_;
+    my $master_thl_port='';
+    if ($params->{master_thl_port}) 
+    {
+        $master_thl_port = "--master-thl-port=$params->{master_thl_port}";
+    }
+    $extra = '' unless defined $extra;
+    my $command = "./tools/tungsten-installer";
+    my $args = 
+      " --direct "
+    . " --master-host=$params->{master_host}"
+    . " --master-port=$params->{master_port}"
+    . " --slave-host=$params->{cluster_hosts}"
+    . " --slave-port=$params->{mysql_port}"
+    . " --master-user=msandbox"
+    . " --master-password=msandbox"
+    . " --slave-user=msandbox"
+    . " --slave-password=msandbox"
+    . " --home-directory=$params->{home_directory}"
+    . " --master-log-directory=$params->{master_log_directory}"
+    . " --slave-log-directory=$params->{log_directory}"
+    . " --master-mysql-conf=$params->{master_my_conf}"
+    . " --slave-mysql-conf=$params->{my_conf}"
+    . " --service-name=$params->{service}"
+    . " --thl-directory=$params->{home_directory}/tlogs"
+    . " --thl-port=$params->{thl_port} $master_thl_port"
+    . " --rmi-port=$params->{rmi_port}"
+    . " $extra "
+    . " --start"
+    ;
+
+    print pretty_command($command, $args) if $params->{verbose};
+    my $result = system "$command $args";
+    if ($result) 
+    {
+        die "installation failed ($OS_ERROR)\n";
+    }
+#
+#TUNGSTEN_BASE=$HOME/tinstall/tsb/
+#./tools/tungsten-installer \
+#    --direct \
+#    --master-host=127.0.0.1 \
+#    --master-port=7101 \
+#    --slave-host=db2 \
+#    --slave-port=7102 \
+#    --master-user=root \
+#    --slave-user=root \
+#    --master-password=msandbox \
+#    --slave-password=msandbox \
+#    --master-log-directory=$HOME/sandboxes/tr_dbs/node1/data \
+#    --service-name=Castor \
+#    --thl-port=12112 \
+#    --channels=5 \
+#    --rmi-port=20000 \
+#    --home-directory=$TUNGSTEN_BASE \
+#
+#./tools/tungsten-installer \
+#    --direct \
+#    --master-host=127.0.0.1 \
+#    --master-port=7101 \
+#    --slave-host=db3 \
+#    --slave-port=7103 \
+#    --master-user=root \
+#    --slave-user=root \
+#    --master-password=msandbox \
+#    --slave-password=msandbox \
+#    --master-log-directory=$HOME/sandboxes/tr_dbs/node1/data \
+#    --service-name=Pollux \
+#    --thl-port=22112 \
+#    --channels=1 \
+#    --rmi-port=20000 \
+#    --home-directory=$TUNGSTEN_BASE \
+#    --relay-directory=$TUNGSTEN_BASE/relay --start-and-report
+
+}
+
+sub install_direct 
+{
+    my ($options, $sandbox_dir) = @_;
+
+    my %rmi_ports;
+    my $env_node_options    = $ENV{TR_NODE_OPTIONS}   || '';
+    my $env_master_options  = '';
+    my $env_slave_options   = $ENV{TR_SLAVE_OPTIONS}  || '';
+
+    #
+    # There is no master to install
+    #
+    my %slave_params = (
+        master_host          => '127.0.0.1',
+        cluster_hosts        => '127.0.0.1',
+        master_port          => $options->{base_port}   +1,
+        mysql_port           => $options->{base_port}   +1,
+        thl_port             => $options->{thl_port},
+        rmi_port             => $options->{rmi_port},
+        home_directory       => "$options->{tungsten_base}/$options->{tsb_prefix}1",
+        master_log_directory => "$sandbox_dir/node1/data",
+        master_my_conf       => "$sandbox_dir/node1/my.sandbox.cnf",
+        service              => "$options->{service}",
+        verbose              => $options->{verbose},
+    );
+    mkdir "$options->{tungsten_base}/$options->{tsb_prefix}1";
+
+    for my $N (2 .. $options->{nodes} )
+    {
+        $slave_params{mysql_port}           += 1 ;
+        $slave_params{thl_port}             += 1 ;
+        $slave_params{rmi_port}             += 2 ;
+        $slave_params{master_extra_options} = '';
+        $slave_params{home_directory}       = "$options->{tungsten_base}/$options->{tsb_prefix}$N";
+        $slave_params{log_directory}        = "$sandbox_dir/node$N/data";
+        $slave_params{my_conf}              = "$sandbox_dir/node$N/my.sandbox.cnf";
+
+        $rmi_ports{$N} = $slave_params{rmi_port};
+        mkdir $slave_params{home_directory};
+        Tsandbox::install_direct_slave_replicator(\%slave_params, $env_node_options . ' ' . $env_slave_options ); 
+    }
+    return \%rmi_ports;
+}
+
+
+
 sub install_master_slave 
 {
     my ($options, $sandbox_dir) = @_;
@@ -577,14 +702,23 @@ sub create_sandbox_scripts
         Utils::add_header('trepctl');    # runs trepctl
         Utils::add_header('services');   # runs trepctl services
         Utils::add_header('thl');        # runs thl
-
-        my $curdir = "$options->{tungsten_base}/$options->{tsb_prefix}$N";
-        Utils::write_to('show_log', "vim -o $curdir/tungsten/tungsten-replicator/log/*.log", '>>');
-        Utils::write_to('show_conf', "vim -o $curdir/tungsten/tungsten-replicator/conf/static-*.properties", '>>');
-        Utils::write_to('replicator', "$curdir/tungsten/tungsten-replicator/bin/replicator " . '$@', '>>');
-        Utils::write_to('trepctl', "$curdir/tungsten/tungsten-replicator/bin/trepctl -port $rmi_ports->{$N} " . '$@', '>>');
-        Utils::write_to('services', "$curdir/tungsten/tungsten-replicator/bin/trepctl -port $rmi_ports->{$N} services $services_filter" , '>>');
-        Utils::write_to('thl', "$curdir/tungsten/tungsten-replicator/bin/thl " . '$@', '>>');
+        if (($options->{topology} eq 'direct') && $N == 1)
+        {
+            for my $s( qw(show_conf show_log replicator trepctl services thl))
+            {
+                Utils::write_to($s, "echo 'Command $s not available in direct mode'", '>>')
+            }
+        }
+        else
+        {
+            my $curdir = "$options->{tungsten_base}/$options->{tsb_prefix}$N";
+            Utils::write_to('show_log', "vim -o $curdir/tungsten/tungsten-replicator/log/*.log", '>>');
+            Utils::write_to('show_conf', "vim -o $curdir/tungsten/tungsten-replicator/conf/static-*.properties", '>>');
+            Utils::write_to('replicator', "$curdir/tungsten/tungsten-replicator/bin/replicator " . '$@', '>>');
+            Utils::write_to('trepctl', "$curdir/tungsten/tungsten-replicator/bin/trepctl -port $rmi_ports->{$N} " . '$@', '>>');
+            Utils::write_to('services', "$curdir/tungsten/tungsten-replicator/bin/trepctl -port $rmi_ports->{$N} services $services_filter" , '>>');
+            Utils::write_to('thl', "$curdir/tungsten/tungsten-replicator/bin/thl " . '$@', '>>');
+        }
         chmod 0750, qw(show_conf show_log replicator trepctl services thl);
     }
 
@@ -611,8 +745,11 @@ sub create_sandbox_scripts
     for my $N ( 1 .. $options->{nodes})
     {
         Utils::write_to('clear_tsandbox', '# ', '>>');
-        Utils::write_to('clear_tsandbox', "find $options->{tungsten_base}/$options->{tsb_prefix}$N/tlogs/ -type f -exec rm {} \\;", '>>');
-        Utils::write_to('clear_tsandbox', "rm -rf $options->{tungsten_base}/$options->{tsb_prefix}$N/tungsten/tungsten-replicator/log/*", '>>');
+        if (($options->{topology} ne 'direct') or ($N > 1 ))
+        {
+            Utils::write_to('clear_tsandbox', "find $options->{tungsten_base}/$options->{tsb_prefix}$N/tlogs/ -type f -exec rm {} \\;", '>>');
+            Utils::write_to('clear_tsandbox', "rm -rf $options->{tungsten_base}/$options->{tsb_prefix}$N/tungsten/tungsten-replicator/log/*", '>>');
+        }
     }
     chmod 0750, 'clear_tsandbox';
     Utils::write_to('erase_tsandbox', "$options->{tungsten_base}/clear_tsandbox", '>>');
@@ -755,7 +892,7 @@ my %parse_options = (
             parse   => 'topology=s',
             value   => 'master-slave',
             so      => 50,
-            allowed => {'master-slave' => 1, 'direct'=> 0, 'bi-dir' => 1, 'all-masters' => 1, 'fan-in' => 1, 'star' => 1},
+            allowed => {'master-slave' => 1, 'direct'=> 1, 'bi-dir' => 1, 'all-masters' => 1, 'fan-in' => 1, 'star' => 1},
             help    => ['Which topology to deploy' ]
         },
 
@@ -1115,6 +1252,12 @@ if  ($options{topology} eq 'master-slave')
     $options{masters} = [1];
     $options{slaves} = [grep {$_ != 1} ( 1 .. $options{nodes})];
 }
+elsif  ($options{topology} eq 'direct')
+{
+    $rmi_ports = Tsandbox::install_direct(\%options, $sandbox_dir);
+    $options{masters} = [1];
+    $options{slaves} = [grep {$_ != 1} ( 1 .. $options{nodes})];
+}
 elsif  (($options{topology} eq 'all-masters') or  ($options{topology} eq 'bi-dir'))
 {
     $rmi_ports = Tsandbox::install_all_masters(\%options, $sandbox_dir);
@@ -1207,6 +1350,8 @@ Using this tool you will be able to deploy:
 B<Master/ Slave> is the vanilla replication between one master and N slaves.
 
 =item *
+B<direct> is a hybrid replication topology where one or more Tungsten slaves attach directly to a MySQL master without installing a master service.
+=item *
 B<All-Masters> is a replication cluster where every node is a master and each node is a slave of all the other nodes. This is done by installing, for each node, a master service and one slave service for each of the other nodes.
 
 =item *
@@ -1280,6 +1425,11 @@ Thus, indicating a MySQL version and Tungsten installation directory will give y
 
   tungsten-sandbox -m 5.1.60 \
      -i /tmp/tungsten-replicator-2.0.5-452/
+
+=head2 Direct
+
+The main feature of this topology is that there is no master replicator service. The slave service is attached directly to the MySQL master, and it can also occasionally take over an existing MySQL native slave.
+The lack of master service makes some differences in the way the sandboxes are organized. For sanebod #1, there is no replicator, trepctl, thl. The corresponding commands are replaced by a reminder taht there is no such command.
 
 =head2 All-masters
 
