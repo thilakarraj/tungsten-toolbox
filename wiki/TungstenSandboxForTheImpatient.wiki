@@ -4,6 +4,7 @@
 
 1. install MySQL::Sandbox 
    sudo su -
+
    cpan MySQL::Sandbox
 
 2. download a MySQL binary tarball for your machine. Not a source tarball, nor a rpm. a .tar.gz containing binaries. For this example, let's say you download 5.1.60
