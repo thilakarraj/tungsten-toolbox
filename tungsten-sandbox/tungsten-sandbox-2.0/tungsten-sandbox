@@ -10,7 +10,6 @@ use strict;
 # TODO
 #
 #  - Add prefetch service
-#  - direct slave services
 #  - mixed replication (MySQL and Tungsten slaves)
 # 
 
@@ -21,8 +20,8 @@ use Getopt::Long;
 use File::Basename;
 use English '-no_match_vars';
 
-our $VERSION = '2.0.07';
-our $DRY_RUN = 0;
+our $VERSION = '2.0.08';
+# our $DRY_RUN = 0;
 our $VERBOSE = 0;
 
 {
@@ -79,7 +78,7 @@ sub get_help {
         warn "[***] $msg\n\n";
     }
 
-    my $layout = '[options] operation';
+    my $layout = '[options] ';
     my $HELP_MSG = q{};
     for my $op (
                 sort { $parse_options->{$a}{so} <=> $parse_options->{$b}{so} }
@@ -88,7 +87,7 @@ sub get_help {
     {
         my $param =  $parse_options->{$op}{parse};
         my $param_str = q{    };
-        my ($short, $long ) = $param =~ / (?: (\w) \| )? (\S+) /x;
+        my ($short, $long ) = $param =~ / (?: (\w+) \| )? (\S+) /x;
         if ($short)
         {
             $param_str .= q{-} . $short . q{ };
@@ -290,7 +289,7 @@ my @service_names = qw(
 
 sub install_master_slave_replicator 
 {
-    my ($params, $extra) = @_;
+    my ($params, $extra, $options) = @_;
     my $master_thl_port='';
     if ($params->{master_thl_port}) 
     {
@@ -316,12 +315,14 @@ sub install_master_slave_replicator
     . " --start"
     ;
 
+    Tsandbox::run_user_var($options,'TR_BEFORE');
     print pretty_command($command, $args) if $params->{verbose};
     my $result = system "$command $args";
     if ($result) 
     {
         die "installation failed ($OS_ERROR)\n";
     }
+    Tsandbox::run_user_var($options,'TR_AFTER');
 }
 
 
@@ -430,7 +431,25 @@ sub install_direct
     );
     mkdir "$options->{tungsten_base}/$options->{tsb_prefix}1";
 
-    for my $N (2 .. $options->{nodes} )
+    my $starting_direct_slave = 2 ;
+    if ($options->{mysql_slaves})
+    {
+        for my $N (2 .. 1 + $options->{mysql_slaves})
+        {
+            my $change_master_to = sprintf(qq{CHANGE MASTER TO master_host='%s',master_port=%d, master_user='%s',master_password='%s'},
+                '127.0.0.1',
+                $slave_params{master_port},
+                'msandbox',
+                'msandbox'
+            );
+            $slave_params{mysql_port}           += 1 ;
+            mkdir "$options->{tungsten_base}/$options->{tsb_prefix}$N";
+            system qq($sandbox_dir/n$N -e "$change_master_to; start slave");
+        }
+        $starting_direct_slave = 2 + $options->{mysql_slaves}; 
+    }
+
+    for my $N ($starting_direct_slave .. $options->{nodes} )
     {
         $slave_params{mysql_port}           += 1 ;
         $slave_params{thl_port}             += 1 ;
@@ -480,7 +499,7 @@ sub install_master_slave
     $rmi_ports{1} = $options->{rmi_port};
 
     mkdir $master_params{home_directory};
-    Tsandbox::install_master_slave_replicator(\%master_params, $env_node_options . ' ' . $env_master_options );
+    Tsandbox::install_master_slave_replicator(\%master_params, $env_node_options . ' ' . $env_master_options, $options );
 
     my %slave_params = %master_params;
 
@@ -497,7 +516,7 @@ sub install_master_slave
 
         $rmi_ports{$N} = $slave_params{rmi_port};
         mkdir $slave_params{home_directory};
-        Tsandbox::install_master_slave_replicator(\%slave_params, $env_node_options . ' ' . $env_slave_options ); 
+        Tsandbox::install_master_slave_replicator(\%slave_params, $env_node_options . ' ' . $env_slave_options, $options ); 
     }
     return \%rmi_ports;
 }
@@ -541,10 +560,36 @@ sub install_all_masters
         $rmi_ports{$N} = $node_params{rmi_port};
 
         mkdir $node_params{home_directory};
-        Tsandbox::install_master_slave_replicator(\%node_params, $env_master_options . ' ' . $env_node_options );
+        Tsandbox::install_master_slave_replicator(\%node_params, $env_master_options . ' ' . $env_node_options, $options );
     }
 
     return \%rmi_ports;
+}
+
+#
+# Runs the contents of an environment variable.
+# If the variable is not set it doesn't do anything.
+# If the variable is set, it runs its value without any additional checks.
+#
+sub run_user_var
+{
+    my ($options, $var) = @_;
+    return unless $ENV{$var};
+    if ($ENV{$var})
+    {
+        if ($options->{verbose})
+        {
+            print "Running contents of \$$var\n";
+            print "$ENV{$var}\n";
+        }
+        my $result = system $ENV{$var};
+        if ($result)
+        {
+            die "error running \$$var. ($!)\n";
+        }
+    }
+     
+
 }
 
 sub install_service ($$$)
@@ -563,11 +608,13 @@ sub install_service ($$$)
     {
         print pretty_command($configure_service, $command);
     }
+    Tsandbox::run_user_var ($options,'TRS_BEFORE');
     my $result = system "$configure_service $command";
     if ($result) 
     {
         die "installation failed ($OS_ERROR)\n";
     }
+    Tsandbox::run_user_var ($options,'TRS_AFTER');
 }
 
 # Returns a nicely formatted set of options for a command with a long list of arguments
@@ -650,13 +697,13 @@ sub install_fan_in_services
 
     for my $master (1 .. $options->{nodes} )
     {
-        next if $master == $options->{hub};
+        next if $master == $options->{fan_in};
 
         my $command = sprintf($fan_in_params, 
               $service_names[$options->{hub} -1], 
               $options->{thl_port} + $master -1, 
               $service_names[$master -1]) ;
-        Tsandbox::install_service($options, $command, $options->{hub});
+        Tsandbox::install_service($options, $command, $options->{fan_in});
      }
 }
 
@@ -702,7 +749,7 @@ sub create_sandbox_scripts
         Utils::add_header('trepctl');    # runs trepctl
         Utils::add_header('services');   # runs trepctl services
         Utils::add_header('thl');        # runs thl
-        if (($options->{topology} eq 'direct') && $N == 1)
+        if (($options->{topology} eq 'direct') && $N <= (1 + $options->{mysql_slaves}))
         {
             for my $s( qw(show_conf show_log replicator trepctl services thl))
             {
@@ -745,7 +792,7 @@ sub create_sandbox_scripts
     for my $N ( 1 .. $options->{nodes})
     {
         Utils::write_to('clear_tsandbox', '# ', '>>');
-        if (($options->{topology} ne 'direct') or ($N > 1 ))
+        if (($options->{topology} ne 'direct') or ($N > (1 + $options->{mysql_slaves}) ))
         {
             Utils::write_to('clear_tsandbox', "find $options->{tungsten_base}/$options->{tsb_prefix}$N/tlogs/ -type f -exec rm {} \\;", '>>');
             Utils::write_to('clear_tsandbox', "rm -rf $options->{tungsten_base}/$options->{tsb_prefix}$N/tungsten/tungsten-replicator/log/*", '>>');
@@ -887,6 +934,12 @@ my %parse_options = (
             so      => 40,
             help    => ['sandbox group directory name' ]
         },
+     skip_sandbox_creation => {
+            parse   => 'skip-sandbox-creation',
+            value   => 0,
+            so      => 45,
+            help    => ['Skips sandbox creation (using an existing one)' ]
+        },
 
      topology => {
             parse   => 'topology=s',
@@ -900,8 +953,25 @@ my %parse_options = (
             parse   => 'hub=i',
             value   => undef,
             so      => 60,
-            must_have => ['star', 'fan-in'],
+            must_have => ['star'],
             help    => ['Which node is a hub' ]
+        },
+   
+
+     fan_in => {
+            parse   => 'fan-in=i',
+            value   => undef,
+            so      => 65,
+            must_have => ['fan-in'],
+            help    => ['Which node is the fan-in slave' ]
+        },
+
+     mysql_slaves => {
+            parse   => 'mysql-slaves=i',
+            value   => 0,
+            so      => 70,
+            must_have => ['direct'],
+            help    => ['How many nodes in the cluster will be MySQL native slaves' ]
         },
 
      tsb_prefix => {
@@ -913,7 +983,7 @@ my %parse_options = (
      service => {
             parse   => 's|service=s',
             value   => 'tsandbox',
-            so      => 60,
+            so      => 85,
             help    => ['How the service is named' ]
         },
      base_port => {
@@ -968,14 +1038,14 @@ my %parse_options = (
             help    => ['display the program manual' ]
         },
      install_options => {
-            parse   => 'install-options=s@',
+            parse   => 'o|install-options=s@',
             value   => undef,
             so      => 150,
             help    => [
                             'Options to be passed to the underlying installer, with the format' ,
                             '{TR|MSB}:ROLE:options',
                             'Where TR is Tungsten Replicator, MSB is MySQL Sandbox, and ROLE can be',
-                            'one of MASTER, SLAVE, DIRECT, NODE, HUB, ENDPOINT, GLOBAL'
+                            'one of BEFORE AFTER MASTER, SLAVE, DIRECT, NODE, HUB, ENDPOINT, GLOBAL'
                        ]
         },
       help => {
@@ -1034,7 +1104,7 @@ unless ($parse_options{topology}{allowed}{$options{topology}})
 
 
 my $make_multiple_sandbox = Utils::which('make_multiple_sandbox');
-unless ($make_multiple_sandbox) 
+unless ($make_multiple_sandbox or $options{skip_sandbox_creation}) 
 {
     die "Can't find make_multiple_sandbox in PATH ($ENV{PATH}).\n"
         ."Perhaps MySQL Sandbox is not installed.\n"
@@ -1042,7 +1112,8 @@ unless ($make_multiple_sandbox)
 }
 
 my @applications_options_list= qw( TR TRS MSB );
-my @role_options_list = qw( MASTER SLAVE DIRECT NODE HUB ENDPOINT GLOBAL ); 
+my @role_options_list = qw( BEFORE AFTER MASTER SLAVE DIRECT NODE HUB ENDPOINT GLOBAL ); 
+my %role_actions = (BEFORE=>1, AFTER=>1);
 
 my %customer_install_options= (
 );
@@ -1050,7 +1121,14 @@ for my $app (@applications_options_list)
 {
     for my $role (@role_options_list)
     {
-        $customer_install_options{$app}{$role} =  "${app}_${role}_OPTIONS";
+        if ($role_actions{$role})
+        {
+            $customer_install_options{$app}{$role} =  "${app}_${role}";
+        }
+        else
+        {
+            $customer_install_options{$app}{$role} =  "${app}_${role}_OPTIONS";
+        }
         my $env_variable = $customer_install_options{$app}{$role};
         $ENV{$env_variable} = '' unless $ENV{$env_variable};
     }
@@ -1094,19 +1172,22 @@ if ($options{install_options} )
 
 # print Dumper \%options; exit;
 
-my $minimum_mysql_sandbox_version = '3.0.24';
-my $mysql_sandbox_help = qx($make_multiple_sandbox --help);
-if ($mysql_sandbox_help =~ /version\s+(\d+\.\d+\.\d+)/)
+unless ($options{skip_sandbox_creation})
 {
-    my $sb_version = $1;
-    if ($sb_version lt $minimum_mysql_sandbox_version)
+    my $minimum_mysql_sandbox_version = '3.0.24';
+    my $mysql_sandbox_help = qx($make_multiple_sandbox --help);
+    if ($mysql_sandbox_help =~ /version\s+(\d+\.\d+\.\d+)/)
     {
-        die "This application requires MySQL Sandbox version $minimum_mysql_sandbox_version. Your version is $sb_version. Please upgrade\n";
+        my $sb_version = $1;
+        if ($sb_version lt $minimum_mysql_sandbox_version)
+        {
+            die "This application requires MySQL Sandbox version $minimum_mysql_sandbox_version. Your version is $sb_version. Please upgrade\n";
+        }
     }
-}
-else
-{
+    else
+    {
     die "unable to find MySQL Sandbox version using $make_multiple_sandbox\n";
+    }
 }
 
 #
@@ -1115,7 +1196,7 @@ else
 
 if ($options{'installation_directory'})
 {
-    $options{'installation_directory'} =~ s/^\./$ENV{PWD}/;
+    $options{'installation_directory'} =~ s[^\./][$ENV{PWD}/];
     chdir $options{'installation_directory'};
 }
 
@@ -1191,6 +1272,32 @@ if ($options{show_options})
     exit 0;
 }
 
+if ($options{nodes} < 2)
+{
+    die "There must be at least 2 nodes \n";
+}
+
+if ($options{'hub'} and ($options{topology} ne 'star'))
+{
+    die "The option 'hub' can only be used with the 'star' topology\n";
+}
+
+if ($options{'fan_in'} and ($options{topology} ne 'fan-in'))
+{
+    die "The option 'fan-in' can only be used with the 'fan-in' topology\n";
+}
+
+if ($options{mysql_slaves} and ($options{topology} ne 'direct'))
+{
+    die "The option 'mysql_slaves' can only be used with the 'direct' topology\n";
+}
+
+if (($options{nodes} - $options{mysql_slaves}) < 2) 
+{
+    die  "Not enough nodes for the requested topology:\n"
+        ."If you want $options{mysql_slaves} mysql slaves, then you need at least " . ($options{mysql_slaves} + 2) . " nodes \n";
+}
+
 if ($options{hub})
 {
     die "The value for --hub must be an integer\n" unless $options{hub} =~/^\d+$/;
@@ -1217,21 +1324,68 @@ if ($options{topology} eq 'bi-dir')
 #
 # ------------------------------------------------------------
 
-my $mms_cmd =   "$make_multiple_sandbox "
+my $sandbox_dir = "$SANDBOX_HOME/$options{group_dir}";
+
+if ($options{skip_sandbox_creation})
+{
+    unless ( ( -d $sandbox_dir) && ( -x "$sandbox_dir/n1" ) && ( -x "$sandbox_dir/start_all") && ( -x "$sandbox_dir/status_all")  ) 
+    {
+        die "sandbox $sandbox_dir does not seem to contain an usable sandbox\n";
+    }
+    my @sandbox_dirs = grep { -d $_ } glob("$sandbox_dir/*/");
+    my $sandbox_nodes = scalar grep { m{\/node\d+/$} } @sandbox_dirs;
+    #print "[@sandbox_dirs] $sandbox_nodes\n"; exit;
+    if ($sandbox_nodes < $options{nodes})
+    {
+        die "The sandbox in $sandbox_dir doesn't have enough available nodes (found: $sandbox_nodes)\n";
+    }    
+    my @using = Utils::get_file_lines("$sandbox_dir/node1/USING", {no_blanks=>1});
+    my $sb_version;
+    for my $line (@using)
+    {
+        if ($line =~ /basedir.+(\d\.\d\.\d+)/)
+        {
+            $sb_version = $1;
+        }
+    }
+    unless ($sb_version)
+    {
+        die "could not find version in $sandbox_dir/node1/USING\n";
+    }
+    if ($sb_version ne $options{mysql_version})
+    {
+        die "incompatible sandbox version. Requested $options{mysql_version}, but found $sb_version\n";
+    }
+
+    my $sandbox_status = qx($sandbox_dir/status_all);
+    if ($sandbox_status =~ /\boff\b/)
+    {
+        system "$sandbox_dir/start_all";
+    }
+    $sandbox_status = qx($sandbox_dir/status_all);
+    if ($sandbox_status =~ /\boff\b/)
+    {
+        die "The sandbox in $sandbox_dir does not start\n";
+    }
+
+}
+else
+{
+    my $mms_cmd =   "$make_multiple_sandbox "
               . " --node_options='$ENV{MSB_NODE_OPTIONS} -c log-bin=mysql-bin -c innodb_flush_log_at_trx_commit=2 -c max_allowed_packet=48M'"
               . " --how_many_nodes=$options{nodes}"
               . " --sandbox_base_port=$options{base_port}"
               . " --group_directory=$options{group_dir}"
               . " $options{mysql_version}"
               ;
+    Tsandbox::run_user_var(\%options,'MSB_BEFORE');
+    system $mms_cmd;
 
-system $mms_cmd;
-
-my $sandbox_dir = "$SANDBOX_HOME/$options{group_dir}";
-
-unless ( ( -d $sandbox_dir) && ( -x "$sandbox_dir/n1" ) && ( -x "$sandbox_dir/start_all") ) 
-{
-    die "sandbox installation failed\n";
+    unless ( ( -d $sandbox_dir) && ( -x "$sandbox_dir/n1" ) && ( -x "$sandbox_dir/start_all") ) 
+    {
+        die "sandbox installation failed\n";
+    }
+    Tsandbox::run_user_var(\%options,'MSB_AFTER');
 }
 
 for my $N ( 1 .. $options{nodes} )
@@ -1278,14 +1432,14 @@ elsif  ($options{topology} eq 'star')
 }
 elsif  ($options{topology} eq 'fan-in')
 {
-    unless ($options{hub})
+    unless ($options{'fan_in'})
     {
-        die "The 'fan-in' topology requires a hub number \n";
+        die "The 'fan-in' topology requires a fan-in number \n";
     }
     $rmi_ports = Tsandbox::install_all_masters(\%options, $sandbox_dir);
     Tsandbox::install_fan_in_services(\%options);
-    $options{masters} = [ grep {$_ != $options{hub}} (1 .. $options{nodes})];
-    $options{slaves} = [$options{hub}];
+    $options{masters} = [ grep {$_ != $options{fan_in}} (1 .. $options{nodes})];
+    $options{slaves} = [$options{fan_in}];
 }
 else
 {
@@ -1310,33 +1464,38 @@ Tungsten Sandbox - Quickly installs Tungsten Replicator clusters with MySQL
     --installation-directory=tungsten-replicator-2.0.5/ \
     --topology=all-masters --nodes=5
 
- tungsten-sandbox --help --verbose
-    Tungsten Tools,  version 2.0.1
+    Tungsten Tools,  version 2.0.08
     Tungsten Sandbox - Cluster builder
      (C) 2011 Giuseppe Maxia, Continuent, Inc
- Syntax: ./tungsten-sandbox-2.0/tungsten-sandbox [options] operation 
-    -n --nodes = number                 How many nodes to install ( default: 3 )
+ Syntax: tungsten-sandbox-2.0/tungsten-sandbox [options] 
+
+    -n --nodes = number                 How many nodes to install (3)
     -m --mysql-version = name           which MySQL version to use
-    -t --tungsten-base = name           Where to install the sandbox ( default: /Users/gmax/tsb2 )
-    -i --installation-directory = name  Where tthe Tungsten tarball has been expanded
-                                         default: /Users/gmax/workdir/continuent/tungsten-toolbox/tungsten-sandbox 
-    -d --group-dir = name               sandbox group directory name ( default: tr_dbs )
-    --topology = name                   Which topology to deploy (default: master-slave )
+    -t --tungsten-base = name           Where to install the sandbox (/Users/gmax/tsb2)
+    -i --installation-directory = name  Where the Tungsten tarball has been expanded
+                                         (/Users/gmax/workdir/continuent/tungsten-toolbox/tungsten-sandbox)
+    -d --group-dir = name               sandbox group directory name (tr_dbs)
+    --skip-sandbox-creation             Skips sandbox creation (using an existing one)
+    --topology = name                   Which topology to deploy (master-slave)
                                           (Allowed: {all-masters|bi-dir|direct|fan-in|master-slave|star})
     --hub = number                      Which node is a hub
-    -s --service = name                 How the service is named ( default: tsandbox )
-    -x --tsb-prefix = name              Tungsten Sandbox prefix ( default: db )
-    -p --base-port = number             Base port for MySQL Sandbox nodes ( default: 7100 )
-    -l --thl-port = number              Port for the THL service (default: 12110 )
-    -r --rmi-port = number              Port for the RMI service (default: 10100 )
+    --fan-in = number                   Which node is the fan-in slave
+    --mysql-slaves = number             How many nodes in the cluster will be MySQL native slaves
+    -x --tsb-prefix = name              Tungsten Sandbox prefix (db)
+    -s --service = name                 How the service is named (tsandbox)
+    -p --base-port = number             Base port for MySQL Sandbox nodes  (7100)
+    -l --thl-port = number              Port for the THL service  (12110)
+    -r --rmi-port = number              Port for the RMI service  (10100)
     -v --version                        Show Tungsten sandbox version and exit 
     --show-options                      Show Tungsten sandbox collected options and exit 
+    --ignore-manifest                   Ignore build values in .manifest when determining if the Tungsten package
+                                        can be used with this sandbox
     --verbose                           Show more information during installation and help 
-    --install-options = name            Options to be passed to the underlying installer, with the format
+    -man --manual                       display the program manual
+    -o --install-options = name         Options to be passed to the underlying installer, with the format
                                         {TR|MSB}:ROLE:options
                                         Where TR is Tungsten Replicator, MSB is MySQL Sandbox, and ROLE can be
-                                        one of MASTER, SLAVE, DIRECT, NODE, HUB, ENDPOINT, GLOBAL
-    --man|manual                        display the program manual
+                                        one of BEFORE AFTER MASTER, SLAVE, DIRECT, NODE, HUB, ENDPOINT, GLOBAL
     -h --help                           display this help
 
 =head1 PURPOSE
@@ -1392,6 +1551,10 @@ If your current working directory is inside that tarball, you don't need to spec
   cd /tmp/tungsten-replicator-2.0.5-452/
   tungsten-sandbox -m 5.1.60
 
+=head2 Reusing sandboxes
+
+If you want to use an existing sandbox instead of creating a new one, you cand do it by specifying C<--skip-sandbox-creation>. In this case, Tungsten Sandbox will look for an existing sandbox named with the value of C<--group-dir> under C<$SANDBOX_HOME>. If the requested version matches, and the sandbox is a multiple sandbox as needed by Tungsten-Sandbox, the existing sandbox will be used. If not, an appropriate error will be shown.
+
 =head2 Defaults
 
 To avoid typing too much, there are defaults defined for most everything that can be reasonably expected. Here's what you get:
@@ -1429,7 +1592,17 @@ Thus, indicating a MySQL version and Tungsten installation directory will give y
 =head2 Direct
 
 The main feature of this topology is that there is no master replicator service. The slave service is attached directly to the MySQL master, and it can also occasionally take over an existing MySQL native slave.
-The lack of master service makes some differences in the way the sandboxes are organized. For sanebod #1, there is no replicator, trepctl, thl. The corresponding commands are replaced by a reminder taht there is no such command.
+The lack of master service makes some differences in the way the sandboxes are organized. For sandbox #1, there is no replicator, trepctl, thl. The corresponding commands are replaced by a reminder taht there is no such command.
+
+=head2 Mixed
+
+This topology is a "direct" deployment, with the addition of native MySQL replication slaves. If you use the option C<--mysql-slaves=1> with a direct topology, then you will have 1 MySQL vanilla slave, and one Tungsten direct slave.
+You can add as many MySQL slaves as wanted, provided that the number is within the nodes you want to define. For example 
+
+  tungsten-sandbox -m 5.1.60 \
+     --topology=direct --nodes=5 --mysql-slaves=2
+
+This command will create two MySQL slaves (nodes #2 and #3) and two Tungsten direct slaves (nodes #4 and #5). 
 
 =head2 All-masters
 
