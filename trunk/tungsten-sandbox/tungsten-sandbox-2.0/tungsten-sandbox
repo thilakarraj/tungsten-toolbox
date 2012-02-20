@@ -3,14 +3,13 @@ use strict;
 
 #
 # The Tungsten Sandbox
-# (C) 2011, Giuseppe Maxia, Continuent, Inc
+# (C) 2011, 2012 Giuseppe Maxia, Continuent, Inc
 # Released under the New BSD License
 #
 
 # TODO
 #
 #  - Add prefetch service
-#  - mixed replication (MySQL and Tungsten slaves)
 # 
 
 use strict;
@@ -20,7 +19,7 @@ use Getopt::Long;
 use File::Basename;
 use English '-no_match_vars';
 
-our $VERSION = '2.0.08';
+our $VERSION = '2.0.09';
 # our $DRY_RUN = 0;
 our $VERBOSE = 0;
 
@@ -136,7 +135,7 @@ sub get_credits
     my $CREDITS =
           qq(    Tungsten Tools,  version $VERSION\n)
         . qq(    Tungsten Sandbox - Cluster builder\n )
-        . qq(    (C) 2011 Giuseppe Maxia, Continuent, Inc\n);
+        . qq(    (C) 2011,2012 Giuseppe Maxia, Continuent, Inc\n);
     return $CREDITS;
 }
 
@@ -317,6 +316,7 @@ sub install_master_slave_replicator
 
     Tsandbox::run_user_var($options,'TR_BEFORE');
     print pretty_command($command, $args) if $params->{verbose};
+    log_installation( $options, pretty_command($command, $args));
     my $result = system "$command $args";
     if ($result) 
     {
@@ -328,7 +328,7 @@ sub install_master_slave_replicator
 
 sub install_direct_slave_replicator 
 {
-    my ($params, $extra) = @_;
+    my ($params, $extra, $options) = @_;
     my $master_thl_port='';
     if ($params->{master_thl_port}) 
     {
@@ -360,6 +360,7 @@ sub install_direct_slave_replicator
     ;
 
     print pretty_command($command, $args) if $params->{verbose};
+    log_installation($options,  pretty_command($command, $args));
     my $result = system "$command $args";
     if ($result) 
     {
@@ -461,7 +462,7 @@ sub install_direct
 
         $rmi_ports{$N} = $slave_params{rmi_port};
         mkdir $slave_params{home_directory};
-        Tsandbox::install_direct_slave_replicator(\%slave_params, $env_node_options . ' ' . $env_slave_options ); 
+        Tsandbox::install_direct_slave_replicator(\%slave_params, $env_node_options . ' ' . $env_slave_options , $options); 
     }
     return \%rmi_ports;
 }
@@ -608,6 +609,7 @@ sub install_service ($$$)
     {
         print pretty_command($configure_service, $command);
     }
+    log_installation($options,  pretty_command($configure_service, $command));
     Tsandbox::run_user_var ($options,'TRS_BEFORE');
     my $result = system "$configure_service $command";
     if ($result) 
@@ -616,6 +618,22 @@ sub install_service ($$$)
     }
     Tsandbox::run_user_var ($options,'TRS_AFTER');
 }
+
+sub log_installation
+{
+    my ($options, $command) = @_;
+    unless ( $options->{tungsten_base} && ( -d $options->{tungsten_base}))
+    {
+        die "can't find tungsten base directory\n";
+    }
+    my $fname = "$options->{tungsten_base}/tungsten_installation.log";
+    open my $FH, '>>', $fname
+        or die "can't open $fname ($OS_ERROR)\n";
+    print $FH "#", scalar localtime, "\n";
+    print $FH $command, "\n";
+    close $FH;
+}
+
 
 # Returns a nicely formatted set of options for a command with a long list of arguments
 sub pretty_command
@@ -700,7 +718,7 @@ sub install_fan_in_services
         next if $master == $options->{fan_in};
 
         my $command = sprintf($fan_in_params, 
-              $service_names[$options->{hub} -1], 
+              $service_names[$options->{fan_in} -1], 
               $options->{thl_port} + $master -1, 
               $service_names[$master -1]) ;
         Tsandbox::install_service($options, $command, $options->{fan_in});
@@ -833,9 +851,13 @@ sub create_sandbox_scripts
     
     for my $opt ( grep {$options->{$_}} ('nodes','mysql_version','installation_directory', 
                    'tungsten_release', 'sandbox_directory', 'topology', 
-                   'hub', 'base_port', 'thl_port','rmi_port'  ))
+                   'fan-in','hub', 'base_port', 'thl_port','rmi_port'  ))
     {
         Utils::write_to('tungsten_sandbox.info', sprintf('%-30s => %s',$opt, $options->{$opt} || '') ,'>>');
+    }
+    for my $opt (qw(masters slaves))
+    {
+        Utils::write_to('tungsten_sandbox.info', sprintf('%-30s => %s', $opt, '[' . join( ',',@{$options->{$opt}}) . ']' ), '>>' );
     }
 
     #
@@ -848,9 +870,9 @@ sub create_sandbox_scripts
     {
         $hub = ' (hub: ' . $options->{hub} . ')'; 
     }
-    Utils::write_to('test_topology', "echo 'Testing topology $options->{topology}$hub with $options->{nodes} nodes.'", '>>');
+    Utils::write_to('test_topology', "echo '# Testing topology '$options->{topology}' $hub with $options->{nodes} nodes.'", '>>');
     Utils::write_to('test_topology', 
-                "echo 'Master nodes: [@{$options->{masters}}] - Slave nodes: [@{ $options->{slaves}}]'", 
+                "echo '# Master nodes: [@{$options->{masters}}] - Slave nodes: [@{ $options->{slaves}}]'", 
                 '>>');
     for my $N (@{$options->{masters}})
     {
@@ -868,17 +890,47 @@ sub create_sandbox_scripts
     
     Utils::write_to('test_topology', "sleep 2" , '>>');
     my %trepctl_seen;
+    my $num_masters = scalar @{$options->{masters}};
     for my $N (@{$options->{slaves}})
     {
         Utils::write_to('test_topology', "echo '# node $N'" , '>>');
-        for my $T (@tables)
-        {
-            Utils::write_to('test_topology',
-                "$options->{tungsten_base}/n$N -N -B -e 'select * from test.t$T'",
-                '>>');
-        }
         Utils::write_to('test_topology',
-            "$options->{tungsten_base}/$options->{tsb_prefix}$N/trepctl services | grep 'state\\|Seqno\\|serviceName'",
+            qq[COUNT_ALL=\$($options->{tungsten_base}/n$N -N -B -e 'select count(*) from information_schema.tables where table_schema="test"')],
+            '>>');
+        Utils::write_to('test_topology',
+            qq(if [ "\$COUNT_ALL" == "$num_masters" ] ; then echo -n 'ok' ; else echo -n 'not ok' ; fi ; echo ' - Tables from all masters' ),
+            '>>');
+        for my $M (@{$options->{masters}})
+        {
+            #Utils::write_to('test_topology',
+            #    "$options->{tungsten_base}/n$N -N -B -e 'select * from test.t$T'",
+            #    '>>');
+
+            Utils::write_to('test_topology',
+                qq[COUNT=\$($options->{tungsten_base}/n$N -N -B -e 'select count(*) from test.t$M where c = "inserted by node #$M" ')],
+                '>>');
+            Utils::write_to('test_topology',
+                qq(if [ "\$COUNT" == "1" ] ; then echo -n 'ok' ; else echo -n 'not ok' ; fi ; echo ' - Records from master #$M' ),
+                '>>');
+             
+        }
+        #Utils::write_to('test_topology',
+        #    "$options->{tungsten_base}/$options->{tsb_prefix}$N/trepctl services | grep 'state\\|Seqno\\|serviceName'",
+        #    '>>');
+        Utils::write_to('test_topology',
+            "SERVICES=\$($options->{tungsten_base}/$options->{tsb_prefix}$N/trepctl services | grep 'serviceName' | awk '{print \$3}')",
+            '>>');
+        Utils::write_to('test_topology',
+            'for SERVICE in $SERVICES ; do',
+            '>>');
+        Utils::write_to('test_topology',
+            "    STATE=\$($options->{tungsten_base}/$options->{tsb_prefix}$N/trepctl -service \$SERVICE status | grep 'state' | awk '{print \$3}')",
+            '>>');
+        Utils::write_to('test_topology',
+            qq(    if [ "\$STATE" == "ONLINE" ] ; then echo -n 'ok' ; else echo -n 'not ok' ; fi ; echo " - Node #$N-\$SERVICE online" ),
+            '>>');
+        Utils::write_to('test_topology',
+            'done',
             '>>');
     }
     chmod 0750, 'test_topology';
