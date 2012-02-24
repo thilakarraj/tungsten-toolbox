@@ -1,0 +1,166 @@
+#!/usr/bin/perl
+use strict;
+
+#
+# The Tungsten Progress Report
+# (C) 2012 Giuseppe Maxia, Continuent, Inc
+# Released under the New BSD License
+#
+
+use strict;
+use warnings;
+use Data::Dumper;
+use Getopt::Long;
+use File::Basename;
+use English '-no_match_vars';
+
+our $VERSION = '1.0.00';
+our $VERBOSE = 0;
+
+my $tungsten_path = shift
+    #or die "Syntax tungsten-progress \$TUNGSTEN_INSTALLATION_PATH [service]\n";
+    or get_help();
+my $wanted_service = shift;
+
+my $rmi_port = 10_000;
+my @services = ();
+
+if ($tungsten_path =~ /^\d+$/)
+{
+    my $sandbox_dir = "$ENV{HOME}/tsb2/db$tungsten_path";
+    if ( -d $sandbox_dir )
+    {
+        $tungsten_path = $sandbox_dir;
+    }
+    else
+    {
+        die "could not find a suitable Tungsten directory using $tungsten_path\n";
+    }
+}
+
+my $trepctl = "$tungsten_path/tungsten-replicator/bin/trepctl";
+my $thl = "$tungsten_path/tungsten-replicator/bin/thl";
+my $properties = "$tungsten_path/tungsten-replicator/conf/services.properties";
+
+unless (-x $trepctl)
+{
+    $trepctl = "$tungsten_path/tungsten/tungsten-replicator/bin/trepctl";
+    $thl = "$tungsten_path/tungsten/tungsten-replicator/bin/thl";
+    $properties = "$tungsten_path/tungsten/tungsten-replicator/conf/services.properties";
+}
+
+unless ( -x $trepctl)
+{
+    die "could not find $trepctl \n";
+}
+
+unless ( -x $thl)
+{
+    die "could not find $thl \n";
+}
+
+unless ( -f $properties)
+{
+    die "could not find $properties \n";
+}
+my @lines = get_file_lines($properties);
+for my $line (@lines)
+{
+    if ($line =~ /replicator\.rmi_port=(\d+)/)
+    {
+        $rmi_port=$1;
+        last;
+    }
+}
+
+my $service_text = qx/$trepctl -port $rmi_port services | grep serviceName | awk '{print \$3}'/;
+@services = split /\n/, $service_text;
+# print "<$service_text>\n";
+# print Dumper \@services;
+
+if ($wanted_service )
+{
+    unless (grep {$_ eq $wanted_service} @services)
+    {
+        die "service $wanted_service not found in [@services]\n";
+    }
+    @services = ( $wanted_service )
+}
+
+
+for my $service (@services)
+{
+    my $thl_info = qx($thl -service $service info);
+    my $max_seqno =0;
+    if ($thl_info =~ /max seq#\s*=\s*(\d+)/)
+    {
+        $max_seqno = $1;
+    }
+    else
+    {
+        die "could not find max seqno in THL output\n";
+    }
+    my $trepctl_status = qx($trepctl -port $rmi_port -service $service status);
+    my $applied_seqno=0;
+    if ($trepctl_status =~ /appliedLastSeqno\s*:\s*(\d+)/)
+    {
+        $applied_seqno = $1;
+    }
+    else
+    {
+        die "could not find the value for appliedLastSeqno \n";
+    }
+    print_progress($service, $max_seqno, $applied_seqno);
+}
+
+sub print_progress
+{
+    my ($service, $max_seqno, $applied_seqno) = @_;
+    my $todo = $max_seqno - $applied_seqno;
+    printf "Service : %s\n", $service;
+    printf "Target  : %8d\n", $max_seqno;
+    printf "Done    : %8d (%3.0f%%)\n", $applied_seqno, $max_seqno? $applied_seqno / $max_seqno * 100 : 0;
+    printf "To Do   : %8d (%3.0f%%)\n", $todo, $max_seqno? $todo / $max_seqno * 100 : 0;
+    print "\n";
+}
+
+
+sub get_file_lines 
+{
+    my ($fname, $options) = @_;
+    open my $FH, '<', $fname
+        or die "can't open $fname ($OS_ERROR)\n";
+    my @lines =();
+    while (my $line = <$FH>) 
+    {
+        if ( $options->{no_blanks} ) 
+        {
+            next if $line =~ /^\s*$/;
+        }
+        if ( $options->{no_comments} ) 
+        {
+            next if $line =~ /^\s*#/;
+        }
+        push @lines, $line;
+    }
+    close $FH;
+    return (wantarray ? @lines : \@lines);
+}
+
+sub get_help 
+{
+    my ($msg) = @_;
+    if ($msg)
+    {
+        print "*** $msg\n";
+    }
+    print <<END_HELP;
+ The Tungsten Progress Report
+ version $VERSION
+ (C) 2012 Giuseppe Maxia, Continuent, Inc
+ Released under the New BSD License
+ Syntax: $0 TUNGSTEN_DIRECTORY [service]
+
+END_HELP
+    exit 0;
+}
