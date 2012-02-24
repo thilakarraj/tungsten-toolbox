@@ -315,7 +315,7 @@ sub install_master_slave_replicator
     ;
 
     Tsandbox::run_user_var($options,'TR_BEFORE');
-    print pretty_command($command, $args) if $params->{verbose};
+    #print pretty_command($command, $args) if $params->{verbose};
     log_installation( $options, pretty_command($command, $args));
     my $result = system "$command $args";
     if ($result) 
@@ -359,7 +359,7 @@ sub install_direct_slave_replicator
     . " --start"
     ;
 
-    print pretty_command($command, $args) if $params->{verbose};
+    #print pretty_command($command, $args) if $params->{verbose};
     log_installation($options,  pretty_command($command, $args));
     my $result = system "$command $args";
     if ($result) 
@@ -445,6 +445,7 @@ sub install_direct
             );
             $slave_params{mysql_port}           += 1 ;
             mkdir "$options->{tungsten_base}/$options->{tsb_prefix}$N";
+            log_installation($options, qq($sandbox_dir/n$N -e "$change_master_to; start slave"));
             system qq($sandbox_dir/n$N -e "$change_master_to; start slave");
         }
         $starting_direct_slave = 2 + $options->{mysql_slaves}; 
@@ -605,10 +606,10 @@ sub install_service ($$$)
     {
         $command .= ' ' . $ENV{TRS_NODE_OPTIONS};
     }
-    if ($options->{verbose})
-    {
-        print pretty_command($configure_service, $command);
-    }
+    #if ($options->{verbose})
+    #{
+    #    print pretty_command($configure_service, $command);
+    #}
     log_installation($options,  pretty_command($configure_service, $command));
     Tsandbox::run_user_var ($options,'TRS_BEFORE');
     my $result = system "$configure_service $command";
@@ -619,9 +620,16 @@ sub install_service ($$$)
     Tsandbox::run_user_var ($options,'TRS_AFTER');
 }
 
+#
+# Logs the given command to a file in the sandbox directory
+#
 sub log_installation
 {
     my ($options, $command) = @_;
+    if ($options->{verbose})
+    {
+        print "$command\n";
+    }
     unless ( $options->{tungsten_base} && ( -d $options->{tungsten_base}))
     {
         die "can't find tungsten base directory\n";
@@ -634,8 +642,9 @@ sub log_installation
     close $FH;
 }
 
-
+#
 # Returns a nicely formatted set of options for a command with a long list of arguments
+#
 sub pretty_command
 {
     my ($cmd, $args) = @_;
@@ -644,6 +653,9 @@ sub pretty_command
     return "$cmd$args\n";
 }
 
+#
+# Install slave services for all nodes 
+#
 sub install_all_slave_services
 {
     my ($options) = @_;
@@ -669,6 +681,9 @@ sub install_all_slave_services
     }
 }
 
+#
+# Installs all services needed for a star schema
+#
 
 sub install_star_services
 {
@@ -704,6 +719,9 @@ sub install_star_services
      }
 }
 
+#
+# Installs slave service in a fan-in node
+#
 sub install_fan_in_services
 {
     my ($options) = @_;
@@ -938,7 +956,7 @@ sub create_sandbox_scripts
 
 
 1;
-}
+} # end package Tsandbox
 
 #
 # Definition of the options for this application.
@@ -1030,7 +1048,9 @@ my %parse_options = (
             parse   => 'x|tsb-prefix=s',
             value   => 'db',
             so      => 80,
-            help    => ['Tungsten Sandbox prefix' ]
+            help    => ['Tungsten Sandbox prefix ',
+                        '(each directory inside ~/tsb2/ containing a complete tungsten ',
+                        'sandbox will be named using this prefix and the node number)' ]
         },
      service => {
             parse   => 's|service=s',
@@ -1452,6 +1472,9 @@ system "rm -rf $options{tungsten_base}/{replicator,trepctl,clear,use,send_kill,s
 
 my $rmi_ports;
 
+#
+# Main task  
+#
 if  ($options{topology} eq 'master-slave')
 {
     $rmi_ports = Tsandbox::install_master_slave(\%options, $sandbox_dir);
