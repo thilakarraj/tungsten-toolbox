@@ -1093,7 +1093,7 @@ my %parse_options = (
             parse   => 'tree=s',
             value   => undef,
             so      => 66,
-            help    => [ 'Define hyerarchical replication. ',
+            help    => [ 'Define hierarchical replication. ',
                          'You must indicate which node does not replicate directly from the master',
                          'The format is --tree=X:Y, where X is the intermediate node,',
                          'and Y is the ultimate one. (e.g. --tree=2:4 means that node 4 replicates from',
