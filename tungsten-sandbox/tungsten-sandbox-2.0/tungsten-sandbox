@@ -1363,7 +1363,7 @@ if ( -f ".manifest" )
 {
     my @manifest_lines = Utils::get_file_lines('.manifest');
     my $build_no =0;
-    my $minimum_build=627;
+    my $minimum_build=628;
     for my $line (@manifest_lines) 
     {
         if ($line =~ /RELEASE:\s*(\S+)/) 
