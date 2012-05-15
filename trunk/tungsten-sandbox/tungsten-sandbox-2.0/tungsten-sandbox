@@ -19,7 +19,7 @@ use Getopt::Long;
 use File::Basename;
 use English '-no_match_vars';
 
-our $VERSION = '2.0.09';
+our $VERSION = '2.0.10';
 # our $DRY_RUN = 0;
 our $VERBOSE = 0;
 
@@ -275,7 +275,7 @@ use English '-no_match_vars';
 # of items in this array. Although you probably
 # don't want to hit that limit, especially in all-masters 
 # topology.
-my @service_names = qw(
+our @service_names = qw(
     alpha   bravo   charlie delta    echo 
     foxtrot golf    hotel   india    juliet 
     kilo    lima    mike    november oscar 
@@ -468,7 +468,36 @@ sub install_direct
     return \%rmi_ports;
 }
 
-
+sub check_tree_options
+{
+    my ($options) = @_;
+    return unless $options->{tree};
+    if ($options->{tree} =~ /\s*(\d+)\s*:\s*(\d+)/)
+    {
+        my ($intermediate, $final) = ($1, $2);    
+        if (    ($intermediate < 1) 
+             or ($intermediate > $options->{nodes})
+             or ($final < 1) 
+             or ($final < $options->{nodes})
+           )
+           
+        {
+            die "tree nodes out of range\n";   
+        }
+        else
+        {
+            if ($options->{topology} ne 'master-slave')
+            {
+                die "the --tree option can only be used with master-slave topology\n";
+            }
+            return {intermediate=> $intermediate, final =>$final};
+        }
+    }
+    else
+    {
+        get_help('Invalid tree value');
+    }
+}
 
 sub install_master_slave 
 {
@@ -519,10 +548,29 @@ sub install_master_slave
         $rmi_ports{$N} = $slave_params{rmi_port};
         mkdir $slave_params{home_directory};
         Tsandbox::install_master_slave_replicator(\%slave_params, $env_node_options . ' ' . $env_slave_options, $options ); 
+        if ($options->{tree_actions})
+        {
+            if ($N == $options->{tree_actions}{intermediate})
+            {
+                $options->{tree_actions}{thl_port} = $slave_params{thl_port};
+            }
+        }
     }
     return \%rmi_ports;
 }
 
+sub set_tree_topology
+{
+    my ($options) = @_;
+    my $trepctl = "$options->{tungsten_base}/$options->{tsb_prefix}$options->{tree_actions}{final}/trepctl";
+    unless ( -x $trepctl)
+    {
+        die "something went wrong with the tree topology setup\n";
+    }
+    system "$trepctl offline";
+    system "$trepctl setrole -role slave -uri thl://127.0.0.1:$options->{tree_actions}{thl_port}";
+    system "$trepctl online";
+}
 
 sub install_all_masters 
 {
@@ -698,6 +746,7 @@ sub install_star_services
     my $hub_params  =  ' -C --quiet --host=127.0.0.1 --datasource=127_0_0_1 --role=slave '
                        . ' --service-type=remote --master-thl-host=127.0.0.1 --svc-start '
                        . ' --skip-validation-check=THLStorageCheck '
+                       . ' --log-slave-updates=true '
                        . '--local-service-name=%s --master-thl-port=%d %s';
 
     for my $master (1 .. $options->{nodes} )
@@ -789,7 +838,7 @@ sub create_sandbox_scripts
         {
             for my $s( qw(show_conf show_log replicator trepctl services thl))
             {
-                Utils::write_to($s, "echo 'Command $s not available in direct mode'", '>>')
+                Utils::write_to($s, "# 'Command $s not available in direct mode'", '>>')
             }
         }
         else
@@ -869,7 +918,7 @@ sub create_sandbox_scripts
     
     for my $opt ( grep {$options->{$_}} ('nodes','mysql_version','installation_directory', 
                    'tungsten_release', 'sandbox_directory', 'topology', 
-                   'fan-in','hub', 'base_port', 'thl_port','rmi_port'  ))
+                   'fan-in','hub', 'base_port', 'thl_port','rmi_port', 'tree'))
     {
         Utils::write_to('tungsten_sandbox.info', sprintf('%-30s => %s',$opt, $options->{$opt} || '') ,'>>');
     }
@@ -883,12 +932,16 @@ sub create_sandbox_scripts
     #
     my @tables =();
     Utils::add_header('test_topology');
-    my $hub = '';
+    my $extra = '';
     if ($options->{topology} eq 'star') 
     {
-        $hub = ' (hub: ' . $options->{hub} . ')'; 
+        $extra = ' (hub: ' . $options->{hub} . ')'; 
     }
-    Utils::write_to('test_topology', "echo '# Testing topology '$options->{topology}' $hub with $options->{nodes} nodes.'", '>>');
+    if ($options->{tree_actions})
+    {
+        $extra = '( tree: ' . $options->{tree} . ')'; 
+    }
+    Utils::write_to('test_topology', "echo '# Testing topology '$options->{topology}' $extra with $options->{nodes} nodes.'", '>>');
     Utils::write_to('test_topology', 
                 "echo '# Master nodes: [@{$options->{masters}}] - Slave nodes: [@{ $options->{slaves}}]'", 
                 '>>');
@@ -1036,6 +1089,18 @@ my %parse_options = (
             help    => ['Which node is the fan-in slave' ]
         },
 
+     tree => {
+            parse   => 'tree=s',
+            value   => undef,
+            so      => 66,
+            help    => [ 'Define hyerarchical replication. ',
+                         'You must indicate which node does not replicate directly from the master',
+                         'The format is --tree=X:Y, where X is the intermediate node,',
+                         'and Y is the ultimate one. (e.g. --tree=2:4 means that node 4 replicates from',
+                         'the master through node 2)' ]
+        },
+
+
      mysql_slaves => {
             parse   => 'mysql-slaves=i',
             value   => 0,
@@ -1058,6 +1123,13 @@ my %parse_options = (
             so      => 85,
             help    => ['How the service is named' ]
         },
+     service_names => {
+            parse   => 'service-names=s',
+            value   => join(',',@Tsandbox::service_names),
+            so      => 86,
+            help    => ['How the services in multiple master topologies are named' ]
+        },
+ 
      base_port => {
             parse   => 'p|base-port=i',
             value   => 7100,
@@ -1161,11 +1233,26 @@ Utils::validate_options(
     \%options, 
     \%parse_options);
 
-if  (($options{topology} eq 'star') or ($options{topology} eq 'all-masters'))
+#if  (($options{topology} eq 'star') or ($options{topology} eq 'all-masters'))
+#{
+#    if ($options{mysql_version} ge '5.5')
+#    {
+#        die "The '$options{topology}' topology is not safe to run with MySQL 5.5. This restriction will be lifted in further versions\n";
+#    }
+#}
+
+if ($options{service_names})
 {
-    if ($options{mysql_version} ge '5.5')
+    my @service_list = split /[;, ]/, $options{service_names};
+    my $max_services = scalar @Tsandbox::service_names;
+    if (scalar @service_list > $max_services )
     {
-        die "The '$options{topology}' topology is not safe to run with MySQL 5.5. This restriction will be lifted in further versions\n";
+        die "too many services named. We can only use as many as $max_services \n" ;
+    }
+
+    for my $N ( 0 .. $max_services -1 )
+    {
+        $Tsandbox::service_names[$N] = $service_list[$N];
     }
 }
 
@@ -1276,7 +1363,7 @@ if ( -f ".manifest" )
 {
     my @manifest_lines = Utils::get_file_lines('.manifest');
     my $build_no =0;
-    my $minimum_build=360;
+    my $minimum_build=630;
     for my $line (@manifest_lines) 
     {
         if ($line =~ /RELEASE:\s*(\S+)/) 
@@ -1389,6 +1476,8 @@ if ($options{topology} eq 'bi-dir')
     $options{nodes}=2;
 }
 
+$options{tree_actions} = Tsandbox::check_tree_options(\%options);
+
 #
 # ------------------ POINT OF NON RETURN ---------------------
 #
@@ -1475,6 +1564,8 @@ my $rmi_ports;
 #
 # Main task  
 #
+
+
 if  ($options{topology} eq 'master-slave')
 {
     $rmi_ports = Tsandbox::install_master_slave(\%options, $sandbox_dir);
@@ -1522,6 +1613,11 @@ else
 }
 
 Tsandbox::create_sandbox_scripts(\%options, $rmi_ports, $sandbox_dir);
+if ($options{tree_actions})
+{
+    Tsandbox::set_tree_topology(\%options);
+}
+
 
 __END__
 
