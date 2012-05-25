@@ -19,7 +19,7 @@ use Getopt::Long;
 use File::Basename;
 use English '-no_match_vars';
 
-our $VERSION = '2.0.10';
+our $VERSION = '2.0.11';
 # our $DRY_RUN = 0;
 our $VERBOSE = 0;
 
@@ -240,13 +240,25 @@ sub which
 
 sub write_to ($$$)
 {
-    my ($fname, $line, $mode) = @_;
+    my ($fname, $lines, $mode) = @_;
     open my $FH, $mode, $fname
         or die "can't open $fname ($OS_ERROR)\n";
-    print $FH $line;
-    unless ($line =~ /\n/)
+    
+    if (ref($lines) && ref($lines) ne 'ARRAY')
     {
-        print $FH "\n";
+        die "'write_to' reuires either a scalar or an array reference\n";
+    }
+    elsif (! ref($lines))
+    {
+        $lines = [ $lines ];
+    }
+    for my $line (@$lines)
+    {
+        print $FH $line;
+        unless ($line =~ /\n/)
+        {
+            print $FH "\n";
+        }
     }
     close $FH;
 }
@@ -879,20 +891,31 @@ sub create_sandbox_scripts
         Utils::write_to('clear_tsandbox', '# ', '>>');
         if (($options->{topology} ne 'direct') or ($N > (1 + $options->{mysql_slaves}) ))
         {
-            Utils::write_to('clear_tsandbox', "find $options->{tungsten_base}/$options->{tsb_prefix}$N/tlogs/ -type f -exec rm {} \\;", '>>');
-            Utils::write_to('clear_tsandbox', "rm -rf $options->{tungsten_base}/$options->{tsb_prefix}$N/tungsten/tungsten-replicator/log/*", '>>');
+            Utils::write_to('clear_tsandbox', 
+                [
+                "find $options->{tungsten_base}/$options->{tsb_prefix}$N/tlogs/ -type f -exec rm {} \\;", 
+                "rm -rf $options->{tungsten_base}/$options->{tsb_prefix}$N/tungsten/tungsten-replicator/log/*", 
+                ],
+                '>>');
         }
     }
     chmod 0750, 'clear_tsandbox';
-    Utils::write_to('erase_tsandbox', "$options->{tungsten_base}/clear_tsandbox", '>>');
-    Utils::write_to('erase_tsandbox', "rm -rf $options->{tungsten_base}/*", '>>');
+    Utils::write_to('erase_tsandbox', 
+        [
+        "$options->{tungsten_base}/clear_tsandbox", 
+        "rm -rf $options->{tungsten_base}/*", 
+        ],
+        '>>');
     chmod 0750, 'erase_tsandbox';
 
     Utils::add_header('restart_tsandbox');
-    # Utils::write_to('restart_tsandbox', "$options->{tungsten_base}/clear_tsandbox", '>>');
-    Utils::write_to('restart_tsandbox', "$options->{tungsten_base}/db_start_all", '>>');
-    Utils::write_to('restart_tsandbox', "$options->{tungsten_base}/replicator_all start", '>>');
-    Utils::write_to('restart_tsandbox', "$options->{tungsten_base}/trepctl_all services", '>>');
+    Utils::write_to('restart_tsandbox', 
+        [
+        "$options->{tungsten_base}/db_start_all", 
+        "$options->{tungsten_base}/replicator_all start", 
+        "$options->{tungsten_base}/trepctl_all services", 
+        ],
+        '>>');
     chmod 0750, 'restart_tsandbox';
 
     #
@@ -903,8 +926,12 @@ sub create_sandbox_scripts
         Utils::add_header("${script}_all");
         for my $N (1 .. $options->{nodes})
         {
-            Utils::write_to("${script}_all", "echo '#$N'", '>>');
-            Utils::write_to("${script}_all", "$options->{tungsten_base}/$options->{tsb_prefix}$N/$script \$\@", '>>');
+            Utils::write_to("${script}_all", 
+                [ 
+                "echo '#$N'",
+                "$options->{tungsten_base}/$options->{tsb_prefix}$N/$script \$\@", 
+                ],
+                '>>');
         }
         chmod 0750, "${script}_all";
     }
@@ -948,13 +975,13 @@ sub create_sandbox_scripts
     for my $N (@{$options->{masters}})
     {
         Utils::write_to('test_topology',
+            [ 
             "$options->{tungsten_base}/n$N -N -B -e 'drop table if exists test.t$N'",
-            '>>');
-        Utils::write_to('test_topology',
+            "$options->{tungsten_base}/n$N -N -B -e 'drop table if exists test.v$N'",
             "$options->{tungsten_base}/n$N -N -B -e 'create table test.t$N(i int not null primary key, c char(20)) engine= innodb'",
-            '>>');
-        Utils::write_to('test_topology',
-            qq[$options->{tungsten_base}/n$N -N -B -e 'insert into test.t$N VALUES ($N, "inserted by node #$N")'],
+            "$options->{tungsten_base}/n$N -N -B -e 'create or replace view test.v$N as select * from  test.t$N'",
+            qq[$options->{tungsten_base}/n$N -N -B -e 'insert into test.v$N VALUES ($N, "inserted by node #$N")'],
+            ],
             '>>');
         push @tables, $N;
     }
@@ -965,46 +992,61 @@ sub create_sandbox_scripts
     for my $N (@{$options->{slaves}})
     {
         Utils::write_to('test_topology', "echo '# node $N'" , '>>');
-        Utils::write_to('test_topology',
-            qq[COUNT_ALL=\$($options->{tungsten_base}/n$N -N -B -e 'select count(*) from information_schema.tables where table_schema="test"')],
-            '>>');
-        Utils::write_to('test_topology',
+        write_test('test_topology',
+            [
+            qq[COUNT_ALL=\$($options->{tungsten_base}/n$N -N -B -e 'select count(*) from information_schema.tables where table_schema="test" and table_type="BASE TABLE"')],
             qq(if [ "\$COUNT_ALL" == "$num_masters" ] ; then echo -n 'ok' ; else echo -n 'not ok' ; fi ; echo ' - Tables from all masters' ),
-            '>>');
+            ]
+         );
+
+        write_test('test_topology',
+            [
+            qq[COUNT_ALL=\$($options->{tungsten_base}/n$N -N -B -e 'select count(*) from information_schema.tables where table_schema="test" and table_type="VIEW"')],
+            qq(if [ "\$COUNT_ALL" == "$num_masters" ] ; then echo -n 'ok' ; else echo -n 'not ok' ; fi ; echo ' - Views from all masters' ),
+            ]
+        );
+
         for my $M (@{$options->{masters}})
         {
-            #Utils::write_to('test_topology',
-            #    "$options->{tungsten_base}/n$N -N -B -e 'select * from test.t$T'",
-            #    '>>');
-
-            Utils::write_to('test_topology',
+            write_test( 'test_topology',
+                [
                 qq[COUNT=\$($options->{tungsten_base}/n$N -N -B -e 'select count(*) from test.t$M where c = "inserted by node #$M" ')],
-                '>>');
-            Utils::write_to('test_topology',
                 qq(if [ "\$COUNT" == "1" ] ; then echo -n 'ok' ; else echo -n 'not ok' ; fi ; echo ' - Records from master #$M' ),
-                '>>');
-             
+                ]
+            );
         }
-        #Utils::write_to('test_topology',
-        #    "$options->{tungsten_base}/$options->{tsb_prefix}$N/trepctl services | grep 'state\\|Seqno\\|serviceName'",
-        #    '>>');
-        Utils::write_to('test_topology',
+        write_test('test_topology',
+            [
             "SERVICES=\$($options->{tungsten_base}/$options->{tsb_prefix}$N/trepctl services | grep 'serviceName' | awk '{print \$3}')",
-            '>>');
-        Utils::write_to('test_topology',
             'for SERVICE in $SERVICES ; do',
-            '>>');
-        Utils::write_to('test_topology',
             "    STATE=\$($options->{tungsten_base}/$options->{tsb_prefix}$N/trepctl -service \$SERVICE status | grep 'state' | awk '{print \$3}')",
-            '>>');
-        Utils::write_to('test_topology',
             qq(    if [ "\$STATE" == "ONLINE" ] ; then echo -n 'ok' ; else echo -n 'not ok' ; fi ; echo " - Node #$N-\$SERVICE online" ),
-            '>>');
-        Utils::write_to('test_topology',
             'done',
-            '>>');
+            ]
+        );
     }
+    Utils::write_to('test_topology',
+        ' echo "1..$TESTS"',
+        '>>');
     chmod 0750, 'test_topology';
+}
+
+sub write_test 
+{
+    my ($fname, $lines) = @_;
+    for my $line (@$lines)
+    {
+        Utils::write_to($fname, $line, '>>');
+        if ($line =~ /\bok\b/)
+        {
+            my $indent = '';
+            if ($line =~ /^(\s+)/)
+            {
+                $indent = $1;
+            }
+            Utils::write_to($fname, $indent . 'TESTS=$(($TESTS+1))' ,'>>');
+        }
+    }
 }
 
 
@@ -1363,7 +1405,7 @@ if ( -f ".manifest" )
 {
     my @manifest_lines = Utils::get_file_lines('.manifest');
     my $build_no =0;
-    my $minimum_build=628;
+    my $minimum_build=627;
     for my $line (@manifest_lines) 
     {
         if ($line =~ /RELEASE:\s*(\S+)/) 
