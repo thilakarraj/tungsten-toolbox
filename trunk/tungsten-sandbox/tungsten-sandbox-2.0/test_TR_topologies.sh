@@ -121,9 +121,7 @@ fi
 
 SANDBOX_INSTALL_LOG=$TMPDIR/test_sandbox_install_log.txt
 
-echo "# $(date)" > $SANDBOX_INSTALL_LOG
-
-for TOPOLOGY in direct master-slave all-masters star 'fan-in' tree
+for TOPOLOGY in tree direct master-slave all-masters star 'fan-in' tree
 do
     FNAME=$TOPOLOGY
     EXTRA=''
@@ -144,6 +142,7 @@ do
     esac
     # installs the topology
     echo "# tungsten-sandbox -m $MYSQL_VERSION --topology=$TOPOLOGY $EXTRA --nodes=$NODES"
+    echo "# tungsten-sandbox -m $MYSQL_VERSION --topology=$TOPOLOGY $EXTRA --nodes=$NODES" > $SANDBOX_INSTALL_LOG 
     tungsten-sandbox -m $MYSQL_VERSION --topology=$TOPOLOGY $EXTRA --nodes=$NODES --verbose >> $SANDBOX_INSTALL_LOG 2>&1
     if [ "$?" != "0" ]
     then 
