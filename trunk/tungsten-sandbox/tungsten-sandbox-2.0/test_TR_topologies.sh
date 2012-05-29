@@ -5,7 +5,7 @@
 # for Continuent, Inc
 # Released under the New BSD license.
 
-VERSION=1.0.0
+VERSION=1.0.1
 
 TSANDBOX=$HOME/tsb2
 if [ -z "$MYSQL_VERSION" ]
@@ -32,6 +32,7 @@ then
 fi
 
 function show_help {
+    echo "test_TR_topologies v. $VERSION"
     echo "usage $0 [options] "
     echo '-v         =>  verbose'
     echo '-h         => help'
@@ -121,7 +122,7 @@ fi
 
 SANDBOX_INSTALL_LOG=$TMPDIR/test_sandbox_install_log.txt
 
-for TOPOLOGY in tree direct master-slave all-masters star 'fan-in' tree
+for TOPOLOGY in direct master-slave all-masters star 'fan-in' tree
 do
     FNAME=$TOPOLOGY
     EXTRA=''
