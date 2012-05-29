@@ -490,11 +490,15 @@ sub check_tree_options
         if (    ($intermediate < 1) 
              or ($intermediate > $options->{nodes})
              or ($final < 1) 
-             or ($final < $options->{nodes})
+             or ($final > $options->{nodes})
            )
            
         {
             die "tree nodes out of range\n";   
+        }
+        elsif ($intermediate == $final)
+        {
+            die "intermediate and final node must be different\n";
         }
         else
         {
