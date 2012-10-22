@@ -17,10 +17,10 @@ my %options = (
 );
 
 GetOptions(
-   'a|action=s' => \$options{action}, 
-   'r|role=s' => \$options{role}, 
-   's|service=s' => \$options{service}, 
-   'h|help'      => \$options{help}, 
+   'a|action=s'   => \$options{action}, 
+   'r|role=s'     => \$options{role}, 
+   's|service=s'  => \$options{service}, 
+   'h|help'       => \$options{help}, 
    'version'      => \$options{version}, 
 ) or get_help();
 
@@ -50,6 +50,7 @@ sub get_help
     . "-a, --action ={show|list|name} ($options{action}) \n"
     . "-r, --role   ={master|slave}   ($options{role}) \n"
     . "-s, --service =service_name    ($options{service}) \n"
+    . "--version\n"
     . "-h, --help\n"
     . "\n"
     ;
@@ -62,6 +63,8 @@ my $name_len = 0;
 while (my $line = <STDIN>)
 {
     next if $line =~ /Processing|NAME|Finished/;
+    next if $line =~ /^\s*$/;
+    next if $line =~ /^\s*#/;
     if ($line =~ /----/ )
     {
         $count++;
