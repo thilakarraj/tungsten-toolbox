@@ -1,0 +1,77 @@
+The Tungsten Replicator cookbook
+
+(C) Continuent, Inc, 2012
+Released under the New BSD license. 
+See http://code.google.com/p/tungsten-toolbox/ for more information.
+
+OVERVIEW
+
+This is a collection of recipes to install several replication topologies using Tungsten Replicator.
+
+The following topologies are supported
+
+* master/slave (one master, many slaves)
+* fan-in (many masters, one slave)
+* all-masters (many masters, with slave services for all nodes)
+* star schema (many masters, interconnected through a hub)
+
+
+GETTING STARTED:
+
+1) deploy the cookbook directory inside the expanded Tungsten Replicator tarball. (See the section "DEPLOYING THE COOKBOOK" for more information.
+2) decide which topology you want to deploy, and edit the relative NODES_xxxxxx.sh file
+3) in the NODES_xxxxxx file, 
+   a) add as many nodes you are using
+   b) check the variables ALL_NODES, MASTERS, and SLAVES, and make sure that they list existing nodes
+   c) if you are using less than 4 nodes, comment out the extra ones
+4) Run the command corresponding to the topology you want to install. The command must run from the directory above the cookbook, i.e the directorfrom where you can access ./tools/tungsten-replicator.
+For example:
+   ./cookbook/install_master_slave.sh
+   ./cookbook/install_all_masters.sh
+   ./cookbook/install_fan_in.sh
+   ./cookbook/install_star.sh
+
+
+AFTER INSTALLATION
+
+There are a few tools that come together with the cookbook.
+As a static bonus, you get a log of the installation, named ./cookbook/current_install.log. That file says the installation type, the date and time of the installation, and the commands that were executed to install the cluster.
+
+You have also some more active tools. There are show* commands that display the status of the cluster
+
+* ./cookbook/show_master_slave.sh
+* ./cookbook/show_star.sh
+* ./cookbook/show_fan_in.sh
+* ./cookbook/show_all_masters.sh
+
+And similar commands that check the replication flow across the cluster
+
+* ./cookbook/test_master_slave.sh
+* ./cookbook/test_star.sh
+* ./cookbook/test_fan_in.sh
+* ./cookbook/test_all_masters.sh
+
+And finally commands that remove the installed replicators and clean up the databases.
+
+* ./cookbook/clear_cluster_master_slave.sh
+* ./cookbook/clear_cluster_star.sh
+* ./cookbook/clear_cluster_fan_in.sh
+* ./cookbook/clear_cluster_all_masters.sh
+
+
+
+DEPLOYING THE COOKBOOK
+
+You can get the cookbook as a tarball, and manually deploying it. The place where it must go is the directory created when you expand the Tungsten-Replicator tarball.
+For example, if you have expanded tungsten-replicator-2.0.6.tar.gz, you will have 
+tungsten-replicator-2.0.6/
+and your cookbook should be under
+tungsten-replicator-2.0.6/cookbook
+
+If you are getting the cookbook from the source, you can deploy with two easy moves:
+1) in the cookbook directory, run ./make_package.sh
+2) this command creates tungsten-replicator-cookbook.tar.gz, which you should copy, together with deploy_cookbook.sh, inside the aforementioned expanded tarball (for example, 'tungsten-replicator-2.0.6').
+3) running deploy_cookbook.sh will create the directory and invite you to read this file.
+
+
+
