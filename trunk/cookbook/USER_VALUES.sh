@@ -8,7 +8,7 @@ then
 fi
 
 SIMPLE_SERVICES=`simple_services --help`
-if [ -z "SIMPLE_SERVICES" ]
+if [ -z "$SIMPLE_SERVICES" ]
 then
     echo "simple_services is not installed. "
     echo "While not strictly necessary for the recipes installation, it is needed to run the auxuliary scripts."
