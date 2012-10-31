@@ -3,9 +3,10 @@ clear_cluster_fan_in.sh
 clear_cluster_master_slave.sh
 clear_cluster.sh
 clear_cluster_star.sh
+COMMON_NODES.sh
 deploy_cookbook.sh
 install_all_masters.sh
-install_fan-in.sh
+install_fan_in.sh
 install_master_slave.sh
 install_star.sh
 make_package.sh
@@ -20,6 +21,7 @@ show_fan_in.sh
 show_master_slave.sh
 show_star.sh
 test_all_masters.sh
+test_all_topologies.sh
 test_cluster.sh
 test_fan_in.sh
 test_master_slave.sh

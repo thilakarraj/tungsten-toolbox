@@ -24,6 +24,14 @@ fi
 
 . ./cookbook/$NODES
 
+if [ -z "${ALL_NODES[0]}" ]
+then
+    echo "Nodes variables not set"
+    echo "Please edit cookbook/COMMON_NODES.sh or cookbook/NODES*.sh"
+    echo "Make sure that NODE1, NODE2, etc are filled"
+    exit 1
+fi
+
 HOSTS_LIST=""
 MASTERS_LIST=""
 SLAVES_LIST=""
@@ -57,5 +65,5 @@ export DATABASE_USER=tungsten
 export DATABASE_PASSWORD=secret
 export DATABASE_PORT=3306
 export TUNGSTEN_SERVICE=cookbook
-
+[ -z "$START_OPTION" ] && export START_OPTION=start
 export INSTALL_LOG=./cookbook/current_install.log

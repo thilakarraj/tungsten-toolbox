@@ -19,8 +19,8 @@ The following topologies are supported
 GETTING STARTED:
 
 1) deploy the cookbook directory inside the expanded Tungsten Replicator tarball. (See the section "DEPLOYING THE COOKBOOK" for more information.
-2) decide which topology you want to deploy, and edit the relative NODES_xxxxxx.sh file
-3) in the NODES_xxxxxx file, 
+2) edit the COMMON_NODES.sh file, with the list of your nodes
+3) If you are using a number of nodes other than 4, in the NODES_xxxxxx file, 
    a) add as many nodes you are using
    b) check the variables ALL_NODES, MASTERS, and SLAVES, and make sure that they list existing nodes
    c) if you are using less than 4 nodes, comment out the extra ones
@@ -58,6 +58,12 @@ And finally commands that remove the installed replicators and clean up the data
 * ./cookbook/clear_cluster_fan_in.sh
 * ./cookbook/clear_cluster_all_masters.sh
 
+TESTING ALL TOPOLOGIES
+If you want to test all topologies in one go, after you have updated COMMON_NODES.sh (and eventually all the NODES_*.sh files if you are using more nodes), you can run
+
+./cookbook/test_all_topologies.sh
+
+This command will install, test, and uninstall all topologies, and return the summary of tests results (total, pass, fail).
 
 
 DEPLOYING THE COOKBOOK
@@ -72,6 +78,4 @@ If you are getting the cookbook from the source, you can deploy with two easy mo
 1) in the cookbook directory, run ./make_package.sh
 2) this command creates tungsten-replicator-cookbook.tar.gz, which you should copy, together with deploy_cookbook.sh, inside the aforementioned expanded tarball (for example, 'tungsten-replicator-2.0.6').
 3) running deploy_cookbook.sh will create the directory and invite you to read this file.
-
-
 

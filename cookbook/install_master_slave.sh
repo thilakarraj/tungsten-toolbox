@@ -22,7 +22,7 @@ INSTALL_COMMAND="./tools/tungsten-installer \
     --service-name=$TUNGSTEN_SERVICE \
     --home-directory=$TUNGSTEN_BASE \
     --cluster-hosts=$HOSTS_LIST \
-    $MORE_OPTIONS --start-and-report"
+    $MORE_OPTIONS --$START_OPTION"     
 
 echo $INSTALL_COMMAND >> $INSTALL_LOG
 
@@ -32,4 +32,5 @@ if [ "$?" != "0"  ]
 then
     exit
 fi
+
 ./cookbook/show_cluster.sh NODES_MASTER_SLAVE.sh
