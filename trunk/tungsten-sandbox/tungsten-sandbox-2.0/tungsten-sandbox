@@ -19,7 +19,7 @@ use Getopt::Long;
 use File::Basename;
 use English '-no_match_vars';
 
-our $VERSION = '2.0.11';
+our $VERSION = '2.0.12';
 # our $DRY_RUN = 0;
 our $VERBOSE = 0;
 
@@ -1254,10 +1254,16 @@ my %options = map { $_ ,  $parse_options{$_}{'value'}}  keys %parse_options;
 #
 # Parses the options, using the 'parse' element of each parse_option item
 # Calls the help if there is a parsing error.
+
 GetOptions (
     map { $parse_options{$_}{parse}, \$options{$_} }    
         grep { $parse_options{$_}{parse}}  keys %parse_options 
 ) or Utils::get_help(\%parse_options, '');
+
+if (@ARGV)
+{
+    Utils::get_help(\%parse_options, "Unexpected arguments: <@ARGV>");
+}
 
 if ($options{verbose}) 
 {
@@ -1409,12 +1415,16 @@ if ( -f ".manifest" )
 {
     my @manifest_lines = Utils::get_file_lines('.manifest');
     my $build_no =0;
+    my $release ='';
+    my $minimum_release='2.0.6';
     my $minimum_build=627;
     for my $line (@manifest_lines) 
     {
         if ($line =~ /RELEASE:\s*(\S+)/) 
         {
             $options{tungsten_release} = $1;
+            $release = $1;
+            $release =~ s/-\d+$//;
         }
         if ($line =~ /BUILD_NUMBER:\s*(\d+)/) 
         {
@@ -1423,7 +1433,10 @@ if ( -f ".manifest" )
             last;
         }
     }
-    if (($build_no < $minimum_build) && ( ! $options{'ignore_manifest'}))
+    if (
+        ( ($release le $minimum_release)  && ($build_no < $minimum_build) )
+        && 
+        ( ! $options{'ignore_manifest'}))
     {
         die "Builds earlier than $minimum_build can't be used with this version of tungsten-sandbox\n"
             ."Your build is $build_no - Please download a more recent version\n"
@@ -1531,6 +1544,8 @@ $options{tree_actions} = Tsandbox::check_tree_options(\%options);
 #
 # ------------------------------------------------------------
 
+##print Dumper \%parse_options; 
+# print Dumper \%options; exit;
 my $sandbox_dir = "$SANDBOX_HOME/$options{group_dir}";
 
 if ($options{skip_sandbox_creation})
@@ -1578,8 +1593,13 @@ if ($options{skip_sandbox_creation})
 }
 else
 {
+    my $additional_flags='';
+    if ($options{mysql_version} =~ /^5\.6/)
+    { 
+        $additional_flags='-c binlog_checksum=none';
+    }
     my $mms_cmd =   "$make_multiple_sandbox "
-              . " --node_options='$ENV{MSB_NODE_OPTIONS} -c log-bin=mysql-bin -c innodb_flush_log_at_trx_commit=2 -c max_allowed_packet=48M'"
+              . " --node_options='$ENV{MSB_NODE_OPTIONS} $additional_flags -c log-bin=mysql-bin -c innodb_flush_log_at_trx_commit=2 -c max_allowed_packet=48M'"
               . " --how_many_nodes=$options{nodes}"
               . " --sandbox_base_port=$options{base_port}"
               . " --group_directory=$options{group_dir}"
