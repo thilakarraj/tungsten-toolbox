@@ -20,6 +20,7 @@ show_cluster.sh
 show_fan_in.sh
 show_master_slave.sh
 show_star.sh
+simple_services
 test_all_masters.sh
 test_all_topologies.sh
 test_cluster.sh
