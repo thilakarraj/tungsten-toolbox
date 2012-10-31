@@ -9,7 +9,22 @@ then
     exit 1
 fi
 
-SIMPLE_SERVICES=`simple_services --help`
+CURDIR=`dirname $0`
+
+if [ -x "$CURDIR/simple_services" ]
+then
+    SIMPLE_SERVICES=$CURDIR/simple_services
+else
+    for P in `echo $PATH |tr ':' ' '` 
+    do
+        if [ -x $P/simple_services ]
+        then
+            SIMPLE_SERVICES=$P/simple_services
+            continue
+        fi
+    done
+fi
+
 if [ -z "$SIMPLE_SERVICES" ]
 then
     echo "simple_services is not installed. "
