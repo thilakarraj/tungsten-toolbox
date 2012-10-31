@@ -26,7 +26,7 @@ do
     --service-name=${MM_SERVICES[$INDEX]} \
     --home-directory=$TUNGSTEN_BASE \
     --cluster-hosts=$NODE \
-    --start-and-report"
+    --$START_OPTION"
 
     echo $INSTALL_COMMAND >> $INSTALL_LOG
     $INSTALL_COMMAND
@@ -61,7 +61,7 @@ do
             --release-directory=$TUNGSTEN_BASE/tungsten \
             --skip-validation-check=THLStorageCheck \
             --master-thl-host=$MASTER \
-            --svc-start-and-report  ${MM_SERVICES[$M_INDEX]} "
+            --svc-$START_OPTION ${MM_SERVICES[$M_INDEX]} "
 
             echo $INSTALL_COMMAND >> $INSTALL_LOG
             $INSTALL_COMMAND

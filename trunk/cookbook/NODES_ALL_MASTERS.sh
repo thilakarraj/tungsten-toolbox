@@ -1,9 +1,15 @@
 #!/bin/bash
 
-export NODE1=
-export NODE2=
-export NODE3=
-export NODE4=
+CURDIR=`dirname $0`
+if [ -f $CURDIR/COMMON_NODES.sh ]
+then
+    . $CURDIR/COMMON_NODES.sh
+else
+    export NODE1=
+    export NODE2=
+    export NODE3=
+    export NODE4=
+fi
 
 export ALL_NODES=($NODE1 $NODE2 $NODE3 $NODE4)
 # indicate which servers will be masters, and which ones will have a slave service

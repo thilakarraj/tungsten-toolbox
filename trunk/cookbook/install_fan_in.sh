@@ -26,7 +26,7 @@ do
     --service-name=${MM_SERVICES[$INDEX]} \
     --home-directory=$TUNGSTEN_BASE \
     --cluster-hosts=$NODE \
-    --start-and-report"
+    --$START_OPTION"     
 
 echo $INSTALL_COMMAND >> $INSTALL_LOG
 $INSTALL_COMMAND
@@ -56,7 +56,7 @@ do
         --host=$FAN_IN_SLAVE \
         ${COMMON_OPTIONS} \
         --master-thl-host=$REMOTE_MASTER \
-        --svc-start ${MM_SERVICES[$INDEX]}"
+        --svc-$START_OPTION ${MM_SERVICES[$INDEX]}"
 
     echo $INSTALL_COMMAND >> $INSTALL_LOG
     $INSTALL_COMMAND
