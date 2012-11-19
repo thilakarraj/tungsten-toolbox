@@ -1,6 +1,6 @@
 #!/bin/bash
-# (C) Copyright 2012 Continuent, Inc - Released under the New BDS License
-# Version 1.0.2 - 2012-10-31
+# (C) Copyright 2012 Continuent, Inc - Released under the New BSD License
+# Version 1.0.3 - 2012-11-19
 if [ ! -f ./cookbook/USER_VALUES.sh ]
 then
     echo "./cookbook/USER_VALUES.sh not found"
@@ -24,6 +24,7 @@ INSTALL_COMMAND="./tools/tungsten-installer \
     --service-name=$TUNGSTEN_SERVICE \
     --home-directory=$TUNGSTEN_BASE \
     --cluster-hosts=$HOSTS_LIST \
+    --datasource-mysql-conf=$MY_CNF \
     $MORE_OPTIONS --$START_OPTION"     
 
 echo $INSTALL_COMMAND >> $INSTALL_LOG
