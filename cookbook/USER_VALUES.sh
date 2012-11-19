@@ -1,6 +1,6 @@
 #!/bin/bash
-# (C) Copyright 2012 Continuent, Inc - Released under the New BDS License
-# Version 1.0.2 - 2012-10-31
+# (C) Copyright 2012 Continuent, Inc - Released under the New BSD License
+# Version 1.0.3 - 2012-11-19
 
 NODES=$1
 if [ -z "$NODES" ]
@@ -76,6 +76,18 @@ export SLAVES_LIST
 export HOSTS_LIST
 
 export TUNGSTEN_BASE=$HOME/installs/cookbook
+export MY_CNF=/etc/mysql/my.cnf
+if [ ! -f $MY_CNF ]
+then
+    UBUNTU_MY_CNF=/etc/mysql/my.cnf
+    if [ -f $UBUNTU_MY_CNF ]
+    then
+        MY_CNF=$UBUNTU_MY_CNF
+    else
+        echo "could not find a configuration file (either $MY_CNF or $UBUNTU_MY_CNF)"
+        exit 1
+    fi
+fi
 export REPLICATOR=$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/replicator
 export TREPCTL=$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/trepctl
 export DATABASE_USER=tungsten
