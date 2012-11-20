@@ -76,7 +76,7 @@ export SLAVES_LIST
 export HOSTS_LIST
 
 export TUNGSTEN_BASE=$HOME/installs/cookbook
-export MY_CNF=/etc/mysql/my.cnf
+export MY_CNF=/etc/my.cnf
 if [ ! -f $MY_CNF ]
 then
     UBUNTU_MY_CNF=/etc/mysql/my.cnf
