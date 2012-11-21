@@ -9,6 +9,8 @@ then
 fi
 . ./cookbook/USER_VALUES.sh NODES_FAN_IN.sh
 
+check_installed
+
 ./cookbook/clear_cluster.sh NODES_FAN_IN.sh
 
 echo "installing FAN-IN" >$INSTALL_LOG
@@ -78,6 +80,6 @@ do
     INDEX=$(($INDEX+1))
 done
 #set +x
-
+echo "fan_in" > $CURRENT_TOPOLOGY
 ./cookbook/show_cluster.sh NODES_FAN_IN.sh
 

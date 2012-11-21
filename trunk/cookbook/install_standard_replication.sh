@@ -8,6 +8,8 @@ then
 fi
 . ./cookbook/USER_VALUES.sh NODES_MASTER_SLAVE.sh
 
+check_installed
+
 ./cookbook/clear_cluster.sh NODES_MASTER_SLAVE.sh
 
 export MASTER=${MASTERS[0]}
@@ -20,10 +22,30 @@ MASTER_STATUS=`mysql -h $MASTER -u $DATABASE_USER -p$DATABASE_PASSWORD -P $DATAB
 MASTER_FILE=$(echo $MASTER_STATUS | cut --delimiter=' ' -f 1) 
 MASTER_POS=$(echo $MASTER_STATUS | cut --delimiter=' ' -f 2)
 
-SQL="change master to master_host='$MASTER',master_user='$DATABASE_USER',master_password='$DATABASE_PASSWORD',master_port=$DATABASE_PORT,master_log_file='$MASTER_FILE',master_log_pos=$MASTER_POS;slave start;"
+SQL="stop slave; change master to master_host='$MASTER',master_user='$DATABASE_USER',master_password='$DATABASE_PASSWORD',master_port=$DATABASE_PORT,master_log_file='$MASTER_FILE',master_log_pos=$MASTER_POS;start slave;"
 
 for SLAVE in ${SLAVES[*]}
 do
 	$MYSQL -h $SLAVE -e"$SQL"
 	echo "Starting slave on $SLAVE Master File = $MASTER_FILE, Master Position = $MASTER_POS"
 done
+
+#testing 
+$MYSQL -h $MASTER -e 'create schema if not exists test'
+$MYSQL -h $MASTER -e 'drop table if exists test.t1'
+$MYSQL -h $MASTER -e 'create table test.t1(i int)'
+$MYSQL -h $MASTER -e 'insert into test.t1 values (1)'
+sleep 1
+echo  "# master  $MASTER"
+$MYSQL -h $MASTER -BN -e 'show master status'
+for SLAVE in ${SLAVES[*]}
+do
+    echo "#slave $SLAVE"
+	$MYSQL -h $SLAVE -e 'show slave status\G' | grep "\(Running:\|Master_Log_Pos\|\<Master_Log_File\)"
+    FOUND_TABLES=$($MYSQL -h $SLAVE -BN -e 'select count(*) from test.t1')
+    echo -n "replication test: "
+    if [ "$FOUND_TABLES" == "1" ] ; then echo "ok" ; else echo "NOT ok" ; fi
+    echo ""
+done
+echo "standard_mysql_replication" > $CURRENT_TOPOLOGY
+
