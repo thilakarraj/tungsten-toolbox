@@ -32,6 +32,7 @@ do
     $MYSQL -h $NODE -e 'create schema test'
     $MYSQL -h $NODE -e 'set global read_only=0'
     $MYSQL -h $NODE -e 'set global binlog_format=mixed'
+    $MYSQL -h $NODE -e 'slave stop'
     $MYSQL -h $NODE -e 'reset master'
 done
 
