@@ -76,10 +76,6 @@ echo trepctl -host $MASTER offline
 $TREPCTL -host $MASTER offline
 
 
-# . ./cookbook/USER_VALUES.sh NODES_SWITCH.sh
-
-# export MASTER=${MASTERS[0]}
-
 echo trepctl -host $NEW_MASTER setrole -role master
 $TREPCTL -host $NEW_MASTER setrole -role master
 echo trepctl -host $NEW_MASTER online
