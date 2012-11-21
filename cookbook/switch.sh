@@ -7,7 +7,7 @@ then
     exit 1
 fi
 . ./cookbook/USER_VALUES.sh NODES_MASTER_SLAVE.sh
-
+check_current_topology "master_slave"
 
 function find_roles {
     SLAVE_COUNT=0

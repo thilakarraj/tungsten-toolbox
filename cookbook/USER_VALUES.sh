@@ -121,6 +121,10 @@ function check_current_topology
             echo "Found a different topology ($TOPOLOGY) in $CURRENT_TOPOLOGY"
             exit 1
         fi
+    else
+        echo "$CURRENT_TOPOLOGY not found"
+        echo "Cannot determine if $WANTED topology is deployed"
+        exit 1
     fi
 }
 
