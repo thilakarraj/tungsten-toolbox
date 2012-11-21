@@ -11,7 +11,7 @@ fi
 
 check_installed
 
-./cookbook/clear_cluster.sh NODES_ALL_MASTERS.sh
+# ./cookbook/clear_cluster.sh NODES_ALL_MASTERS.sh
 
 echo "installing STAR" >$INSTALL_LOG
 date >> $INSTALL_LOG
