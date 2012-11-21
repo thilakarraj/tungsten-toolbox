@@ -8,6 +8,7 @@ then
 fi
 . ./cookbook/USER_VALUES.sh NODES_MASTER_SLAVE.sh
 
+check_current_topology 'standard_mysql_replication'
 
 export MASTER=${MASTERS[0]}
 
@@ -18,7 +19,15 @@ MYSQL="mysql -u $DATABASE_USER -p$DATABASE_PASSWORD -P $DATABASE_PORT"
 
 for SLAVE in ${SLAVES[*]} 
 do
-	$MYSQL -h $SLAVE -e 'slave stop'
+	SLAVE_STATUS=$($MYSQL -h $SLAVE -e 'show slave status\G' |grep Slave_IO_Running |grep Yes)
+    if [ -z "$SLAVE_STATUS" ]
+    then
+        echo "Server $SLAVE does not seem to be running standard MySQL replication."
+        echo "This script has the purpose of taking over from existing replication."
+        echo "Use the regular install_master_slave.sh if you don't have replication in place"
+        exit 1
+    fi
+	$MYSQL -h $SLAVE -e 'stop slave'
 done
 
 
@@ -63,5 +72,5 @@ do
 	echo "$TREPCTL -host $SLAVE online"
 done
 
-
+echo "master_slave" > $CURRENT_TOPOLOGY
 ./cookbook/show_cluster.sh NODES_MASTER_SLAVE.sh

@@ -9,6 +9,8 @@ then
 fi
 . ./cookbook/USER_VALUES.sh NODES_STAR.sh
 
+check_installed
+
 if [ -z "$HUB" ]
 then
     echo "HUB undefined. Please update ./cookbook/NODES_STAR.sh"
@@ -122,4 +124,5 @@ do
     INDEX=$(($INDEX+1))
 done
 # set +x
+echo "star" > $CURRENT_TOPOLOGY
 ./cookbook/show_cluster.sh NODES_STAR.sh

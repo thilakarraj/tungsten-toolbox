@@ -96,3 +96,31 @@ export DATABASE_PORT=3306
 export TUNGSTEN_SERVICE=cookbook
 [ -z "$START_OPTION" ] && export START_OPTION=start
 export INSTALL_LOG=./cookbook/current_install.log
+
+CURRENT_TOPOLOGY=./CURRENT_TOPOLOGY
+
+function check_installed
+{
+    if [ -f $CURRENT_TOPOLOGY ]
+    then
+        echo "There is a previous installation recorded in $CURRENT_TOPOLOGY"
+        cat $CURRENT_TOPOLOGY
+        exit 1
+    fi 
+}
+
+function check_current_topology
+{
+    if [ -f $CURRENT_TOPOLOGY ]
+    then
+        WANTED=$1
+        TOPOLOGY=$(cat $CURRENT_TOPOLOGY)
+        if [ "$TOPOLOGY" != "$WANTED" ]
+        then
+            echo "this script requires a $WANTED topology."
+            echo "Found a different topology ($TOPOLOGY) in $CURRENT_TOPOLOGY"
+            exit 1
+        fi
+    fi
+}
+

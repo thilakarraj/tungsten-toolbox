@@ -17,6 +17,15 @@ fi
 
 . ./cookbook/USER_VALUES.sh $NODES
 
+WANTED_TOPOLOGY=$2
+if [ -z "$WANTED_TOPOLOGY" ]
+then
+    echo unable to determine which topology is required
+    exit 1
+fi
+
+check_current_topology $WANTED_TOPOLOGY
+
 MYSQL="mysql -u $DATABASE_USER -p$DATABASE_PASSWORD -P $DATABASE_PORT"
 for NODE in ${ALL_NODES[*]} 
 do 
@@ -32,8 +41,8 @@ do
     $MYSQL -h $NODE -e 'create schema test'
     $MYSQL -h $NODE -e 'set global read_only=0'
     $MYSQL -h $NODE -e 'set global binlog_format=mixed'
-    $MYSQL -h $NODE -e 'slave stop'
     $MYSQL -h $NODE -e 'reset master'
 done
 
 [ -f $INSTALL_LOG ] && rm -f $INSTALL_LOG
+[ -f $CURRENT_TOPOLOGY ] && rm -f $CURRENT_TOPOLOGY

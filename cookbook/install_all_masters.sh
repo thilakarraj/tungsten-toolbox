@@ -9,6 +9,8 @@ then
 fi
 . ./cookbook/USER_VALUES.sh NODES_ALL_MASTERS.sh
 
+check_installed
+
 ./cookbook/clear_cluster.sh NODES_ALL_MASTERS.sh
 
 echo "installing STAR" >$INSTALL_LOG
@@ -87,4 +89,5 @@ do
     S_INDEX=$(($S_INDEX+1))
 done
 # set +x
+echo "all_masters" > $CURRENT_TOPOLOGY
 ./cookbook/show_cluster.sh NODES_ALL_MASTERS.sh
