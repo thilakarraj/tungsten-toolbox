@@ -27,6 +27,11 @@ INSTALL_COMMAND="./tools/tungsten-installer \
     --datasource-mysql-conf=$MY_CNF \
     $MORE_OPTIONS --$START_OPTION"     
 
+if [ -n "$VERBOSE" ]
+then
+    echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g'
+fi
+
 echo $INSTALL_COMMAND >> $INSTALL_LOG
 
 $INSTALL_COMMAND

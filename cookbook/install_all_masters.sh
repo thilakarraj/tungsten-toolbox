@@ -31,7 +31,11 @@ do
     --datasource-mysql-conf=$MY_CNF \
     --$START_OPTION"
 
-    echo $INSTALL_COMMAND >> $INSTALL_LOG
+    echo $INSTALL_COMMAND  | perl -pe 's/--/\n\t--/g' >> $INSTALL_LOG
+    if [ -n "$VERBOSE" ]
+    then
+        echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g'
+    fi
     $INSTALL_COMMAND
 
     if [ "$?" != "0"  ]
@@ -66,7 +70,12 @@ do
             --master-thl-host=$MASTER \
             --svc-$START_OPTION ${MM_SERVICES[$M_INDEX]} "
 
-            echo $INSTALL_COMMAND >> $INSTALL_LOG
+            echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g' >> $INSTALL_LOG
+            if [ -n "$VERBOSE" ]
+            then
+                echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g'
+            fi
+
             $INSTALL_COMMAND
             if [ "$?" != "0"  ]
             then

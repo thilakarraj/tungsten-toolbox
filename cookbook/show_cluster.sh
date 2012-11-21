@@ -15,7 +15,16 @@ then
     exit 1
 fi
 
+if [ ! -f ./cookbook/utilities.sh ]
+then
+    echo "./cookbook/utilities.sh not found"
+    exit 1
+fi
+
 . ./cookbook/USER_VALUES.sh $NODES
+. ./cookbook/utilities.sh 
+
+fill_roles
 
 for NODE in ${MASTERS[*]}
 do
