@@ -11,7 +11,7 @@ fi
 
 check_installed
 
-./cookbook/clear_cluster.sh NODES_FAN_IN.sh
+# ./cookbook/clear_cluster.sh NODES_FAN_IN.sh
 
 echo "installing FAN-IN" >$INSTALL_LOG
 date >> $INSTALL_LOG

@@ -17,8 +17,7 @@ then
     exit 1
 fi
 
-
-./cookbook/clear_cluster.sh NODES_STAR.sh
+#./cookbook/clear_cluster.sh NODES_STAR.sh
 
 echo "installing STAR" >$INSTALL_LOG
 date >> $INSTALL_LOG

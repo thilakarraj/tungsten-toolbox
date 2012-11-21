@@ -10,7 +10,7 @@ fi
 
 check_installed
 
-./cookbook/clear_cluster.sh NODES_MASTER_SLAVE.sh
+# ./cookbook/clear_cluster.sh NODES_MASTER_SLAVE.sh
 
 export MASTER=${MASTERS[0]}
 MYSQL="mysql -u $DATABASE_USER -p$DATABASE_PASSWORD -P $DATABASE_PORT"

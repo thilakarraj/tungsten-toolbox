@@ -12,7 +12,7 @@ fi
 
 check_installed
 
-./cookbook/clear_cluster.sh NODES_MASTER_SLAVE.sh
+# ./cookbook/clear_cluster.sh NODES_MASTER_SLAVE.sh
 
 export MASTER=${MASTERS[0]}
 
