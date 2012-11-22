@@ -29,6 +29,7 @@ INSTALL_COMMAND="./tools/tungsten-installer \
     --home-directory=$TUNGSTEN_BASE \
     --cluster-hosts=$HOSTS_LIST \
     --datasource-mysql-conf=$MY_CNF \
+    --datasource-log-directory=$BINLOG_DIRECTORY \
     $MORE_OPTIONS --$START_OPTION"     
 
 if [ -n "$VERBOSE" ]

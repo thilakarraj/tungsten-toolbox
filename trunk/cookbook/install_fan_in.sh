@@ -31,7 +31,8 @@ do
     --home-directory=$TUNGSTEN_BASE \
     --cluster-hosts=$NODE \
     --datasource-mysql-conf=$MY_CNF \
-    --$START_OPTION"     
+    --datasource-log-directory=$BINLOG_DIRECTORY \
+    $MORE_OPTINS --$START_OPTION"     
 
 echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g' >> $INSTALL_LOG
 if [ -n "$VERBOSE" ]
