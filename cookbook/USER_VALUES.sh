@@ -90,7 +90,9 @@ then
 fi
 export REPLICATOR=$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/replicator
 export TREPCTL=$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/trepctl
+export THL=$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/thl
 export DATABASE_USER=tungsten
+export BINLOG_DIRECTORY=/var/lib/mysql
 export DATABASE_PASSWORD=secret
 export DATABASE_PORT=3306
 export TUNGSTEN_SERVICE=cookbook
