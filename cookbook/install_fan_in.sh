@@ -15,8 +15,11 @@ check_installed
 
 echo "installing FAN-IN" >$INSTALL_LOG
 date >> $INSTALL_LOG
-# install all masters
+# install fan in
 INDEX=0
+
+#Install the Master replicators on all the hosts
+
 for NODE in ${MASTERS[*]} $FAN_IN_SLAVE
 do
 
@@ -34,12 +37,12 @@ do
     --datasource-log-directory=$BINLOG_DIRECTORY \
     $MORE_OPTINS --$START_OPTION"     
 
-echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g' >> $INSTALL_LOG
-if [ -n "$VERBOSE" ]
-then
-    echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g'
-fi
-$INSTALL_COMMAND
+	echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g' >> $INSTALL_LOG
+	if [ -n "$VERBOSE" ]
+	then
+	    echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g'
+	fi
+	$INSTALL_COMMAND
 
     if [ "$?" != "0"  ]
     then
@@ -60,6 +63,9 @@ COMMON_OPTIONS="--advanced -C -q
 
 INDEX=0
 # set -x
+
+#Install all the Slave replicators from the Masters on the Fan-In Slave
+
 for REMOTE_MASTER in ${MASTERS[*]}
 do
     INSTALL_COMMAND="$TUNGSTEN_TOOLS/configure-service \
