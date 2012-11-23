@@ -22,7 +22,7 @@ fi
 echo "installing STAR" >$INSTALL_LOG
 date >> $INSTALL_LOG
 
-# install all masters
+# install STAR
 INDEX=0
 for NODE in ${MASTERS[*]}
 do
