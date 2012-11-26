@@ -9,13 +9,13 @@ then
     exit 1
 fi
 
-if [ ! -f ./cookbook/USER_VALUES.sh ]
+if [ ! -f ./cookbook/BOOTSTRAP.sh ]
 then
-    echo "./cookbook/USER_VALUES.sh not found"
+    echo "./cookbook/BOOTSTRAP.sh not found"
     exit 1
 fi
 
-. ./cookbook/USER_VALUES.sh $NODES
+. ./cookbook/BOOTSTRAP.sh $NODES
 
 WANTED_TOPOLOGY=$2
 if [ -z "$WANTED_TOPOLOGY" ]
