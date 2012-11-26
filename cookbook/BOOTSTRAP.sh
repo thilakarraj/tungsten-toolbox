@@ -75,7 +75,22 @@ export MASTERS_LIST
 export SLAVES_LIST
 export HOSTS_LIST
 
+CURRENT_HOST=$(hostname)
 
+for HOST in ${ALL_NODES[*]}
+do
+    if [ "$HOST" == "$CURRENT_HOST" ]
+    then
+        INSTALLER_IN_CLUSTER=1
+    fi
+done
+
+if [ -z "$INSTALLER_IN_CLUSTER" ]
+then
+    echo "This framework is designed to act within the cluster that is installing"
+    echo "The current host ($CURRENT_HOST) is not among the designated servers (${ALL_NODES[*]})"
+    exit 1
+fi
 
 . ./cookbook/USER_VALUES.sh
 
