@@ -122,6 +122,8 @@ function check_installed
     then
         echo "There is a previous installation recorded in $CURRENT_TOPOLOGY"
         cat $CURRENT_TOPOLOGY
+        TOPOLOGY=$(cat $CURRENT_TOPOLOGY)
+        echo "Run cookbook/clear_cluster_$TOPOLOGY.sh to remove this installation"
         exit 1
     fi 
 }
