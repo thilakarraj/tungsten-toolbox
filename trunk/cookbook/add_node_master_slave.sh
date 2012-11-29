@@ -7,7 +7,7 @@ then
     exit 1
 fi
 
-if [ ! -f ./cookbook/BOOTSTRAP.sh ]
+if [ ! -f ./cookbook/utilities.sh ]
 then
     echo "./cookbook/utilities.sh not found"
     exit 1
