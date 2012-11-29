@@ -64,6 +64,8 @@ MYSQLDUMP="mysqldump -u $DATABASE_USER -p$DATABASE_PASSWORD -P $DATABASE_PORT"
 $MYSQLDUMP --all-databases --single-transaction -h $DONOR > /tmp/donor.dmp
 $MYSQL -h $NODE_TO_ADD < /tmp/donor.dmp
 
+rm /tmp/donor.dmp
+
 echo "Adding $NODE_TO_ADD into the cluster"
 
  
