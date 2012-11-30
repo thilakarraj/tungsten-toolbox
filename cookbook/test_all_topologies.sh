@@ -13,10 +13,24 @@ do
     echo "# $TOPOLOGY" 
     echo "# $TOPOLOGY" >> $INSTALL_LOG
     echo "# $TOPOLOGY" >> $TEST_LOG
+    UCTOPOLOGY=$(perl -e "print uc '$TOPOLOGY'")
     ./cookbook/install_$TOPOLOGY.sh >> $INSTALL_LOG 
     if [ -f /tmp/test_log$$ ] ; then rm /tmp/test_log$$ ; fi
-    ./cookbook/test_$TOPOLOGY.sh | tee /tmp/test_log$$
-    cat /tmp/test_log$$ >> $TEST_LOG
+    . ./cookbook/BOOTSTRAP.sh NODES_$UCTOPOLOGY.sh
+    for MODE in row statement
+    do
+        for MASTER in ${MASTERS[*]}
+        do
+            mysql -h $MASTER -u $DATABASE_USER -p$DATABASE_PASSWORD -P $DATABASE_PORT -e "set global binlog_format=$MODE"
+        done 
+        echo "# testing with binlog_format=$MODE" >> /tmp/test_log$$ 
+        # echo "# testing with binlog_format=$MODE" 
+
+        ./cookbook/test_$TOPOLOGY.sh >> /tmp/test_log$$
+        cat /tmp/test_log$$ >> $TEST_LOG
+    done
+    cat /tmp/test_log$$
+    rm /tmp/test_log$$
     ./cookbook/clear_cluster_$TOPOLOGY.sh >> $INSTALL_LOG
 done
 
