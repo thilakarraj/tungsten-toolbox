@@ -109,7 +109,7 @@ fi
 
 
 export REPLICATOR=$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/replicator
-export TREPCTL=$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/trepctl
+export TREPCTL="$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/trepctl -port $RMI_PORT"
 export THL=$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/thl
 
 export INSTALL_LOG=./cookbook/current_install.log
