@@ -19,6 +19,16 @@ export MASTER=${MASTERS[0]}
 echo "installing MASTER/SLAVE" >$INSTALL_LOG
 date >> $INSTALL_LOG
 
+if [ -n "$VALIDATE_ONLY"  ]
+then
+    MORE_OPTIONS="--validate-only -a"
+    if [ -n "$VERBOSE" ]
+    then
+        MORE_OPTIONS="$MORE_OPTIONS --info"
+    fi
+    echo "# Performing validation check ..."
+fi
+
 INSTALL_COMMAND="./tools/tungsten-installer \
     --master-slave \
     --master-host=$MASTER \
@@ -43,7 +53,12 @@ $INSTALL_COMMAND
 
 if [ "$?" != "0"  ]
 then
-    exit
+    exit 1
+fi
+
+if [ -n "$VALIDATE_ONLY" ]
+then
+    exit 0
 fi
 
 echo "master_slave" > $CURRENT_TOPOLOGY
