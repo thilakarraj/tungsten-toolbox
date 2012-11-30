@@ -35,6 +35,8 @@ do
     --cluster-hosts=$NODE \
     --datasource-mysql-conf=$MY_CNF \
     --datasource-log-directory=$BINLOG_DIRECTORY \
+    --rmi-port=$RMI_PORT \
+    --thl-port=$THL_PORT \
     $MORE_OPTINS --$START_OPTION"     
 
 	echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g' >> $INSTALL_LOG
@@ -72,6 +74,7 @@ do
         --host=$FAN_IN_SLAVE \
         ${COMMON_OPTIONS} \
         --master-thl-host=$REMOTE_MASTER \
+        --master-thl-port=$THL_PORT \
         --svc-$START_OPTION ${MM_SERVICES[$INDEX]}"
 
     echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g' >> $INSTALL_LOG

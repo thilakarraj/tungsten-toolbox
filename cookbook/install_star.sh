@@ -38,6 +38,8 @@ do
     --cluster-hosts=$NODE \
     --datasource-mysql-conf=$MY_CNF \
     --datasource-log-directory=$BINLOG_DIRECTORY \
+    --rmi-port=$RMI_PORT \
+    --thl-port=$THL_PORT \
     $MORE_OPTIONS $START_OPTION "
 
     echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g' >> $INSTALL_LOG
@@ -79,6 +81,7 @@ do
             --release-directory=$TUNGSTEN_BASE/tungsten \
             --skip-validation-check=THLStorageCheck \
             --master-thl-host=$HUB \
+            --master-thl-port=$THL_PORT \
             --svc-$START_OPTION  $HUB_SERVICE "
 
         echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g' >> $INSTALL_LOG
@@ -105,6 +108,7 @@ do
             --release-directory=$TUNGSTEN_BASE/tungsten \
             --skip-validation-check=THLStorageCheck \
             --master-thl-host=$NODE \
+            --master-thl-port=$THL_PORT \
             --svc-$START_OPTION \
             ${MM_SERVICES[$INDEX]}"
 
