@@ -18,13 +18,14 @@ The following topologies are supported
 
 GETTING STARTED:
 
-1) deploy the cookbook directory inside the expanded Tungsten Replicator tarball. (See the section "DEPLOYING THE COOKBOOK" for more information.
-2) edit the COMMON_NODES.sh file, with the list of your nodes
+1) unpack the Tungsten tarball
+2) edit ./cookbook/COMMON_NODES.sh file, with the list of your nodes
 3) If you are using a number of nodes other than 4, in the NODES_xxxxxx file, 
    a) add as many nodes you are using
    b) check the variables ALL_NODES, MASTERS, and SLAVES, and make sure that they list existing nodes
    c) if you are using less than 4 nodes, comment out the extra ones
-4) Run the command corresponding to the topology you want to install. The command must run from the directory above the cookbook, i.e the directorfrom where you can access ./tools/tungsten-replicator.
+4) edit ./cookbook/USER_VALUES.sh
+5) Run the command corresponding to the topology you want to install. The command must run from the directory above the cookbook, i.e the directory from where you can access ./tools/tungsten-replicator.
 For example:
    ./cookbook/install_master_slave.sh
    ./cookbook/install_all_masters.sh
@@ -66,16 +67,4 @@ If you want to test all topologies in one go, after you have updated COMMON_NODE
 This command will install, test, and uninstall all topologies, and return the summary of tests results (total, pass, fail).
 
 
-DEPLOYING THE COOKBOOK
-
-You can get the cookbook as a tarball, and manually deploying it. The place where it must go is the directory created when you expand the Tungsten-Replicator tarball.
-For example, if you have expanded tungsten-replicator-2.0.6.tar.gz, you will have 
-tungsten-replicator-2.0.6/
-and your cookbook should be under
-tungsten-replicator-2.0.6/cookbook
-
-If you are getting the cookbook from the source, you can deploy with two easy moves:
-1) in the cookbook directory, run ./make_package.sh
-2) this command creates tungsten-replicator-cookbook.tar.gz, which you should copy, together with deploy_cookbook.sh, inside the aforementioned expanded tarball (for example, 'tungsten-replicator-2.0.6').
-3) running deploy_cookbook.sh will create the directory and invite you to read this file.
 

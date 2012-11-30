@@ -11,7 +11,7 @@ clear_cluster_all_masters.sh
 clear_cluster_fan_in.sh
 clear_cluster_master_slave.sh
 clear_cluster_star.sh
-deploy_cookbook.sh
+collect_logs.sh
 install_all_masters.sh
 install_fan_in.sh
 install_master_slave.sh
