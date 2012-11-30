@@ -21,6 +21,8 @@ check_current_topology "master_slave"
 function find_roles {
     SLAVE_COUNT=0
     SLAVES=()
+    FREE_COUNT=0
+    FREE=()
     for NODE in ${ALL_NODES[*]} 
     do 
         echo -n "$NODE "
@@ -29,11 +31,18 @@ function find_roles {
         then
             export MASTER=$NODE
             echo "master"
-        else
-            SLAVES[$SLAVE_COUNT]=$NODE
-            SLAVE_COUNT=$(($SLAVE_COUNT+1))
-            echo "slave"
-        fi
+    	else
+	    	if  [ "$role" == "slave" ] 
+	    	then
+	            SLAVES[$SLAVE_COUNT]=$NODE
+	            SLAVE_COUNT=$(($SLAVE_COUNT+1))
+	            echo "slave"
+			else
+				FREE[$FREE_COUNT]=$NODE
+	            FREE_COUNT=$(($FREE_COUNT+1))
+			    echo "free"
+			fi
+	 fi
     done
 
     if [ -z "$MASTER" ]
@@ -43,19 +52,14 @@ function find_roles {
     fi
     export  MASTERS=($MASTER)
     export SLAVES=(${SLAVES[*]})
+    export FREE=(${FREE[*]})
 }
 
 find_roles
 
-#This script will first take the 1st Slave out of the cluster
-#then it will add it back in
+NODE_TO_ADD=${FREE[0]}
 
-NODE_TO_ADD=${SLAVES[0]}
-
-echo "Removing $NODE_TO_ADD from cluster"
-clear_node $NODE_TO_ADD
-
-DONOR=${SLAVES[1]}
+DONOR=${SLAVES[0]}
 
 echo "Populating $NODE_TO_ADD with data from $DONOR"
 MYSQL="mysql -u $DATABASE_USER -p$DATABASE_PASSWORD -P $DATABASE_PORT"
