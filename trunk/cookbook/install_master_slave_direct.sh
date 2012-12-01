@@ -55,7 +55,7 @@ done
  
 for NODE in ${SLAVES[*]}
 do
-	tungsten-replicator/bin/trepctl -host $NODE services | cookbook/simple_services
+	tungsten-replicator/bin/trepctl -host $NODE services
 done
 
 echo "master_slave_direct" > $CURRENT_TOPOLOGY
