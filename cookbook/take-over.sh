@@ -42,6 +42,7 @@ INSTALL_COMMAND="./tools/tungsten-installer \
     --home-directory=$TUNGSTEN_BASE \
     --cluster-hosts=$HOSTS_LIST \
     --datasource-mysql-conf=$MY_CNF \
+    --datasource-log-directory=$BINLOG_DIRECTORY \
     --rmi-port=$RMI_PORT \
     --thl-port=$THL_PORT \
     $MORE_OPTIONS --$START_OPTION"     

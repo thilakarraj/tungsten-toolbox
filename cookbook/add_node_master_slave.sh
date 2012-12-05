@@ -86,7 +86,9 @@ INSTALL_COMMAND="./tools/tungsten-installer \
     --cluster-hosts=$NODE_TO_ADD \
     --datasource-mysql-conf=$MY_CNF \
     --datasource-log-directory=$BINLOG_DIRECTORY \
-     --skip-validation-check=InstallerMasterSlaveCheck \
+    --rmi-port=$RMI_PORT \
+    --thl-port=$THL_PORT \
+    --skip-validation-check=InstallerMasterSlaveCheck \
     $MORE_OPTIONS --$START_OPTION"     
 
 if [ -n "$VERBOSE" ]
