@@ -26,6 +26,8 @@ fi
 
 check_current_topology $WANTED_TOPOLOGY
 
+are_you_sure_you_want_to_clear
+
 MYSQL="mysql -u $DATABASE_USER -p$DATABASE_PASSWORD -P $DATABASE_PORT"
 for NODE in ${ALL_NODES[*]} 
 do 

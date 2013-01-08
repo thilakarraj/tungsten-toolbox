@@ -147,3 +147,26 @@ function check_current_topology
     fi
 }
 
+function are_you_sure_you_want_to_clear
+{
+    echo "--------------------------------------------------------------------------------------"
+    echo "!!! WARNING !!!"
+    echo "--------------------------------------------------------------------------------------"
+    echo "'clear-cluster' is a potentially damaging operation."
+    echo "This command will stop the replication software in all servers"
+    echo "and REMOVE ALL THE CONTENTS from $TUNGSTEN_BASE/."
+    echo "*** It will also REMOVE ALL DATABASE CONTENTS in all servers. (${ALL_NODES[*]}) *** "
+    echo "If this is what you want, either set the variable I_WANT_TO_UNINSTALL "
+    echo "or answer 'y' to the question below"
+    echo "Alternatively, have a look at $0 and customize it to your needs."
+    echo "--------------------------------------------------------------------------------------"
+
+    while [ -z "$I_WANT_TO_UNINSTALL" ] ; do
+        read -p 'Do you wish to uninstall this cluster? [y/n] ' yn 
+        case $yn in 
+            [Yy]* ) I_WANT_TO_UNINSTALL=YES;; 
+            [Nn]* ) exit;;
+            * ) echo 'Please answer (y) or (n).';;
+        esac
+    done
+}
