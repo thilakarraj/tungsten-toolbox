@@ -11,6 +11,8 @@ fi
 
 . ./cookbook/BOOTSTRAP.sh NODES_MASTER_SLAVE.sh
 
+are_you_sure_you_want_to_clear
+
 MYSQL="mysql -u $DATABASE_USER -p$DATABASE_PASSWORD -P $DATABASE_PORT"
 for NODE in ${ALL_NODES[*]} 
 do 

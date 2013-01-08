@@ -31,7 +31,9 @@ do
     done
     cat /tmp/test_log$$
     rm /tmp/test_log$$
+    export I_WANT_TO_UNINSTALL=1
     ./cookbook/clear_cluster_$TOPOLOGY.sh >> $INSTALL_LOG
+    unset I_WANT_TO_UNINSTALL
 done
 
 OK=$(grep "^ok" $TEST_LOG| wc -l)
