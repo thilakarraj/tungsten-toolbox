@@ -18,11 +18,12 @@ fi
 
 check_current_topology "all_masters"
 
-function find_free {
+function find_free_node {
     FREE_COUNT=0
+    USED_SERVICE_COUNT=0
     N_INDEX=0
     FREE=()
-    FREE_SERVICE=()
+    USED_SERVICE=()
     for NODE in ${ALL_NODES[*]} 
     do 
         echo -n "$NODE "
@@ -42,11 +43,17 @@ function find_free {
     export FREE_SERVICE=(${FREE_SERVICE[*]})
 }
 
-find_free
+find_free_node
 
 NODE_TO_ADD=${FREE[0]}
-SERVICE_TO_ADD=${FREE_SERVICE[0]}
+SERVICE_TO_ADD="newNode"
 DONOR=${SLAVES[0]}
+
+if [ "$NODE_TO_ADD" == '' ]
+then
+    echo 'No free nodes to add into the cluster'
+    exit 1
+fi
 
 
 echo "Populating $NODE_TO_ADD with data from $DONOR"
