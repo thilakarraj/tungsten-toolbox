@@ -52,7 +52,7 @@ a2=${USED_SERVICE_U[@]}
 freeServiceName=($(diff "$a1" "$a2" ))
 
 NODE_TO_ADD=${FREE[0]}
-SERVICE_TO_ADD=${freeServiceName[@]}
+SERVICE_TO_ADD=${freeServiceName[0]}
 DONOR=${SLAVES[0]}
 
 if [ "$NODE_TO_ADD" == '' ]
