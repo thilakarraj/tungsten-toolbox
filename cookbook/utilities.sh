@@ -53,3 +53,36 @@ function clear_node {
 	    $MYSQL -h $NODE -e 'reset master'	
 	
 }
+
+diff(){
+    a1="$1"
+    a2="$2"
+    awk -va1="$a1" -va2="$a2" '
+     BEGIN{
+       m= split(a1, A1," ")
+       n= split(a2, t," ")
+       for(i=1;i<=n;i++) { A2[t[i]] }
+       for (i=1;i<=m;i++){
+            if( ! (A1[i] in A2)  ){
+                printf A1[i]" "
+            }
+        }
+    }'
+}
+
+function find_used_serviceName {
+
+    USED_SERVICE_COUNT=0
+    USED_SERVICE=()
+    for NODE in ${ALL_NODES[*]} 
+    do 
+        for serviceName in $($TREPCTL -host $NODE services |grep serviceName  | awk '{print $3}')
+        do
+        	
+    		USED_SERVICE[$USED_COUNT]=$serviceName
+    		USED_COUNT=$(($USED_COUNT+1))
+		done
+    done
+    USED_SERVICE_U=$(echo "${USED_SERVICE[*]}"|tr " " "\n"|sort|uniq|tr "\n" " ")
+    export USED_SERVICE=(${USED_SERVICE_U[*]})
+}
