@@ -43,15 +43,27 @@ function find_free_node {
     export FREE_SERVICE=(${FREE_SERVICE[*]})
 }
 
+echo "Looking for a free node"
 find_free_node
+echo "Looking for a free serviceName"
+find_used_serviceName
+a1=${MM_SERVICES[@]}
+a2=${USED_SERVICE_U[@]}
+freeServiceName=($(diff "$a1" "$a2" ))
 
 NODE_TO_ADD=${FREE[0]}
-SERVICE_TO_ADD="newNode"
+SERVICE_TO_ADD=${freeServiceName[@]}
 DONOR=${SLAVES[0]}
 
 if [ "$NODE_TO_ADD" == '' ]
 then
     echo 'No free nodes to add into the cluster'
+    exit 1
+fi
+
+if [ "$SERVICE_TO_ADD" == '' ]
+then
+    echo 'No free service names to add into the cluster'
     exit 1
 fi
 
