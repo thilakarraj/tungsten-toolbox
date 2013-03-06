@@ -49,7 +49,7 @@ then
     echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g'
 fi
 
-echo $INSTALL_COMMAND >> $INSTALL_LOG
+echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g' >> $INSTALL_LOG
 
 $INSTALL_COMMAND
 
