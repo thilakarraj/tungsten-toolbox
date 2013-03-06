@@ -32,7 +32,7 @@ do
     --datasource-port=$DATABASE_PORT \
     --datasource-user=$DATABASE_USER \
     --datasource-password=$DATABASE_PASSWORD \
-    --datasource-log-directory=/var/lib/mysql \
+    --datasource-log-directory=$BINLOG_DIRECTORY \
     --service-name=${MM_SERVICES[$INDEX]} \
     --home-directory=$TUNGSTEN_BASE \
     --cluster-hosts=$NODE \
