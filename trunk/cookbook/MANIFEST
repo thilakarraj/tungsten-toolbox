@@ -22,6 +22,7 @@ install_master_slave.sh
 install_master_slave_direct.sh
 install_standard_replication.sh
 install_star.sh
+load_data.sh
 make_package.sh
 pre_req_checker/tungsten_prereq
 show_all_masters.sh
