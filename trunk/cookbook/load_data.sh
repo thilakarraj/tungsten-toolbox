@@ -6,6 +6,8 @@ function gethelp
 {
     echo "syntax: $0 {start|stop|print}"
     echo "Starts (or stops) a Bristlecone load in every master deployed in the current topology"
+    echo "For more info about this load, see "
+    echo  "./bristlecone/bin/concurrent_evaluator.pl --help"
     exit
 }
 
@@ -68,7 +70,7 @@ do
    else
        mkdir -p $JOB_INFO_PATH/$db
    fi
-   BRISTLECONE_OPTIONS="--deletes=1 --updates=1 --inserts=3 --test-duration=100"
+   BRISTLECONE_OPTIONS="--deletes=1 --updates=1 --inserts=3 --test-duration=3600"
    EVALUATOR="$TUNGSTEN_BASE/tungsten/bristlecone/bin/concurrent_evaluator.pl"
    DB_OPTIONS="--host=$HOST --port=$DATABASE_PORT -u $DATABASE_USER -p $DATABASE_PASSWORD "
    EV_OPTIONS="--continuent-root=$TUNGSTEN_BASE -d $db -s $JOB_INFO_PATH/$db"
