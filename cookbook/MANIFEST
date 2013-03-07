@@ -16,6 +16,7 @@ clear_cluster_master_slave.sh
 clear_cluster_master_slave_direct.sh
 clear_cluster_star.sh
 collect_logs.sh
+deploy_to_sandboxes.sh
 install_all_masters.sh
 install_fan_in.sh
 install_master_slave.sh
