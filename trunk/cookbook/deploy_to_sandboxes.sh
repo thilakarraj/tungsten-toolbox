@@ -7,8 +7,9 @@
 [ -z "$MYSQL_PORT" ]    && MYSQL_PORT=17100
 [ -z "$SANDBOX_DIR" ]   && SANDBOX_DIR=tungsten_deployment
 UPDATE_USER_VALUES=1
+NODES_LIST=
 
-NODES=COMMON_NODES
+NODES_FILE=COMMON_NODES
 TARBALL=
 
 function show_help {
@@ -18,7 +19,8 @@ function show_help {
     echo "-P port          => MySQL port  ($MYSQL_PORT)"
     echo "-d sandbox dir   => sandbox directory name ($SANDBOX_DIR)"
     echo "-m version       => MySQL version ($MYSQL_VERSION)"
-    echo "-n nodes file    => NODES file to load ($NODES)"
+    echo "-n nodes file    => NODES file to load ($NODES_FILE)"
+    echo "-l list of nodes =>list of nodes to use instead of the ones in the NODES file"
     echo '-t tarball       => MySQL tarball to install remotely (none)'
     echo '-U               => DO NOT update USER_VALUES.sh (yes by default)'
     echo ""
@@ -28,7 +30,7 @@ function show_help {
     exit 1
 }
 
-args=$(getopt hUP:m:n:d:t: $*)
+args=$(getopt hUP:m:n:d:l:t: $*)
 
 if [ $? != 0 ]
 then
@@ -50,7 +52,19 @@ do
             shift
             ;;
         -n)
-            NODES=$2
+            NODES_FILE=$2
+            shift
+            shift
+            ;;
+        -l)
+            NODES_LIST=$(echo $2 | tr ',' ' ')
+            count=0
+            for NODE in $NODES_LIST
+            do
+                NODES[$count]=$NODE
+                count=$(($count+1))
+            done
+            export UPDATE_USER_VALUES=
             shift
             shift
             ;;
@@ -81,27 +95,22 @@ do
     esac
 done
 
-if [ ! -f ./cookbook/$NODES.sh ]
+
+if [ -z "$NODES_LIST" ]
 then
-    echo "could not find ./cookbook/$NODES.sh"
-    exit 1
+    if [ ! -f ./cookbook/$NODES_FILE.sh ]
+    then
+        echo "could not find ./cookbook/$NODES_FILE.sh"
+        exit 1
+    fi
+    . ./cookbook/$NODES_FILE.sh
+    if [ $NODES_FILE == "COMMON_NODES" ]
+    then
+        NODES=($NODE1 $NODE2 $NODE3 $NODE4 $NODE5 $NODE6 $NODE7 $NODE8 $NODE9 $NODE10)
+    else
+        NODES=$ALL_NODES
+    fi
 fi
-
-. ./cookbook/$NODES.sh
-if [ $NODES == "COMMON_NODES" ]
-then
-    NODES=($NODE1 $NODE2 $NODE3 $NODE4 $NODE5 $NODE6 $NODE7 $NODE8 $NODE9 $NODE10)
-else
-    NODES=$ALL_NODES
-fi
-
-# checks that the required mysql version is available in $HOME/opt/mysql
-#for HOST in ${NODES[*]}
-#do 
-#    ssh $HOST "if [ ! -d $HOME/opt/mysql/$MYSQL_VERSION ] ; then echo 'host $HOST - no $MYSQL_VERSION found'; exit 1 ; fi" 
-#done
-
-if [  "$?" != "0" ] ; then exit ; fi
 
 # remove the sandbox if it already exists
 for HOST in ${NODES[*]} 
