@@ -47,17 +47,17 @@ do
             show_help
             ;;
         -d)
-            SANDBOX_DIR=$2
+            export SANDBOX_DIR=$2
             shift
             shift
             ;;
         -n)
-            NODES_FILE=$2
+            export NODES_FILE=$2
             shift
             shift
             ;;
         -l)
-            NODES_LIST=$(echo $2 | tr ',' ' ')
+            export NODES_LIST=$(echo $2 | tr ',' ' ')
             count=0
             for NODE in $NODES_LIST
             do
@@ -74,7 +74,7 @@ do
             shift
             ;;
         -P)
-            MYSQL_PORT=$2
+            export MYSQL_PORT=$2
             shift
             shift
             ;;
