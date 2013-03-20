@@ -34,6 +34,10 @@ do
     --service-name=$TUNGSTEN_SERVICE \
     --home-directory=$TUNGSTEN_BASE \
     --slave-host=$NODE \
+    --master-mysql-conf=$DIRECT_MASTER_MY_CNF \
+    --master-log-directory=$DIRECT_MASTER_BINLOG_DIRECTORY \
+    --slave-mysql-conf=$DIRECT_SLAVE_MY_CNF \
+    --slave-log-directory=$DIRECT_SLAVE_BINLOG_DIRECTORY \
     $MORE_OPTIONS --$START_OPTION"
 
     echo $INSTALL_COMMAND  | perl -pe 's/--/\n\t--/g' >> $INSTALL_LOG
