@@ -26,14 +26,35 @@ fi
 
 fill_roles
 
-for NODE in ${MASTERS[*]}
+[ -z "$TMPDIR" ] && export TMPDIR=/tmp
+
+if [ ! -d $TMPDIR ]
+then
+    export TMPDIR=$PWD
+fi
+
+TOPOLOGY=`cat CURRENT_TOPOLOGY`
+if [ "$TOPOLOGY" == 'master_slave_direct' ]
+then
+    ALL_NODES=${ALL_SLAVES[*]}
+else
+    for NODE in ${MASTERS[*]}
+    do
+        SERVICE=$($TREPCTL -host $NODE services |$SIMPLE_SERVICES -r master -a list)
+        $TREPCTL -host $NODE -service $SERVICE heartbeat
+    done
+fi
+
+for NODE in ${ALL_NODES[*]}
 do
-    SERVICE=$($TREPCTL -host $NODE services |$SIMPLE_SERVICES -r master -a list)
-    $TREPCTL -host $NODE -service $SERVICE heartbeat
+    $TREPCTL -host $NODE services | $SIMPLE_SERVICES > $TMPDIR/services$$.$NODE &
 done
+
+wait
 
 for NODE in ${ALL_NODES[*]}
 do
     echo "# node $NODE"
-    $TREPCTL -host $NODE services | $SIMPLE_SERVICES
+    cat $TMPDIR/services$$.$NODE
+    rm $TMPDIR/services$$.$NODE
 done

@@ -15,3 +15,9 @@ export RMI_PORT=10000
 export THL_PORT=2112
 [ -z "$START_OPTION" ] && export START_OPTION=start
 
+# Options used by the "direct slave " installer only
+# Modify only if you are using 'install_master_slave_direct.sh'
+export DIRECT_MASTER_BINLOG_DIRECTORY=$BINLOG_DIRECTORY
+export DIRECT_SLAVE_BINLOG_DIRECTORY=$BINLOG_DIRECTORY
+export DIRECT_MASTER_MY_CNF=$MY_CNF
+export DIRECT_SLAVE_MY_CNF=$MY_CNF
