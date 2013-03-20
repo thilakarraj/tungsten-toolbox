@@ -41,3 +41,4 @@ test_fan_in.sh
 test_master_slave.sh
 test_star.sh
 utilities.sh
+validate_cluster.sh
