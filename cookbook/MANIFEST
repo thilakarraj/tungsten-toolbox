@@ -16,7 +16,9 @@ clear_cluster_master_slave.sh
 clear_cluster_master_slave_direct.sh
 clear_cluster_star.sh
 collect_logs.sh
+conf.sh
 deploy_to_sandboxes.sh
+edit_conf.sh
 install_all_masters.sh
 install_fan_in.sh
 install_master_slave.sh
@@ -24,11 +26,14 @@ install_master_slave_direct.sh
 install_standard_replication.sh
 install_star.sh
 load_data.sh
-make_package.sh
+log.sh
 pre_req_checker/tungsten_prereq
+replicator.sh
 show_all_masters.sh
 show_cluster.sh
+show_conf.sh
 show_fan_in.sh
+show_log.sh
 show_master_slave.sh
 show_star.sh
 simple_services
@@ -40,5 +45,11 @@ test_cluster.sh
 test_fan_in.sh
 test_master_slave.sh
 test_star.sh
+thl.sh
+tool.sh
+trepctl.sh
 utilities.sh
 validate_cluster.sh
+vilog.sh
+vimconf.sh
+vimlog.sh
