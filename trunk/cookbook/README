@@ -25,12 +25,18 @@ GETTING STARTED:
    b) check the variables ALL_NODES, MASTERS, and SLAVES, and make sure that they list existing nodes
    c) if you are using less than 4 nodes, comment out the extra ones
 4) edit ./cookbook/USER_VALUES.sh
-5) Run the command corresponding to the topology you want to install. The command must run from the directory above the cookbook, i.e the directory from where you can access ./tools/tungsten-replicator.
+5) Optionally, but recommended: VALIDATE your cluster, i.e check that the installer can work fine in them.
+   Run ./cookbook/validate_cluster.sh
+   This command does not install anything, but will perform all healthy checks. Thus you will know if your sustem
+   is fit to install Tungsten.
+   If anything goes wrong and you want to see more detail, repeat the validation in debug mode:
+   VERBOSE=2 ./cookbook/validate_cluster.sh
+6) Run the command corresponding to the topology you want to install. The command must run from the directory above the cookbook, i.e the directory from where you can access ./tools/tungsten-replicator.
 For example:
-   ./cookbook/install_master_slave.sh
-   ./cookbook/install_all_masters.sh
-   ./cookbook/install_fan_in.sh
-   ./cookbook/install_star.sh
+   VERBOSE=1 ./cookbook/install_master_slave.sh
+   VERBOSE=1 ./cookbook/install_all_masters.sh
+   VERBOSE=1 ./cookbook/install_fan_in.sh
+   VERBOSE=1 ./cookbook/install_star.sh
 
 
 AFTER INSTALLATION
@@ -58,6 +64,28 @@ And finally commands that remove the installed replicators and clean up the data
 * ./cookbook/clear_cluster_star.sh
 * ./cookbook/clear_cluster_fan_in.sh
 * ./cookbook/clear_cluster_all_masters.sh
+
+MONITORING AND MAINTENANCE TOOLS
+
+The cookbook includes several shortcuts to the installed tools
+* trepctl
+* thl
+* replicator
+For each one of the above, there is a corresponding ./cookbook/$TOOL_NAME.sh
+
+e.g.: ./cookbook/trepctl status
+
+Similarly, there are maintenance scripts that give you quick access to the configuration and logs
+* log        shows the replicator log using 'less'
+* show_log   same as 'log'
+* vilog      shows the log using 'vi'
+* vimlog     shows the log using 'vim'
+* conf       shows the configuration files using 'less'
+* vimconf    edit the configuration files using 'vim'
+* edit_conf  same as 'vimconf'
+
+You can invoke each of the above by adding '.sh' at the end
+e.g.: ./cookbook/vimlog.sh
 
 TESTING ALL TOPOLOGIES
 If you want to test all topologies in one go, after you have updated COMMON_NODES.sh (and eventually all the NODES_*.sh files if you are using more nodes), you can run
