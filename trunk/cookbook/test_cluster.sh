@@ -2,6 +2,12 @@
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
 # Version 1.0.4 - 2013-03-07
 
+if [ ! -f CURRENT_TOPOLOGY ]
+then
+    echo "This command requires an installed cluster"
+    exit 1
+fi
+
 NODES=$1
 if [ -z "$NODES" ]
 then

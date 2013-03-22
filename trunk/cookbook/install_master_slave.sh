@@ -21,10 +21,15 @@ date >> $INSTALL_LOG
 
 if [ -n "$VALIDATE_ONLY"  ]
 then
-    MORE_OPTIONS="--validate-only -a"
+    MORE_OPTIONS="$MORE_OPTIONS --validate-only -a"
     if [ -n "$VERBOSE" ]
     then
-        MORE_OPTIONS="$MORE_OPTIONS --info"
+        if [ "$VERBOSE" -gt "1" ]
+        then
+            MORE_OPTIONS="$MORE_OPTIONS --verbose"
+        else
+            MORE_OPTIONS="$MORE_OPTIONS --info"
+        fi
     fi
     echo "# Performing validation check ..."
 fi
