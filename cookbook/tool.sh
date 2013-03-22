@@ -23,16 +23,7 @@ then
     exit 1
 fi
 
-if [ ! -f ./cookbook/utilities.sh ]
-then
-    echo "./cookbook/utilities.sh not found"
-    exit 1
-fi
-
 . ./cookbook/BOOTSTRAP.sh $NODES
-. ./cookbook/utilities.sh 
-
-fill_roles
 
 SUPPORTED_TOOLS="trepctl thl replicator log vilog vimlog conf vimconf"
 
