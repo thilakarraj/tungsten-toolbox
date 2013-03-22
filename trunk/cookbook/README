@@ -15,7 +15,6 @@ The following topologies are supported
 * all-masters (many masters, with slave services for all nodes)
 * star schema (many masters, interconnected through a hub)
 
-
 GETTING STARTED:
 
 1) unpack the Tungsten tarball
@@ -38,6 +37,16 @@ For example:
    VERBOSE=1 ./cookbook/install_fan_in.sh
    VERBOSE=1 ./cookbook/install_star.sh
 
+DRY RUN, OR MEETING SPECIAL INSTALLATION NEEDS
+If you don't have SSH access between nodes, the installation scripts in the cookbook will not work.
+Also, if you need to modify options for a single node, the cookbook scripts offer minimal help, or none at all.
+However, in this cases you can ask the cookbook to show you the installation commands, without actually executing them.
+
+Run:
+DRYRUN=1 ./cookbook/install_$TOPOLOGY.sh
+and you will get all the commands in the screen, with the proper sequence and a comment saying in which mode they should run.
+
+With this installation mode, you should manually download and expand the tarball in each node, and run the required commands manually.
 
 AFTER INSTALLATION
 

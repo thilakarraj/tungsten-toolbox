@@ -15,6 +15,13 @@ check_installed
 
 echo "installing ALL_MASTERS" >$INSTALL_LOG
 date >> $INSTALL_LOG
+if [ -n "$DRYRUN" ]
+then
+    [ -z "$VERBOSE" ] && VERBOSE=1
+fi 
+
+COMMAND_SEQUENCE=1
+
 
 # install all masters
 INDEX=0
@@ -36,16 +43,23 @@ do
     --thl-port=$THL_PORT \
     $MORE_OPTIONS --$START_OPTION"
 
-    echo $INSTALL_COMMAND  | perl -pe 's/--/\n\t--/g' >> $INSTALL_LOG
+    echo "## $COMMAND_SEQUENCE (host: $NODE)" >> $INSTALL_LOG
+    echo $INSTALL_COMMAND  | perl -pe 's/--/\\\n\t--/g' >> $INSTALL_LOG
     if [ -n "$VERBOSE" ]
     then
-        echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g'
+        echo "## $COMMAND_SEQUENCE (host: $NODE)"
+        echo $INSTALL_COMMAND | perl -pe 's/--/\\\n\t--/g'
     fi
-    $INSTALL_COMMAND
+    COMMAND_SEQUENCE=$(($COMMAND_SEQUENCE+1))
 
-    if [ "$?" != "0"  ]
+    if [ -z "$DRYRUN" ]
     then
-        exit
+        $INSTALL_COMMAND
+
+        if [ "$?" != "0"  ]
+        then
+            exit
+        fi
     fi
     INDEX=$(($INDEX+1))
 done
@@ -76,16 +90,23 @@ do
             --master-thl-port=$THL_PORT \
             --svc-$START_OPTION ${MM_SERVICES[$M_INDEX]} "
 
-            echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g' >> $INSTALL_LOG
+            echo "## $COMMAND_SEQUENCE (host: $SLAVE)" >> $INSTALL_LOG
+            echo $INSTALL_COMMAND | perl -pe 's/--/\\\n\t--/g' >> $INSTALL_LOG
             if [ -n "$VERBOSE" ]
             then
-                echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g'
+                echo "## $COMMAND_SEQUENCE (host: $SLAVE)"
+                echo $INSTALL_COMMAND | perl -pe 's/--/\\\n\t--/g'
             fi
 
-            $INSTALL_COMMAND
-            if [ "$?" != "0"  ]
+            COMMAND_SEQUENCE=$(($COMMAND_SEQUENCE+1))
+
+            if [ -z "$DRYRUN" ]
             then
-                exit
+                $INSTALL_COMMAND
+                if [ "$?" != "0"  ]
+                then
+                    exit
+                fi
             fi
         fi
         M_INDEX=$(($M_INDEX+1))
@@ -93,5 +114,12 @@ do
     S_INDEX=$(($S_INDEX+1))
 done
 # set +x
+if  [ -n "$DRYRUN" ]
+then
+    echo "## $COMMAND_SEQUENCE (host: $(hostname)"
+    echo "echo 'all_masters' > $CURRENT_TOPOLOGY"
+    exit
+fi
+
 echo "all_masters" > $CURRENT_TOPOLOGY
 ./cookbook/show_cluster.sh NODES_ALL_MASTERS.sh

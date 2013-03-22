@@ -12,6 +12,12 @@ check_installed
 
 # ./cookbook/clear_cluster.sh NODES_MASTER_SLAVE.sh
 
+if  [ -n "$DRYRUN" ]
+then
+    echo "DRYRUN not yet supported for this installer"
+    exit 1
+fi
+
 export MASTER=${MASTERS[0]}
 MYSQL="mysql -u $DATABASE_USER -p$DATABASE_PASSWORD -P $DATABASE_PORT"
 

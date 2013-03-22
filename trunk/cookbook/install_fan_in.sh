@@ -15,6 +15,14 @@ check_installed
 
 echo "installing FAN-IN" >$INSTALL_LOG
 date >> $INSTALL_LOG
+
+if [ -n "$DRYRUN" ]
+then
+    [ -z "$VERBOSE" ] && VERBOSE=1
+fi 
+
+COMMAND_SEQUENCE=1
+
 # install fan in
 INDEX=0
 
@@ -39,16 +47,22 @@ do
     --thl-port=$THL_PORT \
     $MORE_OPTINS --$START_OPTION"     
 
-	echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g' >> $INSTALL_LOG
+    echo "## $COMMAND_SEQUENCE (host: $NODE)" >> $INSTALL_LOG
+	echo $INSTALL_COMMAND | perl -pe 's/--/\\\n\t--/g' >> $INSTALL_LOG
 	if [ -n "$VERBOSE" ]
 	then
-	    echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g'
+        echo "## $COMMAND_SEQUENCE (host: $NODE)"
+	    echo $INSTALL_COMMAND | perl -pe 's/--/\\\n\t--/g'
 	fi
-	$INSTALL_COMMAND
-
-    if [ "$?" != "0"  ]
+    COMMAND_SEQUENCE=$(($COMMAND_SEQUENCE+1))
+    if [ -z "$DRYRUN" ]
     then
-        exit
+	    $INSTALL_COMMAND
+
+        if [ "$?" != "0"  ]
+        then
+            exit
+        fi
     fi
     INDEX=$(($INDEX+1))
 done
@@ -77,19 +91,33 @@ do
         --master-thl-port=$THL_PORT \
         --svc-$START_OPTION ${MM_SERVICES[$INDEX]}"
 
+    echo "## $COMMAND_SEQUENCE (host: $FAN_IN_SLAVE)" >> $INSTALL_LOG
     echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g' >> $INSTALL_LOG
     if [ -n "$VERBOSE" ]
     then
-        echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g'
+        echo "## $COMMAND_SEQUENCE (host: $FAN_IN_SLAVE)"
+        echo $INSTALL_COMMAND | perl -pe 's/--/\\\n\t--/g'
     fi
-    $INSTALL_COMMAND
-    if [ "$?" != "0"  ]
+    COMMAND_SEQUENCE=$(($COMMAND_SEQUENCE+1))
+    if [ -z "DRYRUN" ]
     then
-        exit
+        $INSTALL_COMMAND
+        if [ "$?" != "0"  ]
+        then
+            exit
+        fi
     fi
     INDEX=$(($INDEX+1))
 done
 #set +x
+
+if  [ -n "$DRYRUN" ]
+then
+    echo "## $COMMAND_SEQUENCE (host: $(hostname)"
+    echo "echo 'fan_in' > $CURRENT_TOPOLOGY"
+    exit
+fi
+
 echo "fan_in" > $CURRENT_TOPOLOGY
 ./cookbook/show_cluster.sh NODES_FAN_IN.sh
 

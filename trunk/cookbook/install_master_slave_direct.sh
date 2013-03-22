@@ -13,6 +13,11 @@ export MASTER=${MASTERS[0]}
 
 check_installed
 
+if  [ -n "$DRYRUN" ]
+then
+    echo "DRYRUN not yet supported for this installer"
+    exit 1
+fi
 
 echo "installing MASTER_SLAVE_DIRECT" >$INSTALL_LOG
 date >> $INSTALL_LOG
