@@ -22,6 +22,13 @@ fi
 echo "installing STAR" >$INSTALL_LOG
 date >> $INSTALL_LOG
 
+if [ -n "$DRYRUN" ]
+then
+    [ -z "$VERBOSE" ] && VERBOSE=1
+fi 
+
+COMMAND_SEQUENCE=1
+
 # install STAR
 INDEX=0
 for NODE in ${MASTERS[*]}
@@ -42,17 +49,21 @@ do
     --thl-port=$THL_PORT \
     $MORE_OPTIONS $START_OPTION "
 
-    echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g' >> $INSTALL_LOG
+    echo "## $COMMAND_SEQUENCE (host: $NODE)" >> $INSTALL_LOG
+    echo $INSTALL_COMMAND | perl -pe 's/--/\\\n\t--/g' >> $INSTALL_LOG
     if [ -n "$VERBOSE" ]
     then
-        echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g'
+        echo "## $COMMAND_SEQUENCE (host: $NODE)"
+        echo $INSTALL_COMMAND | perl -pe 's/--/\\\n\t--/g'
     fi
-
-    $INSTALL_COMMAND
-
-    if [ "$?" != "0"  ]
+    COMMAND_SEQUENCE=$(($COMMAND_SEQUENCE+1))
+    if  [ -z "$DRYRUN" ]
     then
-        exit
+        $INSTALL_COMMAND
+        if [ "$?" != "0"  ]
+        then
+            exit
+        fi
     fi
     INDEX=$(($INDEX+1))
 done
@@ -84,18 +95,24 @@ do
             --master-thl-port=$THL_PORT \
             --svc-$START_OPTION  $HUB_SERVICE "
 
-        echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g' >> $INSTALL_LOG
+        echo "## $COMMAND_SEQUENCE (host: $NODE)" >> $INSTALL_LOG
+        echo $INSTALL_COMMAND | perl -pe 's/--/\\\n\t--/g' >> $INSTALL_LOG
 
         if [ -n "$VERBOSE" ]
         then
-            echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g'
+            echo "## $COMMAND_SEQUENCE (host: $NODE)"
+            echo $INSTALL_COMMAND | perl -pe 's/--/\\\n\t--/g'
         fi
-        $INSTALL_COMMAND
-        if [ "$?" != "0"  ]
-        then
-            exit
-        fi
+        COMMAND_SEQUENCE=$(($COMMAND_SEQUENCE+1))
 
+        if  [ -z "$DRYRUN" ]
+        then
+            $INSTALL_COMMAND
+            if [ "$?" != "0"  ]
+            then
+                exit
+            fi
+        fi
         # Setting a slave service on the hub
         INSTALL_COMMAND="$TUNGSTEN_TOOLS/configure-service \
             --quiet -C \
@@ -112,21 +129,35 @@ do
             --svc-$START_OPTION \
             ${MM_SERVICES[$INDEX]}"
 
-        echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g' >> $INSTALL_LOG
+        echo "## $COMMAND_SEQUENCE (host: $HUB)" >> $INSTALL_LOG
+        echo $INSTALL_COMMAND | perl -pe 's/--/\\\n\t--/g' >> $INSTALL_LOG
 
         if [ -n "$VERBOSE" ]
         then
-            echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g'
+            echo "## $COMMAND_SEQUENCE (host: $HUB)"
+            echo $INSTALL_COMMAND | perl -pe 's/--/\\\n\t--/g'
         fi
-        $INSTALL_COMMAND
+        COMMAND_SEQUENCE=$(($COMMAND_SEQUENCE+1))
 
-        if [ "$?" != "0"  ]
+        if  [ -z "$DRYRUN" ]
         then
-            exit
+            $INSTALL_COMMAND
+
+            if [ "$?" != "0"  ]
+            then
+                exit
+            fi
         fi
     fi
     INDEX=$(($INDEX+1))
 done
 # set +x
+
+if  [ -n "$DRYRUN" ]
+then
+    echo "## $COMMAND_SEQUENCE (host: $(hostname)"
+    echo "echo 'star' > $CURRENT_TOPOLOGY"
+    exit
+fi
 echo "star" > $CURRENT_TOPOLOGY
 ./cookbook/show_cluster.sh NODES_STAR.sh

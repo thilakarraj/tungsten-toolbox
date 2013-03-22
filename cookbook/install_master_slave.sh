@@ -19,6 +19,14 @@ export MASTER=${MASTERS[0]}
 echo "installing MASTER/SLAVE" >$INSTALL_LOG
 date >> $INSTALL_LOG
 
+if [ -n "$DRYRUN" ]
+then
+    [ -z "$VERBOSE" ] && VERBOSE=1
+fi 
+
+COMMAND_SEQUENCE=1
+
+
 if [ -n "$VALIDATE_ONLY"  ]
 then
     MORE_OPTIONS="$MORE_OPTIONS --validate-only -a"
@@ -34,33 +42,63 @@ then
     echo "# Performing validation check ..."
 fi
 
-INSTALL_COMMAND="./tools/tungsten-installer \
-    --master-slave \
-    --master-host=$MASTER \
-    --datasource-user=$DATABASE_USER \
-    --datasource-password=$DATABASE_PASSWORD \
-    --datasource-port=$DATABASE_PORT \
-    --service-name=$TUNGSTEN_SERVICE \
-    --home-directory=$TUNGSTEN_BASE \
-    --cluster-hosts=$HOSTS_LIST \
-    --datasource-mysql-conf=$MY_CNF \
-    --datasource-log-directory=$BINLOG_DIRECTORY \
-    --rmi-port=$RMI_PORT \
-    --thl-port=$THL_PORT \
-    $MORE_OPTIONS --$START_OPTION"     
-
-if [ -n "$VERBOSE" ]
+if [ -n "$DRYRUN" ]
 then
-    echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g'
-fi
+    for NODE in $MASTER ${SLAVES[*]}
+    do
+      INSTALL_COMMAND="./tools/tungsten-installer \
+        --master-slave \
+        --master-host=$MASTER \
+        --datasource-user=$DATABASE_USER \
+        --datasource-password=$DATABASE_PASSWORD \
+        --datasource-port=$DATABASE_PORT \
+        --service-name=$TUNGSTEN_SERVICE \
+        --home-directory=$TUNGSTEN_BASE \
+        --cluster-hosts=$NODE \
+        --datasource-mysql-conf=$MY_CNF \
+        --datasource-log-directory=$BINLOG_DIRECTORY \
+        --rmi-port=$RMI_PORT \
+        --thl-port=$THL_PORT \
+        $MORE_OPTIONS --$START_OPTION"     
 
-echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g' >> $INSTALL_LOG
+        echo "## $COMMAND_SEQUENCE (host: $NODE)" >> $INSTALL_LOG
+        echo $INSTALL_COMMAND | perl -pe 's/--/\\\n\t--/g' >> $INSTALL_LOG
+        echo "## $COMMAND_SEQUENCE (host: $NODE )"
+        echo $INSTALL_COMMAND | perl -pe 's/--/\\\n\t--/g'
+        COMMAND_SEQUENCE=$(($COMMAND_SEQUENCE+1))
+    done
 
-$INSTALL_COMMAND
+else
+    INSTALL_COMMAND="./tools/tungsten-installer \
+        --master-slave \
+        --master-host=$MASTER \
+        --datasource-user=$DATABASE_USER \
+        --datasource-password=$DATABASE_PASSWORD \
+        --datasource-port=$DATABASE_PORT \
+        --service-name=$TUNGSTEN_SERVICE \
+        --home-directory=$TUNGSTEN_BASE \
+        --cluster-hosts=$HOSTS_LIST \
+        --datasource-mysql-conf=$MY_CNF \
+        --datasource-log-directory=$BINLOG_DIRECTORY \
+        --rmi-port=$RMI_PORT \
+        --thl-port=$THL_PORT \
+        $MORE_OPTIONS --$START_OPTION"     
 
-if [ "$?" != "0"  ]
-then
-    exit 1
+    if [ -n "$VERBOSE" ]
+    then
+        echo "## $COMMAND_SEQUENCE (host: $(hostname))"
+        echo $INSTALL_COMMAND | perl -pe 's/--/\\\n\t--/g'
+    fi
+    COMMAND_SEQUENCE=$(($COMMAND_SEQUENCE+1))
+
+    echo $INSTALL_COMMAND | perl -pe 's/--/\\\n\t--/g' >> $INSTALL_LOG
+
+    $INSTALL_COMMAND
+
+    if [ "$?" != "0"  ]
+    then
+        exit 1
+    fi
 fi
 
 if [ -n "$VALIDATE_ONLY" ]
@@ -68,6 +106,12 @@ then
     exit 0
 fi
 
+if  [ -n "$DRYRUN" ]
+then
+    echo "## $COMMAND_SEQUENCE (host: $(hostname)"
+    echo "echo 'master_slave' > $CURRENT_TOPOLOGY"
+    exit
+fi
 echo "master_slave" > $CURRENT_TOPOLOGY
 
 ./cookbook/show_cluster.sh NODES_MASTER_SLAVE.sh
