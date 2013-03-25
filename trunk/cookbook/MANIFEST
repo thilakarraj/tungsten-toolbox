@@ -15,10 +15,13 @@ clear_cluster_fan_in.sh
 clear_cluster_master_slave.sh
 clear_cluster_master_slave_direct.sh
 clear_cluster_star.sh
+check_cookbook.sh
 collect_logs.sh
 conf.sh
 deploy_to_sandboxes.sh
 edit_conf.sh
+emacsconf.sh
+emacslog.sh
 heartbeat.sh
 install_all_masters.sh
 install_fan_in.sh
