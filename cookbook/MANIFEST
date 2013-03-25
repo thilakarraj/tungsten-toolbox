@@ -23,6 +23,7 @@ edit_conf.sh
 emacsconf.sh
 emacslog.sh
 heartbeat.sh
+help.sh
 install_all_masters.sh
 install_fan_in.sh
 install_master_slave.sh
@@ -33,6 +34,7 @@ load_data.sh
 log.sh
 paths.sh
 pre_req_checker/tungsten_prereq
+readme.sh
 replicator.sh
 show_all_masters.sh
 show_cluster.sh

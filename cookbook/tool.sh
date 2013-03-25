@@ -25,7 +25,7 @@ fi
 
 . ./cookbook/BOOTSTRAP.sh $NODES
 
-SUPPORTED_TOOLS="paths trepctl thl replicator heartbeat services log vilog vimlog emacslog conf vimconf emacsconf"
+SUPPORTED_TOOLS="help readme paths trepctl thl replicator heartbeat services log vilog vimlog emacslog conf vimconf emacsconf"
 
 if [ -z "$1" ]
 then
@@ -50,6 +50,14 @@ function get_property_value
 
 case "$1" 
     in
+    help)
+        less ./cookbook/REFERENCE
+        shift
+        ;;
+    readme)
+        less ./cookbook/README
+        shift
+        ;;
     paths)
         CONF_DIR="$TUNGSTEN_BASE/tungsten/tungsten-replicator/conf/"
         printf "%15s : %s\n" 'trepctl' "$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/trepctl"
