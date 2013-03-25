@@ -4,15 +4,28 @@
 
 # User defined values for the cluster to be installed.
 
+# Where to install Tungsten Replicator
 export TUNGSTEN_BASE=$HOME/installs/cookbook
-export DATABASE_USER=tungsten
+
+# Directory containing the database binary logs
 export BINLOG_DIRECTORY=/var/lib/mysql
+
+# Path to the options file
 export MY_CNF=/etc/my.cnf
+
+# Database credentials
+export DATABASE_USER=tungsten
 export DATABASE_PASSWORD=secret
 export DATABASE_PORT=3306
+
+# Name of the service to install
 export TUNGSTEN_SERVICE=cookbook
+
+# Replicator ports
 export RMI_PORT=10000
 export THL_PORT=2112
+
+# If set, replicator starts after installation
 [ -z "$START_OPTION" ] && export START_OPTION=start
 
 # Options used by the "direct slave " installer only

@@ -25,7 +25,7 @@ fi
 
 . ./cookbook/BOOTSTRAP.sh $NODES
 
-SUPPORTED_TOOLS="paths trepctl thl replicator heartbeat services log vilog vimlog conf vimconf"
+SUPPORTED_TOOLS="paths trepctl thl replicator heartbeat services log vilog vimlog emacslog conf vimconf emacsconf"
 
 if [ -z "$1" ]
 then
@@ -97,11 +97,17 @@ case "$1"
     vimlog)
        vim $TUNGSTEN_BASE/tungsten/tungsten-replicator/log/trepsvc.log 
        ;;
+    emacslog)
+       emacs $TUNGSTEN_BASE/tungsten/tungsten-replicator/log/trepsvc.log 
+       ;;
     conf)
        less $TUNGSTEN_BASE/tungsten/tungsten-replicator/conf/static*.properties 
        ;;
     vimconf)
        vim -o $TUNGSTEN_BASE/tungsten/tungsten-replicator/conf/static*.properties 
+       ;;
+    emacsconf)
+       emacs $TUNGSTEN_BASE/tungsten/tungsten-replicator/conf/static*.properties 
        ;;
     *)
         echo "Unknown tool requested. Valid choices are '$SUPPORTED_TOOLS'"
