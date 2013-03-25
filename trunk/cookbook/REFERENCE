@@ -5,6 +5,8 @@ README                                 Quick start guide
 REFERENCE                              This file
 MANIFEST                               List of files in the cookbook
 check_cookbook.sh                      Verifies that the cookbook directory contains all files
+help.sh                                Shows this file
+readme.sh                              Shows the quick start guide
 
 #########################
 ## Cluster configuration
