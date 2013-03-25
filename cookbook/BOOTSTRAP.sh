@@ -76,16 +76,38 @@ export SLAVES_LIST
 export HOSTS_LIST
 
 CURRENT_HOST=$(hostname)
+INSTALLER_IN_CLUSTER=0
+CURRENT_HOST_IP=$(hostname --ip)
 
-for HOST in ${ALL_NODES[*]}
-do
-    if [ "$HOST" == "$CURRENT_HOST" ]
-    then
-        INSTALLER_IN_CLUSTER=1
-    fi
-done
+function check_if_installer_is_in_cluster
+{
+    for HOST in ${ALL_NODES[*]}
+    do
+        if [ "$HOST" == "$CURRENT_HOST" ]
+        then
+            INSTALLER_IN_CLUSTER=1
+            return
+        else
+            # Check if the IP for the hostname is associated with
+            # one of the hosts defined for this cluster
+            for LINE in $(grep $CURRENT_HOST_IP /etc/hosts | grep -v '^#')
+            do
+                for ITEM in $LINE
+                do
+                    if [ "$ITEM" == "$HOST" ]
+                    then
+                        INSTALLER_IN_CLUSTER=1
+                        return
+                    fi
+                done 
+            done
+        fi
+    done
+}
 
-if [ -z "$INSTALLER_IN_CLUSTER" ]
+check_if_installer_is_in_cluster
+
+if [ "$INSTALLER_IN_CLUSTER" != "1" ]
 then
     echo "This framework is designed to act within the cluster that is installing"
     echo "The current host ($CURRENT_HOST) is not among the designated servers (${ALL_NODES[*]})"

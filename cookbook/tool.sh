@@ -25,19 +25,60 @@ fi
 
 . ./cookbook/BOOTSTRAP.sh $NODES
 
-SUPPORTED_TOOLS="trepctl thl replicator log vilog vimlog conf vimconf"
+SUPPORTED_TOOLS="paths trepctl thl replicator heartbeat services log vilog vimlog conf vimconf"
 
 if [ -z "$1" ]
 then
-    echo "No tool specified. Required one of '$SUPPORTED_TOOLS'"
+    echo "No tool or service specified. Require one of '$SUPPORTED_TOOLS'"
     exit 1
 fi
 
+function get_property_value
+{
+    LABEL=$1
+    PROPERTY=$2
+    for F in $CONF_DIR/static-*.properties
+    do
+        SERVICE=$(echo $F | perl -ne 'print $1 if /static-(\w+).properties/' )
+        ACTION_STR="print \$1,\$/ if /^$PROPERTY=(.*)/"
+        for VALUE in $(perl -ne "$ACTION_STR" $F)
+        do
+            printf "%15s : (service: %s) %s\n" $LABEL $SERVICE $VALUE
+        done
+    done
+}
+
 case "$1" 
     in
+    paths)
+        CONF_DIR="$TUNGSTEN_BASE/tungsten/tungsten-replicator/conf/"
+        printf "%15s : %s\n" 'trepctl' "$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/trepctl"
+        printf "%15s : %s\n" 'thl' "$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/thl"
+        printf "%15s : %s\n" 'log' "$TUNGSTEN_BASE/tungsten/tungsten-replicator/log/trepsvc.log"
+        printf "%15s : %s\n" 'conf' $CONF_DIR
+        get_property_value 'backup-dir' 'replicator.storage.agent.fs.directory'
+        get_property_value 'thl-dir' 'replicator.store.thl.log_dir'
+        get_property_value 'backup-agent' 'replicator.backup.default'
+        shift 
+        if [ -n "$1" ]
+        then
+            get_property_value $1 $1
+        fi
+        ;;
     trepctl)
         shift
         $TREPCTL $@
+        ;;
+    services)
+        shift
+        $TREPCTL services
+        ;;
+    heartbeat)
+        shift
+        for NODE in ${MASTERS[*]}
+        do
+            $TREPCTL -host $NODE heartbeat
+        done
         ;;
     thl)
         shift
