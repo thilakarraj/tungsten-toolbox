@@ -8,6 +8,7 @@ README
 USER_VALUES.sh
 add_node_master_slave.sh
 add_node_star.sh
+backups.sh
 clear_all.sh
 clear_cluster.sh
 clear_cluster_all_masters.sh

@@ -91,6 +91,7 @@ emacslog.sh                            Edits the replicator log using 'emacs'
 heartbeat.sh                           Performs a heartbeat in each master
 paths.sh                               Shows the path to all important tools and services
 services.sh                            Performs 'trepctl services'
+backups.sh                             Shows which backups were taken in all nodes
 
 #########################
 ## Testing tools

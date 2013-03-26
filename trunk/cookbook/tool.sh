@@ -25,7 +25,7 @@ fi
 
 . ./cookbook/BOOTSTRAP.sh $NODES
 
-SUPPORTED_TOOLS="help readme paths trepctl thl replicator heartbeat services log vilog vimlog emacslog conf vimconf emacsconf"
+SUPPORTED_TOOLS="help readme paths backups trepctl thl replicator heartbeat services log vilog vimlog emacslog conf vimconf emacsconf"
 
 if [ -z "$1" ]
 then
@@ -37,13 +37,19 @@ function get_property_value
 {
     LABEL=$1
     PROPERTY=$2
+    VALUE_ONLY=$3
     for F in $CONF_DIR/static-*.properties
     do
         SERVICE=$(echo $F | perl -ne 'print $1 if /static-(\w+).properties/' )
         ACTION_STR="print \$1,\$/ if /^$PROPERTY=(.*)/"
         for VALUE in $(perl -ne "$ACTION_STR" $F)
         do
-            printf "%15s : (service: %s) %s\n" $LABEL $SERVICE $VALUE
+            if [ -n "$VALUE_ONLY" ]
+            then
+                echo $VALUE
+            else
+                printf "%15s : (service: %s) %s\n" $LABEL $SERVICE $VALUE
+            fi
         done
     done
 }
@@ -72,6 +78,35 @@ case "$1"
         then
             get_property_value $1 $1
         fi
+        ;;
+    backups)
+        CONF_DIR="$TUNGSTEN_BASE/tungsten/tungsten-replicator/conf/"
+        for DIR in $(get_property_value '0' 'replicator.storage.agent.fs.directory' 1) 
+        do
+            echo $(dirname $DIR) >> dirs$$
+        done
+        for DIR in $(sort dirs$$ | uniq)
+        do
+            for NODE in ${ALL_NODES[*]}
+            do
+                HOW_MANY=$(ssh $NODE find $DIR -type f | wc -l)
+                echo "# [node: $NODE] $HOW_MANY files found"
+                if [ "$HOW_MANY" != "0" ]
+                then
+                    for SUBDIR in $(ssh $NODE ls -d "$DIR/*")
+                    do
+                        HOW_MANY=$(ssh $NODE find $SUBDIR -type f | wc -l)
+                        if [ "$HOW_MANY" != "0" ]
+                        then
+                            echo "++ $SUBDIR"
+                            ssh $NODE ls -lh $SUBDIR
+                        fi
+                    done
+                    echo ''
+                fi
+            done
+        done
+        rm dirs$$
         ;;
     trepctl)
         shift

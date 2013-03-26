@@ -95,6 +95,7 @@ Similarly, there are maintenance scripts that give you quick access to the confi
 * heartbeat  Runs 'trepctl heartbeat' in every master in the cluster
 * services   Runs 'trepctl services'
 * paths      Shows the path of the most used tools and services 
+* backups    Shows which backups were taken for each node in the cluster
 
 You can invoke each of the above by adding '.sh' at the end
 e.g.: ./cookbook/vimlog.sh
