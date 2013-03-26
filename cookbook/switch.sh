@@ -36,6 +36,7 @@ function find_roles {
     export SLAVES=(${SLAVES[*]})
 }
 
+echo "# Determining current roles"
 find_roles
 
 NEW_MASTER=$1
@@ -48,6 +49,8 @@ then
     echo "designated new master is already a master"
     exit 0
 fi
+
+echo "# Will promote $NEW_MASTER to be the new master server"
 
 # export MASTER=${MASTERS[0]}
 
@@ -64,6 +67,7 @@ done
 
 master_position=`$TREPCTL -host $MASTER flush|cut -d':' -f2`
 
+echo "# Waiting for slaves to catch up and pausing replication"
 for SLAVE in ${SLAVES[*]} 
 do
 	echo trepctl -host $SLAVE wait -applied $master_position
@@ -75,7 +79,7 @@ done
 echo trepctl -host $MASTER offline
 $TREPCTL -host $MASTER offline
 
-
+echo "# Reconfiguring server roles and restarting replication"
 echo trepctl -host $NEW_MASTER setrole -role master
 $TREPCTL -host $NEW_MASTER setrole -role master
 echo trepctl -host $NEW_MASTER online
