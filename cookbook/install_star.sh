@@ -161,3 +161,4 @@ then
 fi
 echo "star" > $CURRENT_TOPOLOGY
 ./cookbook/show_cluster.sh NODES_STAR.sh
+post_installation

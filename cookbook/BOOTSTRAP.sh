@@ -133,6 +133,16 @@ fi
 export REPLICATOR=$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/replicator
 export TREPCTL="$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/trepctl -port $RMI_PORT"
 export THL=$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/thl
+##############################################################################
+# Variables used when removing the cluster
+##############################################################################
+[ -z "$STOP_REPLICATORS" ] && export STOP_REPLICATORS=1
+[ -z "$REMOVE_TUNGSTEN_BASE" ] && export REMOVE_TUNGSTEN_BASE=1
+[ -z "$REMOVE_SERVICE_SCHEMA" ] && export REMOVE_SERVICE_SCHEMA=1
+[ -z "$REMOVE_TEST_SCHEMAS" ] && export REMOVE_TEST_SCHEMAS=1
+[ -z "$REMOVE_DATABASE_CONTENTS" ] && export REMOVE_DATABASE_CONTENTS=0
+[ -z "$CLEAN_NODE_DATABASE_SERVER" ] && export CLEAN_NODE_DATABASE_SERVER=1
+##############################################################################
 
 export INSTALL_LOG=./cookbook/current_install.log
 
@@ -175,11 +185,37 @@ function are_you_sure_you_want_to_clear
     echo "!!! WARNING !!!"
     echo "--------------------------------------------------------------------------------------"
     echo "'clear-cluster' is a potentially damaging operation."
-    echo "This command will stop the replication software in all servers"
-    echo "and REMOVE ALL THE CONTENTS from $TUNGSTEN_BASE/."
-    echo "*** It will also REMOVE ALL DATABASE CONTENTS in all servers. (${ALL_NODES[*]}) *** "
+    echo "This command will do all the following:"
+    if [ "$STOP_REPLICATORS" == 1 ]
+    then
+        echo "* Stop the replication software in all servers. [\$STOP_REPLICATORS]"
+    fi
+    if [ "$REMOVE_TUNGSTEN_BASE" == "1" ]
+    then
+        echo "* REMOVE ALL THE CONTENTS from $TUNGSTEN_BASE/.[\$REMOVE_TUNGSTEN_BASE]"
+    fi
+    if [ "$REMOVE_SERVICE_SCHEMA" == "1" ]
+    then
+        echo "* REMOVE the tungsten_<service_name> schemas in all nodes (${ALL_NODES[*]}) [\$REMOVE_SERVICE_SCHEMA] "
+    fi
+    if [ "$REMOVE_TEST_SCHEMAS" == "1" ]
+    then
+        echo "* REMOVE the schemas created for testing (test, evaluator) in all nodes (${ALL_NODES[*]})  [\$REMOVE_TEST_SCHEMAS]"
+    fi
+    if [ "$REMOVE_DATABASE_CONTENTS" == "1" ]
+    then
+        echo "* REMOVE *** ALL THE DATABASE CONTENTS *** in all nodes (${ALL_NODES[*]}) [\$REMOVE_DATABASE_CONTENTS] "
+    fi
+    if [ "$CLEAN_NODE_DATABASE_SERVER" == "1" ]
+    then
+        echo "* Create the test server anew;                [\$CLEAN_NODE_DATABASE_SERVER]"
+        echo "* Unset the read_only variable;               [\$CLEAN_NODE_DATABASE_SERVER]"
+        echo "* Set the binlog formato to MIXED;            [\$CLEAN_NODE_DATABASE_SERVER]"
+        echo "* Reset the master (removes all binary logs); [\$CLEAN_NODE_DATABASE_SERVER]"
+    fi
     echo "If this is what you want, either set the variable I_WANT_TO_UNINSTALL "
     echo "or answer 'y' to the question below"
+    echo "You may also set the variables in brackets to fine tune the execution."
     echo "Alternatively, have a look at $0 and customize it to your needs."
     echo "--------------------------------------------------------------------------------------"
 
@@ -192,3 +228,21 @@ function are_you_sure_you_want_to_clear
         esac
     done
 }
+
+function post_installation
+{
+    for NODE in ${ALL_NODES[*]}
+    do  
+        DEPLOYED=$(ssh $NODE "if [ -d $TUNGSTEN_BASE ] ; then echo 'yes' ; fi")
+        if [ "$DEPLOYED" == "yes" ]
+        then
+            scp -q $CURRENT_TOPOLOGY $NODE:$TUNGSTEN_BASE/tungsten/  
+        fi
+    done
+    TOPOLOGY=$(cat $CURRENT_TOPOLOGY)
+    echo "Deployment completed "
+    echo "Topology      :'$TOPOLOGY'"
+    echo "Tungsten path : $TUNGSTEN_BASE "
+    echo "Nodes         : (${ALL_NODES[*]})"
+}
+

@@ -115,3 +115,5 @@ fi
 echo "master_slave" > $CURRENT_TOPOLOGY
 
 ./cookbook/show_cluster.sh NODES_MASTER_SLAVE.sh
+
+post_installation
