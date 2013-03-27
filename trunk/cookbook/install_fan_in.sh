@@ -120,4 +120,5 @@ fi
 
 echo "fan_in" > $CURRENT_TOPOLOGY
 ./cookbook/show_cluster.sh NODES_FAN_IN.sh
+post_installation
 

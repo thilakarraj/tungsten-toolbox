@@ -69,3 +69,4 @@ done
 
 echo "master_slave_direct" > $CURRENT_TOPOLOGY
  
+post_installation

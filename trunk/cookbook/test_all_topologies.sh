@@ -32,6 +32,11 @@ do
     cat /tmp/test_log$$
     rm /tmp/test_log$$
     export I_WANT_TO_UNINSTALL=1
+    export STOP_REPLICATORS=1
+    export REMOVE_TUNGSTEN_BASE=1
+    export REMOVE_SERVICE_SCHEMA=1
+    export REMOVE_TEST_SCHEMAS=1
+    export CLEAN_NODE_DATABASE_SERVER=1
     ./cookbook/clear_cluster_$TOPOLOGY.sh >> $INSTALL_LOG
     unset I_WANT_TO_UNINSTALL
 done

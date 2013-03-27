@@ -123,3 +123,4 @@ fi
 
 echo "all_masters" > $CURRENT_TOPOLOGY
 ./cookbook/show_cluster.sh NODES_ALL_MASTERS.sh
+post_installation
