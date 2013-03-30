@@ -23,9 +23,17 @@ then
     exit 1
 fi
 
-. ./cookbook/BOOTSTRAP.sh $NODES
+if [ ! -f ./cookbook/utilities.sh ]
+then
+    echo "./cookbook/utilities.sh not found"
+    exit 1
+fi
 
-SUPPORTED_TOOLS="help readme paths backups trepctl thl replicator heartbeat services log vilog vimlog emacslog conf vimconf emacsconf"
+. ./cookbook/BOOTSTRAP.sh $NODES
+. ./cookbook/utilities.sh
+
+SUPPORTED_TOOLS="help readme paths backups copy_backup trepctl thl replicator heartbeat services log vilog vimlog emacslog conf vimconf emacsconf"
+CONF_DIR="$TUNGSTEN_BASE/tungsten/tungsten-replicator/conf/"
 
 if [ -z "$1" ]
 then
@@ -33,102 +41,117 @@ then
     exit 1
 fi
 
-function get_property_value
+
+function show_paths
 {
-    LABEL=$1
-    PROPERTY=$2
-    VALUE_ONLY=$3
-    for F in $CONF_DIR/static-*.properties
+    for BIN in replicator trepctl thl
     do
-        SERVICE=$(echo $F | perl -ne 'print $1 if /static-(\w+).properties/' )
-        ACTION_STR="print \$1,\$/ if /^$PROPERTY=(.*)/"
-        for VALUE in $(perl -ne "$ACTION_STR" $F)
+        printf "%15s : %s\n" $BIN "$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/$BIN"
+    done
+    printf "%15s : %s\n" 'log' "$TUNGSTEN_BASE/tungsten/tungsten-replicator/log/trepsvc.log"
+    printf "%15s : %s\n" 'conf' $CONF_DIR
+    get_property_value $CONF_DIR 'thl-dir' 'replicator.store.thl.log_dir'
+    get_property_value $CONF_DIR 'backup-dir' 'replicator.storage.agent.fs.directory'
+    get_property_value $CONF_DIR 'backup-agent' 'replicator.backup.default'
+    shift 
+    if [ -n "$1" ]
+    then
+        get_property_value $CONF_DIR $1 $1
+    fi
+}
+
+function show_backups
+{
+    get_property_value $CONF_DIR 'backup-agent' 'replicator.backup.default'
+    get_property_value $CONF_DIR 'backup-dir' 'replicator.storage.agent.fs.directory' 
+    for DIR in $(get_property_value $CONF_DIR '0' 'replicator.storage.agent.fs.directory' 1) 
+    do
+        echo $(dirname $DIR) >> dirs$$
+    done
+    for DIR in $(sort dirs$$ | uniq)
+    do
+        for NODE in ${ALL_NODES[*]}
         do
-            if [ -n "$VALUE_ONLY" ]
+            HOW_MANY=$(ssh $NODE find $DIR -type f | wc -l)
+            echo "# [node: $NODE] $HOW_MANY files found"
+            if [ "$HOW_MANY" != "0" ]
             then
-                echo $VALUE
-            else
-                printf "%15s : (service: %s) %s\n" $LABEL $SERVICE $VALUE
+                for SUBDIR in $(ssh $NODE ls -d "$DIR/*")
+                do
+                    HOW_MANY=$(ssh $NODE find $SUBDIR -type f | wc -l)
+                    if [ "$HOW_MANY" != "0" ]
+                    then
+                        echo "++ $SUBDIR"
+                        ssh $NODE ls -lh $SUBDIR
+                    fi
+                done
+                echo ''
             fi
         done
     done
+    rm dirs$$
 }
 
-case "$1" 
+function copy_backup_files
+{
+    SERVICE=$1
+    SOURCE_NODE=$2
+    DESTINATION_NODE=$3
+    if [ -z "$DESTINATION_NODE" ]
+    then
+        echo "syntax: copy_backup SERVICE SOURCE_NODE DESTINATION_NODE"
+        exit 1
+    fi
+    BACKUP_DIRECTORY=$( get_specific_property_value $CONF_DIR 'replicator.storage.agent.fs.directory'  $SERVICE)
+    if [ "$(remote_file_exists $SOURCE_NODE $BACKUP_DIRECTORY '-d' )" != "yes" ]
+    then
+        echo "Backup directory $BACKUP_DIRECTORY not found in $SOURCE_NODE"
+        exit 1
+    fi
+    if [ "$(remote_file_exists $DESTINATION_NODE $BACKUP_DIRECTORY '-d' )" != "yes" ]
+    then
+        echo "Backup directory $BACKUP_DIRECTORY not found in $DESTINATION_NODE"
+        exit 1
+    fi
+    ssh $SOURCE_NODE "scp -pr $BACKUP_DIRECTORY/* $DESTINATION_NODE:$BACKUP_DIRECTORY/"
+}
+
+ARG=$1
+shift
+
+case "$ARG" 
     in
     help)
         less ./cookbook/REFERENCE
-        shift
         ;;
     readme)
         less ./cookbook/README
-        shift
         ;;
     paths)
-        CONF_DIR="$TUNGSTEN_BASE/tungsten/tungsten-replicator/conf/"
-        printf "%15s : %s\n" 'trepctl' "$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/trepctl"
-        printf "%15s : %s\n" 'thl' "$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/thl"
-        printf "%15s : %s\n" 'log' "$TUNGSTEN_BASE/tungsten/tungsten-replicator/log/trepsvc.log"
-        printf "%15s : %s\n" 'conf' $CONF_DIR
-        get_property_value 'backup-dir' 'replicator.storage.agent.fs.directory'
-        get_property_value 'thl-dir' 'replicator.store.thl.log_dir'
-        get_property_value 'backup-agent' 'replicator.backup.default'
-        shift 
-        if [ -n "$1" ]
-        then
-            get_property_value $1 $1
-        fi
-        ;;
+        show_paths $1
+       ;;
     backups)
-        CONF_DIR="$TUNGSTEN_BASE/tungsten/tungsten-replicator/conf/"
-        for DIR in $(get_property_value '0' 'replicator.storage.agent.fs.directory' 1) 
-        do
-            echo $(dirname $DIR) >> dirs$$
-        done
-        for DIR in $(sort dirs$$ | uniq)
-        do
-            for NODE in ${ALL_NODES[*]}
-            do
-                HOW_MANY=$(ssh $NODE find $DIR -type f | wc -l)
-                echo "# [node: $NODE] $HOW_MANY files found"
-                if [ "$HOW_MANY" != "0" ]
-                then
-                    for SUBDIR in $(ssh $NODE ls -d "$DIR/*")
-                    do
-                        HOW_MANY=$(ssh $NODE find $SUBDIR -type f | wc -l)
-                        if [ "$HOW_MANY" != "0" ]
-                        then
-                            echo "++ $SUBDIR"
-                            ssh $NODE ls -lh $SUBDIR
-                        fi
-                    done
-                    echo ''
-                fi
-            done
-        done
-        rm dirs$$
-        ;;
+        show_backups
+       ;;
+    copy_backup)
+        copy_backup_files $1 $2 $3
+       ;;
     trepctl)
-        shift
         $TREPCTL $@
         ;;
     services)
-        shift
         $TREPCTL services
         ;;
     heartbeat)
-        shift
         for NODE in ${MASTERS[*]}
         do
             $TREPCTL -host $NODE heartbeat
         done
         ;;
     thl)
-        shift
         $THL $@
         ;;
     replicator)
-        shift
        $REPLICATOR  $@
        ;;
     log)

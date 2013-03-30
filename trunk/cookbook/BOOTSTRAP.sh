@@ -129,21 +129,9 @@ then
     fi
 fi
 
-
 export REPLICATOR=$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/replicator
 export TREPCTL="$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/trepctl -port $RMI_PORT"
 export THL=$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/thl
-##############################################################################
-# Variables used when removing the cluster
-##############################################################################
-[ -z "$STOP_REPLICATORS" ] && export STOP_REPLICATORS=1
-[ -z "$REMOVE_TUNGSTEN_BASE" ] && export REMOVE_TUNGSTEN_BASE=1
-[ -z "$REMOVE_SERVICE_SCHEMA" ] && export REMOVE_SERVICE_SCHEMA=1
-[ -z "$REMOVE_TEST_SCHEMAS" ] && export REMOVE_TEST_SCHEMAS=1
-[ -z "$REMOVE_DATABASE_CONTENTS" ] && export REMOVE_DATABASE_CONTENTS=0
-[ -z "$CLEAN_NODE_DATABASE_SERVER" ] && export CLEAN_NODE_DATABASE_SERVER=1
-##############################################################################
-
 export INSTALL_LOG=./cookbook/current_install.log
 
 CURRENT_TOPOLOGY=./CURRENT_TOPOLOGY

@@ -70,6 +70,62 @@ diff(){
     }'
 }
 
+#
+# Loops through all the services in the configuration files
+# Prints a label and value for a given property
+# INPUT: 
+# #1: Configuration directory
+# #2: an user-defined label for that value
+# #3: The property to look for in the configuration file
+# #4: (optional) if set, will only print the value, not the labeland service info
+function get_property_value
+{
+    CONF_DIR=$1
+    LABEL=$2
+    PROPERTY=$3
+    VALUE_ONLY=$4
+    for F in $CONF_DIR/static-*.properties
+    do
+        SERVICE=$(echo $F | perl -ne 'print $1 if /static-(\w+).properties/' )
+        ACTION_STR="print \$1,\$/ if /^$PROPERTY=(.*)/"
+        for VALUE in $(perl -ne "$ACTION_STR" $F)
+        do
+            if [ -n "$VALUE_ONLY" ]
+            then
+                echo $VALUE
+            else
+                printf "%15s : (service: %s) %s\n" $LABEL $SERVICE $VALUE
+            fi
+        done
+    done
+}
+
+# Prints a value for a given property
+# INPUT: 
+# #1: Configuration directory
+# #2: The property to look for in the configuration file
+# #3: The service for the configuration file
+function get_specific_property_value
+{
+    CONF_DIR=$1
+    PROPERTY=$2
+    SERVICE=$3
+    F=$CONF_DIR/static-$SERVICE.properties
+    ACTION_STR="print \$1,\$/ and exit if /^$PROPERTY=(.*)/"
+    perl -ne "$ACTION_STR" $F
+}
+
+
+function remote_file_exists
+{
+    NODE=$1
+    FILENAME=$2
+    ATTRIBUTE=$3
+    [ -z "$ATTRIBUTE" ] && ATTRIBUTE='-e'
+    EXISTS=$(ssh $NODE "if [ $ATTRIBUTE $FILENAME ] ; then echo 'yes' ; fi ")
+    echo $EXISTS
+}
+
 function find_used_serviceName {
 
     USED_SERVICE_COUNT=0
