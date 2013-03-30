@@ -28,9 +28,25 @@ export THL_PORT=2112
 # If set, replicator starts after installation
 [ -z "$START_OPTION" ] && export START_OPTION=start
 
+##############################################################################
 # Options used by the "direct slave " installer only
 # Modify only if you are using 'install_master_slave_direct.sh'
+##############################################################################
 export DIRECT_MASTER_BINLOG_DIRECTORY=$BINLOG_DIRECTORY
 export DIRECT_SLAVE_BINLOG_DIRECTORY=$BINLOG_DIRECTORY
 export DIRECT_MASTER_MY_CNF=$MY_CNF
 export DIRECT_SLAVE_MY_CNF=$MY_CNF
+##############################################################################
+
+##############################################################################
+# Variables used when removing the cluster
+# Each variable defines an action during the cleanup
+##############################################################################
+[ -z "$STOP_REPLICATORS" ]            && export STOP_REPLICATORS=1
+[ -z "$REMOVE_TUNGSTEN_BASE" ]        && export REMOVE_TUNGSTEN_BASE=1
+[ -z "$REMOVE_SERVICE_SCHEMA" ]       && export REMOVE_SERVICE_SCHEMA=1
+[ -z "$REMOVE_TEST_SCHEMAS" ]         && export REMOVE_TEST_SCHEMAS=1
+[ -z "$REMOVE_DATABASE_CONTENTS" ]    && export REMOVE_DATABASE_CONTENTS=0
+[ -z "$CLEAN_NODE_DATABASE_SERVER" ]  && export CLEAN_NODE_DATABASE_SERVER=1
+##############################################################################
+

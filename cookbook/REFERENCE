@@ -12,7 +12,7 @@ readme.sh                              Shows the quick start guide
 ## Cluster configuration
 #########################
 COMMON_NODES.sh                        List of nodes in the cluster
-USER_VALUES.sh                         Cluster configuration
+USER_VALUES.sh                         Cluster configuration (user defined values)
 BOOTSTRAP.sh                           System definition builder (For internal use)
 utilities.sh                           Cluster shared routines
 NODES_MASTER_SLAVE.sh                  Nodes definition for a master-slave topology
@@ -46,6 +46,7 @@ add_node_star.sh                       Add a node to a star topology
 switch.sh                              Switches role between the master and one given slave
 collect_logs.sh                        Gets all the logs from all servers
 load_data.sh                           Starts concurrent transaction load in all masters
+copy_backup.sh                         Copies backup from a given node to another
 
 #########################
 ## Cleanup tools

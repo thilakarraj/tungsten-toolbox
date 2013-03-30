@@ -19,6 +19,7 @@ clear_cluster_star.sh
 check_cookbook.sh
 collect_logs.sh
 conf.sh
+copy_backup.sh
 deploy_to_sandboxes.sh
 edit_conf.sh
 emacsconf.sh
