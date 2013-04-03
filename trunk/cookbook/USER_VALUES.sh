@@ -1,6 +1,6 @@
 #!/bin/bash
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
-# Version 1.0.4 - 2013-03-07
+# Version 1.0.5 - 2013-04-03
 
 # User defined values for the cluster to be installed.
 

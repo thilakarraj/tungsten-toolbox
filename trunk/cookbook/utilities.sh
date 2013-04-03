@@ -1,6 +1,6 @@
 #!/bin/bash
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
-# Version 1.0.4 - 2013-03-07
+# Version 1.0.5 - 2013-04-03
 if [ ! -f ./cookbook/BOOTSTRAP.sh ]
 then
     echo "./cookbook/BOOTSTRAP.sh not found"
@@ -25,8 +25,12 @@ function fill_roles {
             fi
             if [ "$role" == "slave" ]
             then
-                SLAVES[$SLAVE_COUNT]=$NODE
-                SLAVE_COUNT=$(($SLAVE_COUNT+1))
+                SLAVE_EXISTS=$(echo ${SLAVES[*]} | grep -w $NODE)
+                if [ -z "$SLAVE_EXISTS" ]
+                then
+                    SLAVES[$SLAVE_COUNT]=$NODE
+                    SLAVE_COUNT=$(($SLAVE_COUNT+1))
+                fi
             fi
         done
     done
