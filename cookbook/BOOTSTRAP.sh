@@ -2,6 +2,8 @@
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
 # Version 1.0.5 - 2013-04-03
 
+cookbook_dir=$(dirname $0)
+
 NODES=$1
 if [ -z "$NODES" ]
 then
@@ -33,13 +35,13 @@ then
     exit 1
 fi
 
-if [ ! -f ./cookbook/$NODES ]
+if [ ! -f $cookbook_dir/$NODES ]
 then
-    echo "./cookbook/$NODES not found"
+    echo "$cookbook_dir/$NODES not found"
     exit 1
 fi
 
-. ./cookbook/$NODES
+. $cookbook_dir/$NODES
 
 if [ -z "${ALL_NODES[0]}" ]
 then
@@ -115,7 +117,7 @@ then
     exit 1
 fi
 
-. ./cookbook/USER_VALUES.sh
+. $cookbook_dir/USER_VALUES.sh
 
 [ -z "$MY_CNF" ] && export MY_CNF=/etc/my.cnf
 if [ ! -f $MY_CNF ]
@@ -133,9 +135,9 @@ fi
 export REPLICATOR=$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/replicator
 export TREPCTL="$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/trepctl -port $RMI_PORT"
 export THL=$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/thl
-export INSTALL_LOG=./cookbook/current_install.log
+export INSTALL_LOG=$cookbook_dir/current_install.log
 
-CURRENT_TOPOLOGY=./CURRENT_TOPOLOGY
+CURRENT_TOPOLOGY=$cookbook_dir/../CURRENT_TOPOLOGY
 
 function check_installed
 {

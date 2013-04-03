@@ -1,23 +1,25 @@
 #!/bin/bash
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
 # Version 1.0.5 - 2013-04-03
+cookbook_dir=$(dirname $0)
+cd "$cookbook_dir/../"
 
-if [ ! -f ./cookbook/BOOTSTRAP.sh ]
+if [ ! -f $cookbook_dir/BOOTSTRAP.sh ]
 then
-    echo "./cookbook/BOOTSTRAP.sh not found"
+    echo "$cookbook_dir/BOOTSTRAP.sh not found"
     exit 1
 fi
-. ./cookbook/BOOTSTRAP.sh NODES_STAR.sh
+. $cookbook_dir/BOOTSTRAP.sh NODES_STAR.sh
 
 check_installed
 
 if [ -z "$HUB" ]
 then
-    echo "HUB undefined. Please update ./cookbook/NODES_STAR.sh"
+    echo "HUB undefined. Please update $cookbook_dir/NODES_STAR.sh"
     exit 1
 fi
 
-#./cookbook/clear_cluster
+#$cookbook_dir/clear_cluster
 
 echo "installing STAR" >$INSTALL_LOG
 date >> $INSTALL_LOG
@@ -160,5 +162,5 @@ then
     exit
 fi
 echo "star" > $CURRENT_TOPOLOGY
-./cookbook/show_cluster 
+$cookbook_dir/show_cluster 
 post_installation
