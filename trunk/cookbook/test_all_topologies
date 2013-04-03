@@ -1,6 +1,7 @@
 #!/bin/bash
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
 # Version 1.0.5 - 2013-04-03
+cookbook_dir=$(dirname $0)
 
 INSTALL_LOG=install_log.txt
 TEST_LOG=test_log.txt
@@ -14,9 +15,9 @@ do
     echo "# $TOPOLOGY" >> $INSTALL_LOG
     echo "# $TOPOLOGY" >> $TEST_LOG
     UCTOPOLOGY=$(perl -e "print uc '$TOPOLOGY'")
-    ./cookbook/install_$TOPOLOGY >> $INSTALL_LOG 
+    $cookbook_dir/install_$TOPOLOGY >> $INSTALL_LOG 
     if [ -f /tmp/test_log$$ ] ; then rm /tmp/test_log$$ ; fi
-    . ./cookbook/BOOTSTRAP.sh NODES_$UCTOPOLOGY.sh
+    . $cookbook_dir/BOOTSTRAP.sh NODES_$UCTOPOLOGY.sh
     for MODE in row statement
     do
         for MASTER in ${MASTERS[*]}
@@ -26,7 +27,7 @@ do
         echo "# testing with binlog_format=$MODE" >> /tmp/test_log$$ 
         # echo "# testing with binlog_format=$MODE" 
 
-        ./cookbook/test_cluster >> /tmp/test_log$$
+        $cookbook_dir/test_cluster >> /tmp/test_log$$
         cat /tmp/test_log$$ >> $TEST_LOG
     done
     cat /tmp/test_log$$
@@ -37,7 +38,7 @@ do
     export REMOVE_SERVICE_SCHEMA=1
     export REMOVE_TEST_SCHEMAS=1
     export CLEAN_NODE_DATABASE_SERVER=1
-    ./cookbook/clear_cluster >> $INSTALL_LOG
+    $cookbook_dir/clear_cluster >> $INSTALL_LOG
     unset I_WANT_TO_UNINSTALL
 done
 

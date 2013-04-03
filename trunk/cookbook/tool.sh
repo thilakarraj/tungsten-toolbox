@@ -1,8 +1,9 @@
 #!/bin/bash
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
 # Version 1.0.5 - 2013-04-03
+cookbook_dir=$(dirname $0)
 
-if [ ! -f CURRENT_TOPOLOGY ]
+if [ ! -f $cookbook_dir/../CURRENT_TOPOLOGY ]
 then
     echo "This command requires an installed cluster"
     exit 1
@@ -12,25 +13,25 @@ TOPOLOGY=$(echo $(cat CURRENT_TOPOLOGY) | tr '[a-z]' '[A-Z]')
 
 NODES=NODES_$TOPOLOGY.sh
 
-if [ ! -f ./cookbook/$NODES ]
+if [ ! -f $cookbook_dir/$NODES ]
 then
-    echo "./cookbook/$NODES not found"
+    echo "$cookbook_dir/$NODES not found"
     exit 1
 fi
-if [ ! -f ./cookbook/BOOTSTRAP.sh ]
+if [ ! -f $cookbook_dir/BOOTSTRAP.sh ]
 then
-    echo "./cookbook/BOOTSTRAP.sh not found"
-    exit 1
-fi
-
-if [ ! -f ./cookbook/utilities.sh ]
-then
-    echo "./cookbook/utilities.sh not found"
+    echo "$cookbook_dir/BOOTSTRAP.sh not found"
     exit 1
 fi
 
-. ./cookbook/BOOTSTRAP.sh $NODES
-. ./cookbook/utilities.sh
+if [ ! -f $cookbook_dir/utilities.sh ]
+then
+    echo "$cookbook_dir/utilities.sh not found"
+    exit 1
+fi
+
+. $cookbook_dir/BOOTSTRAP.sh $NODES
+. $cookbook_dir/utilities.sh
 
 SUPPORTED_TOOLS="help readme paths backups copy_backup trepctl thl replicator heartbeat services log vilog vimlog emacslog conf vimconf emacsconf"
 CONF_DIR="$TUNGSTEN_BASE/tungsten/tungsten-replicator/conf/"
@@ -122,10 +123,10 @@ shift
 case "$ARG" 
     in
     help)
-        less ./cookbook/REFERENCE.txt
+        less $cookbook_dir/REFERENCE.txt
         ;;
     readme)
-        less ./cookbook/README.txt
+        less $cookbook_dir/README.txt
         ;;
     paths)
         show_paths $1

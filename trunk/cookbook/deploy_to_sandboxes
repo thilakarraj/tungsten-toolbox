@@ -2,6 +2,7 @@
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
 # Version 1.0.5 - 2013-04-03
 
+cookbook_dir=$(dirname $0)
 
 [ -z "$MYSQL_VERSION" ] && MYSQL_VERSION=5.5.30
 [ -z "$MYSQL_PORT" ]    && MYSQL_PORT=17100
@@ -98,12 +99,12 @@ done
 
 if [ -z "$NODES_LIST" ]
 then
-    if [ ! -f ./cookbook/$NODES_FILE.sh ]
+    if [ ! -f $cookbook_dir/$NODES_FILE.sh ]
     then
-        echo "could not find ./cookbook/$NODES_FILE.sh"
+        echo "could not find $cookbook_dir/$NODES_FILE.sh"
         exit 1
     fi
-    . ./cookbook/$NODES_FILE.sh
+    . $cookbook_dir/$NODES_FILE.sh
     if [ $NODES_FILE == "COMMON_NODES" ]
     then
         NODES=($NODE1 $NODE2 $NODE3 $NODE4 $NODE5 $NODE6 $NODE7 $NODE8 $NODE9 $NODE10)
@@ -175,7 +176,7 @@ function replace_text
     perl -i$BAK -pe "s{$find_string}{$replacement}"  $filename
 }
 
-replace_text ./cookbook/USER_VALUES.sh '/var/lib/mysql' "$HOME/sandboxes/$SANDBOX_DIR/data" BACKUP
-replace_text ./cookbook/USER_VALUES.sh '/etc/my.cnf' "$HOME/sandboxes/$SANDBOX_DIR/my.sandbox.cnf"
-replace_text ./cookbook/USER_VALUES.sh 'DATABASE_PORT=3306' "DATABASE_PORT=$MYSQL_PORT"
+replace_text $cookbook_dir/USER_VALUES.sh '/var/lib/mysql' "$HOME/sandboxes/$SANDBOX_DIR/data" BACKUP
+replace_text $cookbook_dir/USER_VALUES.sh '/etc/my.cnf' "$HOME/sandboxes/$SANDBOX_DIR/my.sandbox.cnf"
+replace_text $cookbook_dir/USER_VALUES.sh 'DATABASE_PORT=3306' "DATABASE_PORT=$MYSQL_PORT"
 
