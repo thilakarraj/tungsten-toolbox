@@ -1,6 +1,6 @@
 #!/bin/bash
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
-# Version 1.0.4 - 2013-03-07
+# Version 1.0.5 - 2013-04-03
 
 NODES=$1
 if [ -z "$NODES" ]
@@ -52,6 +52,7 @@ fi
 HOSTS_LIST=""
 MASTERS_LIST=""
 SLAVES_LIST=""
+export LONG_LINE="--------------------------------------------------------------------------------------"
 
 for NODE in ${ALL_NODES[*]}
 do
@@ -143,7 +144,7 @@ function check_installed
         echo "There is a previous installation recorded in $CURRENT_TOPOLOGY"
         cat $CURRENT_TOPOLOGY
         TOPOLOGY=$(cat $CURRENT_TOPOLOGY)
-        echo "Run cookbook/clear_cluster_$TOPOLOGY.sh to remove this installation"
+        echo "Run cookbook/clear_cluster to remove this installation"
         exit 1
     fi 
 }
@@ -169,9 +170,9 @@ function check_current_topology
 
 function are_you_sure_you_want_to_clear
 {
-    echo "--------------------------------------------------------------------------------------"
+    echo $LONG_LINE
     echo "!!! WARNING !!!"
-    echo "--------------------------------------------------------------------------------------"
+    echo $LONG_LINE
     echo "'clear-cluster' is a potentially damaging operation."
     echo "This command will do all the following:"
     if [ "$STOP_REPLICATORS" == 1 ]
