@@ -51,6 +51,7 @@ done
 
 . $cookbook_dir/USER_VALUES.sh
 . $cookbook_dir/$NODES.sh
+. $cookbook_dir/BOOTSTRAP.sh $NODES.sh
 
 DRYRUN=
 if [ "$OPERATION" == "print" ]
@@ -59,6 +60,40 @@ then
     OPERATION=start
     VERBOSE=1
 fi
+
+function find_roles {
+    MASTER_COUNT=0
+    SLAVE_COUNT=0
+    SLAVES=()
+    MASTERS=()
+    for NODE in ${ALL_NODES[*]} 
+    do 
+        [ -n "$VERBOSE" ] && echo -n "$NODE "
+        role=$($TREPCTL -host $NODE services |grep role | awk '{print $3}')
+        if [ "$role" == "master" ]
+        then
+            MASTERS[$MASTER_COUNT]=$NODE
+            MASTER_COUNT=$(($MASTER_COUNT+1))
+            [ -n "$VERBOSE" ] && echo "master"
+        else
+            SLAVES[$SLAVE_COUNT]=$NODE
+            SLAVE_COUNT=$(($SLAVE_COUNT+1))
+            [ -n "$VERBOSE" ] && echo "slave"
+        fi
+    done
+
+    if [ -z "${#MASTER[*]}" ]
+    then
+        echo "unable to find a master"
+        exit 1
+    fi
+    export  MASTERS=(${MASTER[*]})
+    export SLAVES=(${SLAVES[*]})
+}
+
+[ -n "$VERBOSE" ] && echo "# Determining current roles"
+
+find_roles
 
 JOB_INFO_PATH=$TUNGSTEN_BASE/tungsten/load
 
