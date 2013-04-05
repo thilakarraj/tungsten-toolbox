@@ -64,18 +64,23 @@ JOB_INFO_PATH=$TUNGSTEN_BASE/tungsten/load
 
 for HOST in  ${MASTERS[*]}
 do
-   db=$(echo $HOST | tr '\.' '_' )
-   if [ -d $JOB_INFO_PATH/$db ]
-   then
-       rm -rf $JOB_INFO_PATH/$db/*
-   else
-       mkdir -p $JOB_INFO_PATH/$db
-   fi
+    db=$(echo $HOST | tr '\.' '_' )
+    if [ "$OPERATION" == "start" ]
+    then
+        if [ -d $JOB_INFO_PATH/$db ]
+        then
+            rm -rf $JOB_INFO_PATH/$db/*
+        else
+            mkdir -p $JOB_INFO_PATH/$db
+        fi
+    fi
    BRISTLECONE_OPTIONS="--deletes=1 --updates=1 --inserts=3 --test-duration=3600"
    EVALUATOR="$TUNGSTEN_BASE/tungsten/bristlecone/bin/concurrent_evaluator.pl"
    DB_OPTIONS="--host=$HOST --port=$DATABASE_PORT -u $DATABASE_USER -p $DATABASE_PASSWORD "
    EV_OPTIONS="--continuent-root=$TUNGSTEN_BASE -d $db -s $JOB_INFO_PATH/$db"
-   CMD="$EVALUATOR $BRISTLECONE_OPTIONS $DB_OPTIONS $EV_OPTIONS $OPERATION"
+   V=''
+   [ -n "$VERBOSE" ] && [ "$OPERATION" == "stop" ] && V='--verbose'
+   CMD="$EVALUATOR $BRISTLECONE_OPTIONS $DB_OPTIONS $EV_OPTIONS $V $OPERATION"
     if [ -n "$VERBOSE" ]
     then
         echo "$CMD"
