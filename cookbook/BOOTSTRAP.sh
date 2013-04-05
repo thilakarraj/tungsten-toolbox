@@ -201,7 +201,7 @@ function are_you_sure_you_want_to_clear
     then
         echo "* Create the test server anew;                [\$CLEAN_NODE_DATABASE_SERVER]"
         echo "* Unset the read_only variable;               [\$CLEAN_NODE_DATABASE_SERVER]"
-        echo "* Set the binlog formato to MIXED;            [\$CLEAN_NODE_DATABASE_SERVER]"
+        echo "* Set the binlog format to MIXED;             [\$CLEAN_NODE_DATABASE_SERVER]"
         echo "* Reset the master (removes all binary logs); [\$CLEAN_NODE_DATABASE_SERVER]"
     fi
     echo "If this is what you want, either set the variable I_WANT_TO_UNINSTALL "
