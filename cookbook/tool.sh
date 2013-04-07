@@ -33,7 +33,7 @@ fi
 . $cookbook_dir/BOOTSTRAP.sh $NODES
 . $cookbook_dir/utilities.sh
 
-SUPPORTED_TOOLS="help readme paths backups copy_backup trepctl thl replicator heartbeat services log vilog vimlog emacslog conf vimconf emacsconf"
+SUPPORTED_TOOLS="help readme paths backups copy_backup query_node query_all_nodes tungsten_service insert_retrieve trepctl thl replicator heartbeat services log vilog vimlog emacslog conf vimconf emacsconf"
 CONF_DIR="$TUNGSTEN_BASE/tungsten/tungsten-replicator/conf/"
 
 if [ -z "$1" ]
@@ -42,6 +42,74 @@ then
     exit 1
 fi
 
+function query_node
+{
+    node=$1
+    shift
+    query="$@"
+    MYSQL="mysql -h $node -u $DATABASE_USER --password=$DATABASE_PASSWORD --port=$DATABASE_PORT "
+    $MYSQL -e "$query"
+}
+
+function query_all_nodes
+{
+    query="$@"
+    for node in ${ALL_NODES[*]}
+    do
+        query_node $node "$query"
+    done
+}
+
+function get_tungsten_service
+{
+    node=$1
+    service=$2
+    if [ -n "$service" ]
+    then
+        query="select seqno, source_id, applied_latency,shard_id, update_timestamp,extract_timestamp from tungsten_$service.trep_commit_seqno"
+        echo "# node: $node - service: $service"
+        query_node $node "$query"
+    else
+        for service in $($TREPCTL -host $node services | grep serviceName | awk '{print $3}')     
+        do
+            get_tungsten_service $node $service
+        done       
+    fi
+}
+
+function tungsten_service
+{
+    operation=$1
+    shift
+    if [ -z "$operation" ]
+    then
+        echo "syntax: tungsten_service {node|all} [service]"
+        exit 1
+    fi
+    case $operation in
+        node)
+            node=$1
+            shift
+            if [ -z "$node" ]
+            then
+                echo "node required"
+                exit 1
+            fi
+            get_tungsten_service $node $@
+            ;;
+        all)
+            for node in ${ALL_NODES[*]}
+            do
+                get_tungsten_service $node $@
+            done
+            ;;
+        *)
+            echo "unrecognized operation: $operation "
+            echo "syntax: tungsten_service {node|all} [service]"
+            exit 1
+            ;;
+    esac
+}
 
 function show_paths
 {
@@ -117,19 +185,73 @@ function copy_backup_files
     ssh $SOURCE_NODE "scp -pr $BACKUP_DIRECTORY/* $DESTINATION_NODE:$BACKUP_DIRECTORY/"
 }
 
+function insert_retrieve
+{
+    node1=$1
+    node2=$2
+    if [ -z "$node2" ]
+    then
+        echo "syntax: insert_retrieve node1 node2"
+        exit 1
+    fi
+    table_name="test_retrieve$$"
+    query1="drop table if exists test.$table_name"
+    query2="create table test.$table_name ( i int)"
+    query_node $node1 "$query1"
+    sleep 2
+    query_node $node1 "$query2"
+    timeout=60
+    elapsed=0
+    while  [ $elapsed -lt $timeout ]
+    do
+        found=$(query_node $node2 "select count(*) from information_schema.tables where table_schema='test' and table_name='$table_name' "| grep -v "count")
+        if [ "$found" == "1" ]
+        then
+            echo "Found table $table_name in node $node2 - Elapsed: $elapsed seconds"
+            return
+        fi
+        elapsed=$(($elapsed+1))
+        sleep 1
+    done
+    query_node $node1 "$query1"
+    echo "table $table_name not found in node $node2"
+    exit 1
+}
+
+
+
 ARG=$1
 shift
 
 case "$ARG" 
     in
     help)
-        less $cookbook_dir/REFERENCE.txt
+        if [ -n "$1" ]
+        then
+            grep -w $1 $cookbook_dir/REFERENCE.txt
+        else
+            less $cookbook_dir/REFERENCE.txt
+        fi
         ;;
     readme)
         less $cookbook_dir/README.txt
         ;;
     paths)
         show_paths $1
+       ;;
+    tungsten_service)
+        tungsten_service $@
+       ;;
+    insert_retrieve)
+        insert_retrieve "$@"
+       ;;
+    query_node)
+        node=$1
+        shift
+        query_node $node "$@"
+       ;;
+    query_all_nodes)
+        query_all_nodes "$@"
        ;;
     backups)
         show_backups

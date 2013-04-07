@@ -26,6 +26,7 @@ emacsconf
 emacslog   
 heartbeat   
 help
+insert_retrieve
 install_all_masters   
 install_fan_in   
 install_master_slave   
@@ -36,6 +37,8 @@ load_data
 log   
 paths   
 pre_req_checker/tungsten_prereq
+query_all_nodes
+query_node
 readme
 replicator
 show_all_masters.sh
@@ -58,6 +61,7 @@ test_star.sh
 thl   
 tool.sh
 trepctl   
+tungsten_service
 utilities.sh
 validate_cluster   
 vilog   

@@ -5,6 +5,7 @@
 cd `dirname $0`
 
 MISSING=""
+UNDOCUMENTED=""
 for F in `cat MANIFEST` 
 do
     COMMENT=$(echo $F |grep '#')
@@ -19,18 +20,36 @@ do
             echo "not ok - $F not found"
             MISSING="$MISSING $F"
         fi
+        FOUND_IN_DOCS=$(grep $F REFERENCE.txt)
+        if [ -z "$FOUND_IN_DOCS" ]
+        then
+            echo "not ok - '$F' not described in the documentation"
+            UNDOCUMENTED="$UNDOCUMENTED $F"
+        fi
     fi
 done
 
+exit_code=0
 echo ""
 if [ -z "$MISSING" ]
 then
     echo "All files are accounted for"
 else
-    echo "*** WARNING"
-    echo "Missing files: $MISSING"
-    echo "****"
-    exit 1
+    echo "**** WARNING ****"
+    echo "** Missing files: $MISSING"
+    echo "*****************"
+    exit_code=1
 fi
 
+if [ -z "$UNDOCUMENTED" ]
+then
+    echo "All files are documented"
+else
+    echo "**** WARNING ****"
+    echo "Undocumented files: $UNDOCUMENTED"
+    echo "*****************"
+    exit_code=1
+fi
+
+exit $exit_code
 
