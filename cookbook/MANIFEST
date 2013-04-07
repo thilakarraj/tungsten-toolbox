@@ -1,10 +1,12 @@
 BOOTSTRAP.sh
 COMMON_NODES.sh
+MANIFEST
 NODES_ALL_MASTERS.sh
 NODES_FAN_IN.sh
 NODES_MASTER_SLAVE.sh
 NODES_STAR.sh
 README.txt
+REFERENCE.txt
 USER_VALUES.sh
 add_node_master_slave   
 add_node_star   
@@ -19,6 +21,7 @@ clear_cluster_star.sh
 check_cookbook   
 collect_logs   
 conf   
+configure_service
 copy_backup   
 deploy_to_sandboxes   
 edit_conf   

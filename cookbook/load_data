@@ -89,7 +89,7 @@ do
    CMD="$EVALUATOR $BRISTLECONE_OPTIONS $DB_OPTIONS $EV_OPTIONS $V $OPERATION"
     if [ -n "$VERBOSE" ]
     then
-        echo "$CMD"
+        echo "$CMD" | perl -pe 's/ -/ \\\n\t-/g'
     fi
     if [ -z "$DRYRUN" ]
     then
