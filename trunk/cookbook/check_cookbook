@@ -29,6 +29,19 @@ do
     fi
 done
 
+for F in *
+do
+    IS_BAK=$(echo $F | perl -lne 'print 1 if /(~|\.bak)$/') 
+    if [ -z "$IS_BAK" ]
+    then
+        LISTED=$(grep $F MANIFEST)
+        if [ -z "$LISTED" ]
+        then
+            echo "WARNING: file $F not in MANIFEST"
+        fi
+    fi
+done
+
 exit_code=0
 echo ""
 if [ -z "$MISSING" ]

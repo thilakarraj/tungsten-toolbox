@@ -80,6 +80,7 @@ tool.sh                                Internal shortcut engine (not to use dire
 
 query_node  node query                 runs a query in a given node
 query_all_nodes query                  runs a query in all nodes
+configure_service                      Shortcut to $TUNGSTEN_BASE/configure_service
 conf                                   Shows the configuration files using 'less'
 show_conf                              Same as 'conf.sh'
 edit_conf                              Edits the configuration files using 'vim'
