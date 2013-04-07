@@ -50,7 +50,10 @@ do
     if [ "$REMOVE_TEST_SCHEMAS" == "1" ]
     then
         $MYSQL -h $NODE -e 'drop schema if exists test'
-        $MYSQL -h $NODE -e 'drop schema if exists evaluator'
+        for D in $($MYSQL -h $NODE -BN -e 'show schemas like "evaluator%"' )
+        do
+            $MYSQL -h $NODE -e "drop schema $D"
+        done
     fi
     if [ "$REMOVE_DATABASE_CONTENTS" == "1" ]
     then

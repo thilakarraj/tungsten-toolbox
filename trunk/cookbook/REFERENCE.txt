@@ -5,7 +5,7 @@ README.txt                             Quick start guide
 REFERENCE.txt                          This file
 MANIFEST                               List of files in the cookbook
 check_cookbook                         Verifies that the cookbook directory contains all files
-help                                   Shows this file
+help  [command]                        Shows this file (if a file name is given, displays the help for that command) 
 readme                                 Shows the quick start guide
 
 #########################
@@ -76,8 +76,10 @@ show_star.sh                           Shows the services across all hosts (star
 replicator                             Shortcut to the 'replicator' command
 trepctl                                Shortcut to the 'trepctl' command
 thl                                    Shortcut to the 'thl' command
-tool                                   Internal shortcut engine (not to use directly)
+tool.sh                                Internal shortcut engine (not to use directly)
 
+query_node  node query                 runs a query in a given node
+query_all_nodes query                  runs a query in all nodes
 conf                                   Shows the configuration files using 'less'
 show_conf                              Same as 'conf.sh'
 edit_conf                              Edits the configuration files using 'vim'
@@ -94,6 +96,7 @@ paths                                  Shows the path to all important tools and
 services                               Performs 'trepctl services'
 backups                                Shows which backups were taken in all nodes
 
+
 #########################
 ## Testing tools
 #########################
@@ -103,12 +106,22 @@ test_all_masters.sh                    Tests an all-masters topology (DEPRECATED
 test_fan_in.sh                         Tests a fan-in topology (DEPRECATED)
 test_master_slave.sh                   Tests a master-slave topology (DEPRECATED)
 test_star.sh                           Tests a star topology (DEPRECATED)
-
+insert_retrieve  node1 node2           Creates a table in node1 and retrieves it from node2
+tungsten_service {node|all} [service]  Shows the contents of trep_commit_seqno for a given node for all nodes. If 'service' is not given, it shows all
 
 #########################
 ## ENVIRONMENT VARIABLES
 #########################
+## USED DURING INSTALLATION
 VERBOSE=1                              Gives more information during installation
 VERBOSE=2                              Enables debug mode during validation
 DRYRUN=1                               Used by all installation scripts. Shows installation commands
 MORE_OPTIONS="..."                     Used by all installation scripts. Adds more options to the installer command
+## USED DURING CLEAN-UP
+STOP_REPLICATORS                       Stops the replicators
+REMOVE_TUNGSTEN_BASE                   Removes the directory where the software was installed
+REMOVE_SERVICE_SCHEMA                  Removes the schemas tungsten_*
+REMOVE_TEST_SCHEMAS                    Removes the schemas created for tests
+REMOVE_DATABASE_CONTENTS=0             Removes all the database contents (default: no)
+CLEAN_NODE_DATABASE_SERVER             Resets the database server to default state.
+
