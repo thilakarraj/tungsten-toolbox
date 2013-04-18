@@ -66,10 +66,11 @@ MASTER_LOG=$($MYSQL -h${SLAVES[1]} -Be 'show slave status;' | tail -1 | cut -f10
 MASTER_POS=$($MYSQL -h${SLAVES[1]} -Be 'show slave status;' | tail -1 | cut -f22 | cut -d '.' -f2) 
 EVENT="$MASTER_LOG:$MASTER_POS"
 
+echo "Starting Master Replicator online from $MASTER_LOG - $MASTER_POS"
 $TREPCTL -host $MASTER online -from-event $EVENT
 echo "$TREPCTL -host $MASTER online -from-event $EVENT"
 
-
+echo "Starting Slave Replicators"
 for SLAVE in ${SLAVES[*]} 
 do
 	$TREPCTL -host $SLAVE online 
