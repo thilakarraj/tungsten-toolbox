@@ -118,7 +118,7 @@ function show_paths
         printf "%15s : %s\n" $BIN "$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/$BIN"
     done
     printf "%15s : %s\n" 'log' "$TUNGSTEN_BASE/tungsten/tungsten-replicator/log/trepsvc.log"
-    printf "%15s : %s\n" 'service-cfg' "$TUNGSTEN_BASE/tools/configure-service"
+    printf "%15s : %s\n" 'service-cfg' "$TUNGSTEN_BASE/tungsten/tools/configure-service"
     printf "%15s : %s\n" 'conf' $CONF_DIR
     get_property_value $CONF_DIR 'thl-dir' 'replicator.store.thl.log_dir'
     get_property_value $CONF_DIR 'backup-dir' 'replicator.storage.agent.fs.directory'
@@ -241,7 +241,7 @@ case "$ARG"
         show_paths $1
        ;;
     configure_service)
-        $TUNGSTEN_BASE/tools/configure-service $@
+        $TUNGSTEN_BASE/tungsten/tools/configure-service $@
         ;;
     tungsten_service)
         tungsten_service $@
