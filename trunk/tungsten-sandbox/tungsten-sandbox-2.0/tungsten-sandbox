@@ -1308,6 +1308,21 @@ if ($options{service_names})
     }
 }
 
+if ($options{service_names})
+{
+    my @service_list = split /[;, ]/, $options{service_names};
+    my $max_services = scalar @Tsandbox::service_names;
+    if (scalar @service_list > $max_services )
+    {
+        die "too many services named. We can only use as many as $max_services \n" ;
+    }
+
+    for my $N ( 0 .. $max_services -1 )
+    {
+        $Tsandbox::service_names[$N] = $service_list[$N];
+    }
+}
+
 unless ($parse_options{topology}{allowed}{$options{topology}})
 {
     die "Topology $options{topology} has not been implemented yet\n";
@@ -1455,7 +1470,11 @@ else
 my $SANDBOX_HOME= $ENV{SANDBOX_HOME} || "$ENV{HOME}/sandboxes";
 my $SANDBOX_BINARY= $ENV{SANDBOX_BINARY} || "$ENV{HOME}/opt/mysql";
 
-unless ( -d "$SANDBOX_BINARY/$options{mysql_version}" )
+if ( -d "$SANDBOX_BINARY/$options{mysql_version}" )
+{
+    $ENV{PATH} .= ":$SANDBOX_BINARY/$options{mysql_version}/bin"
+}
+else
 {
     die "directory $SANDBOX_BINARY/$options{mysql_version} not found\n";
 }
@@ -1599,7 +1618,7 @@ else
         $additional_flags='-c binlog_checksum=none';
     }
     my $mms_cmd =   "$make_multiple_sandbox "
-              . " --node_options='$ENV{MSB_NODE_OPTIONS} $additional_flags -c log-bin=mysql-bin -c innodb_flush_log_at_trx_commit=2 -c max_allowed_packet=48M'"
+              . " --node_options='$ENV{MSB_NODE_OPTIONS} $additional_flags -c log-bin=mysql-bin -c innodb_flush_log_at_trx_commit=1 -c max_allowed_packet=48M'"
               . " --how_many_nodes=$options{nodes}"
               . " --sandbox_base_port=$options{base_port}"
               . " --group_directory=$options{group_dir}"
