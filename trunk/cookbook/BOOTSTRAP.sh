@@ -138,6 +138,10 @@ export THL=$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/thl
 export INSTALL_LOG=$cookbook_dir/current_install.log
 
 CURRENT_TOPOLOGY=$cookbook_dir/../CURRENT_TOPOLOGY
+MY_COOKBOOK_CNF=$cookbook_dir/my.cookbook.cnf
+MYSQL="mysql --defaults-file=$MY_COOKBOOK_CNF"
+MYSQLDUMP="mysqldump --defaults-file=$MY_COOKBOOK_CNF"
+MYSQLADMIN="mysqladmin --defaults-file=$MY_COOKBOOK_CNF"
 
 function check_installed
 {
@@ -222,18 +226,30 @@ function are_you_sure_you_want_to_clear
 
 function post_installation
 {
+    echo '[client]'                           > $MY_COOKBOOK_CNF
+    echo "user=$DATABASE_USER"               >> $MY_COOKBOOK_CNF
+    echo "password=$DATABASE_PASSWORD"       >> $MY_COOKBOOK_CNF
+    echo "port=$DATABASE_PORT"               >> $MY_COOKBOOK_CNF
+    echo ''                                  >> $MY_COOKBOOK_CNF
+    echo '[mysql]'                           >> $MY_COOKBOOK_CNF
+    echo "prompt='*mysql [\h] {\u} (\d) > '" >> $MY_COOKBOOK_CNF
+
     for NODE in ${ALL_NODES[*]}
     do  
         DEPLOYED=$(ssh $NODE "if [ -d $TUNGSTEN_BASE ] ; then echo 'yes' ; fi")
         if [ "$DEPLOYED" == "yes" ]
         then
             scp -q $CURRENT_TOPOLOGY $NODE:$TUNGSTEN_BASE/tungsten/  
+            scp -q $MY_COOKBOOK_CNF $NODE:$TUNGSTEN_BASE/tungsten/cookbook/
         fi
     done
     TOPOLOGY=$(cat $CURRENT_TOPOLOGY)
     echo "Deployment completed "
-    echo "Topology      :'$TOPOLOGY'"
-    echo "Tungsten path : $TUNGSTEN_BASE "
-    echo "Nodes         : (${ALL_NODES[*]})"
+    echo "Topology       :'$TOPOLOGY'"
+    echo "Tungsten path  : $TUNGSTEN_BASE "
+    echo "Nodes          : (${ALL_NODES[*]})"
+    echo "MySQL version  : $(MYSQL -h ${MASTERS[0]} -BN -e 'select @@version')" 
+    echo "MySQL port     : $DATABASE_PORT"
+    echo "MySQL shortcut : $MYSQL"
 }
 

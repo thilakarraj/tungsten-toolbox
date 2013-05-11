@@ -44,7 +44,7 @@ function fill_roles {
 function clear_node {
 	
 		NODE=$1
-		MYSQL="mysql -u $DATABASE_USER -p$DATABASE_PASSWORD -P $DATABASE_PORT"
+		# MYSQL is defined in BOOTSTRAP.sh
 		ssh $NODE "if [ ! -d $TUNGSTEN_BASE ] ; then mkdir -p $TUNGSTEN_BASE ;  fi" 
 	    ssh $NODE "if [ -x $REPLICATOR ] ; then $REPLICATOR stop;  fi" 
 	    ssh $NODE rm -rf $TUNGSTEN_BASE/*  

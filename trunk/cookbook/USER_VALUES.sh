@@ -10,6 +10,9 @@ export TUNGSTEN_BASE=$HOME/installs/cookbook
 # Directory containing the database binary logs
 export BINLOG_DIRECTORY=/var/lib/mysql
 
+# Path to the script that can start, stop, and restart a MySQL server
+export MYSQL_BOOT_SCRIPT=/etc/init.d/mysql
+
 # Path to the options file
 export MY_CNF=/etc/my.cnf
 

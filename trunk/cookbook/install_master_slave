@@ -58,6 +58,7 @@ then
         --home-directory=$TUNGSTEN_BASE \
         --cluster-hosts=$NODE \
         --datasource-mysql-conf=$MY_CNF \
+        -a --datasource-boot-script=$MYSQL_BOOT_SCRIPT \
         --datasource-log-directory=$BINLOG_DIRECTORY \
         --rmi-port=$RMI_PORT \
         --thl-port=$THL_PORT \
@@ -82,6 +83,7 @@ else
         --cluster-hosts=$HOSTS_LIST \
         --datasource-mysql-conf=$MY_CNF \
         --datasource-log-directory=$BINLOG_DIRECTORY \
+        -a --datasource-boot-script=$MYSQL_BOOT_SCRIPT \
         --rmi-port=$RMI_PORT \
         --thl-port=$THL_PORT \
         $MORE_OPTIONS --$START_OPTION"     

@@ -56,7 +56,8 @@ esac
 
 fill_roles
 
-MYSQL="mysql -u $DATABASE_USER -p$DATABASE_PASSWORD -P $DATABASE_PORT"
+## MYSQL is defined in BOOTSTRAP.sh
+# 
 
 echo "# $LONG_LINE"
 echo "# Testing cluster with installed topology '$TOPOLOGY'"

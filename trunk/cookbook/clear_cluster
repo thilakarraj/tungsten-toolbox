@@ -29,7 +29,7 @@ echo "Clearing up cluster with installed topology '$TOPOLOGY'"
 
 are_you_sure_you_want_to_clear
 
-MYSQL="mysql -u $DATABASE_USER -p$DATABASE_PASSWORD -P $DATABASE_PORT"
+# MYSQL is defined in BOOTSTRAP.sh
 for NODE in ${ALL_NODES[*]} 
 do 
     if [ "$STOP_REPLICATORS" == "1" ]
