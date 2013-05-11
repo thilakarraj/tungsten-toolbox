@@ -47,8 +47,7 @@ function query_node
     node=$1
     shift
     query="$@"
-    MYSQL="mysql -h $node -u $DATABASE_USER --password=$DATABASE_PASSWORD --port=$DATABASE_PORT "
-    $MYSQL -e "$query"
+    $MYSQL -h $node -e "$query"
 }
 
 function query_all_nodes

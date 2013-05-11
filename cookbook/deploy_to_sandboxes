@@ -179,4 +179,4 @@ function replace_text
 replace_text $cookbook_dir/USER_VALUES.sh '/var/lib/mysql' "$HOME/sandboxes/$SANDBOX_DIR/data" BACKUP
 replace_text $cookbook_dir/USER_VALUES.sh '/etc/my.cnf' "$HOME/sandboxes/$SANDBOX_DIR/my.sandbox.cnf"
 replace_text $cookbook_dir/USER_VALUES.sh 'DATABASE_PORT=3306' "DATABASE_PORT=$MYSQL_PORT"
-
+replace_text $cookbook_dir/USER_VALUES.sh '/etc/init.d/mysql' "$HOME/sandboxes/$SANDBOX_DIR/msb"

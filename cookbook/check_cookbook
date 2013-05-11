@@ -2,10 +2,43 @@
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
 # Version 1.0.5 - 2013-04-03
 
-cd `dirname $0`
+
+cookbook_dir=`dirname $0`
+cd $cookbook_dir
 
 MISSING=""
 UNDOCUMENTED=""
+NOT_IN_MANIFEST=""
+exit_code=0
+
+function final_check
+{
+    ok_msg=$1
+    not_ok_msg=$2
+    file_list=$3
+    if [ -z "$file_list" ]
+    then
+        echo $ok_msg
+    else
+        echo "**** WARNING *********************************"
+        echo "** $not_ok_msg : $file_list"
+        echo "**********************************************"
+        exit_code=1
+    fi
+}
+
+for REQUIRED in MANIFEST REFERENCE.txt
+do
+    if [ ! -f $REQUIRED ]
+    then
+        echo "Can't check the software without $REQUIRED"
+        MISSING="$MISSING $REQUIRED"
+    fi
+done
+
+[ -n "$MISSING" ] && exit $exit_code
+
+# Looking for expected files
 for F in `cat MANIFEST` 
 do
     COMMENT=$(echo $F |grep '#')
@@ -29,40 +62,26 @@ do
     fi
 done
 
-for F in *
+# Looking for unexpected files
+for F in * $(ls -d */*)
 do
-    IS_BAK=$(echo $F | perl -lne 'print 1 if /(~|\.bak)$/') 
-    if [ -z "$IS_BAK" ]
+    SKIP=$(echo $F | perl -lne 'print 1 if /(~|\.bak)$/') 
+    if [ "$F" == "TODO" ] ; then SKIP=1; fi
+    if [ -d $F ] ; then SKIP=1; fi
+    if [ -z "$SKIP" ]
     then
-        LISTED=$(grep $F MANIFEST)
+        LISTED=$(grep "^$F$" MANIFEST)
         if [ -z "$LISTED" ]
         then
-            echo "WARNING: file $F not in MANIFEST"
+            echo "not ok - file $F not in MANIFEST"
+            NOT_IN_MANIFEST="$NOT_IN_MANIFEST $F"
         fi
     fi
 done
 
-exit_code=0
 echo ""
-if [ -z "$MISSING" ]
-then
-    echo "All files are accounted for"
-else
-    echo "**** WARNING ****"
-    echo "** Missing files: $MISSING"
-    echo "*****************"
-    exit_code=1
-fi
-
-if [ -z "$UNDOCUMENTED" ]
-then
-    echo "All files are documented"
-else
-    echo "**** WARNING ****"
-    echo "Undocumented files: $UNDOCUMENTED"
-    echo "*****************"
-    exit_code=1
-fi
-
+final_check "All files from MANIFEST are accounted for" "Missing files" $MISSING
+final_check "All files are documented in REFERENCE.txt" "Undocumented files" $UNDOCUMENTED
+final_check "All files are listed in MANIFEST" "Files not in MANIFEST" $NOT_IN_MANIFEST
 exit $exit_code
 
