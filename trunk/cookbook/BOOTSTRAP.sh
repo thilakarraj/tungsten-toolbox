@@ -248,7 +248,7 @@ function post_installation
     echo "Topology       :'$TOPOLOGY'"
     echo "Tungsten path  : $TUNGSTEN_BASE "
     echo "Nodes          : (${ALL_NODES[*]})"
-    echo "MySQL version  : $(MYSQL -h ${MASTERS[0]} -BN -e 'select @@version')" 
+    echo "MySQL version  : $($MYSQL -h ${MASTERS[0]} -BN -e 'select @@version')" 
     echo "MySQL port     : $DATABASE_PORT"
     echo "MySQL shortcut : $MYSQL"
 }
