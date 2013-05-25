@@ -118,6 +118,8 @@ VERBOSE=1                              Gives more information during installatio
 VERBOSE=2                              Enables debug mode during validation
 DRYRUN=1                               Used by all installation scripts. Shows installation commands
 MORE_OPTIONS="..."                     Used by all installation scripts. Adds more options to the installer command
+## USED DURING TEST
+BINLOG_FORMAT={STATEMENT|MIXED|ROW}    Changes the default binlog format in each master before running the test
 ## USED DURING CLEAN-UP
 STOP_REPLICATORS                       Stops the replicators
 REMOVE_TUNGSTEN_BASE                   Removes the directory where the software was installed
