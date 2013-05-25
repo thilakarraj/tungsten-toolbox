@@ -117,8 +117,9 @@ then
     DDL_POSTFIX='(4)'
 fi
 
-SAMPLE_BLOB=abc
+SAMPLE_BLOB="%!+?/.,[]{}()*^&#@-_=abcdefghi0123456789"
 SAMPLE_T=xyz
+SAMPLE_F=1.512345678901234
 SAMPLE_D=1969-09-01
 SAMPLE_DT="2003-04-26 09:15:57$DATA_POSTFIX"
 SAMPLE_TS="2003-04-26 09:15:58$DATA_POSTFIX"
@@ -132,9 +133,9 @@ do
     fi
     $MYSQL -h $NODE -e "drop table if exists test.t$COUNT"
     $MYSQL -h $NODE -e "drop table if exists test.v$COUNT"
-    $MYSQL -h $NODE -e "create table test.t$COUNT(id int not null primary key, c char(20), b blob, t text, d date, dt datetime$DDL_POSTFIX, ts timestamp$DDL_POSTFIX) engine=innodb"
+    $MYSQL -h $NODE -e "create table test.t$COUNT(id int not null primary key, c char(20), b blob, t text, d date, dt datetime$DDL_POSTFIX, ts timestamp$DDL_POSTFIX, f double) engine=innodb"
     $MYSQL -h $NODE -e "create or replace view test.v$COUNT as select * from test.t$COUNT"
-    $MYSQL -h $NODE -e "insert into test.v$COUNT values (1, 'inserted by node #$COUNT', '$SAMPLE_BLOB', '$SAMPLE_T', '$SAMPLE_D', '$SAMPLE_DT', '$SAMPLE_TS')"
+    $MYSQL -h $NODE -e "insert into test.v$COUNT values (1, 'inserted by node #$COUNT', '$SAMPLE_BLOB', '$SAMPLE_T', '$SAMPLE_D', '$SAMPLE_DT', '$SAMPLE_TS', $SAMPLE_F)"
     HOW_MANY_SERVICES=$($TREPCTL -host $NODE services | grep role | grep master| wc -l)
     # echo "#M> $HOW_MANY_SERVICES"
     ok_greater $HOW_MANY_SERVICES $EXPECTED_SERVICES_MASTER "Master $NODE has at least $EXPECTED_SERVICES_MASTER master services"
@@ -170,6 +171,7 @@ do
         DATE_CONTENT=$($MYSQL -BN -h $NODE -e "select d from test.t$COUNT where c = 'inserted by node #$COUNT' ")
         DT_CONTENT=$($MYSQL -BN -h $NODE -e "select dt from test.t$COUNT where c = 'inserted by node #$COUNT' ")
         TS_CONTENT=$($MYSQL -BN -h $NODE -e "select ts from test.t$COUNT where c = 'inserted by node #$COUNT' ")
+        F_CONTENT=$($MYSQL -BN -h $NODE -e "select f from test.t$COUNT where c = 'inserted by node #$COUNT' ")
         ok_equal $TABLE_COUNT 1 "Tables from master #$COUNT"
         ok_equal $VIEW_COUNT 1 "Views from master #$COUNT"
         ok_equal $RECORD_COUNT 1 "Records from master #$COUNT : <$RECORD_COUNT>"
@@ -178,6 +180,7 @@ do
         ok_equal $DATE_CONTENT "$SAMPLE_D" "Date from master #$COUNT : <$DATE_CONTENT>"
         ok_equal "$DT_CONTENT" "$SAMPLE_DT" "Datetime from master #$COUNT : <$DT_CONTENT>"
         ok_equal "$TS_CONTENT" "$SAMPLE_TS" "Timestamp from master #$COUNT : <$TS_CONTENT>"
+        ok_equal "$F_CONTENT" "$SAMPLE_F" "Double from master #$COUNT : <$F_CONTENT>"
         # $MYSQL -h $NODE -e "select * from test.t$COUNT"
     done
     HOW_MANY_SERVICES=$($TREPCTL -host $SLAVE services | grep role | grep slave| wc -l)
