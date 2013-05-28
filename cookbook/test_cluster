@@ -131,7 +131,8 @@ do
 
 SAMPLE_BLOB="%!+?/.,[]{}()*^&#@-_=abcdefghi0123456789"
 SAMPLE_T=xyz
-SAMPLE_F=1.512345678901234
+# SAMPLE_F=1.512345678901234
+SAMPLE_F=1.012345678901234
 SAMPLE_D=1969-09-01
 SAMPLE_TIME=12:13:56$DATA_POSTFIX
 SAMPLE_DT="2003-04-26 09:15:57$DATA_POSTFIX"
@@ -148,7 +149,7 @@ do
     fi
     $MYSQL -h $NODE -e "drop table if exists test.t$COUNT"
     $MYSQL -h $NODE -e "drop table if exists test.v$COUNT"
-    $MYSQL -h $NODE -e "create table test.t$COUNT(id int not null primary key, c char(20), b blob, t text, ti time$DDL_POSTFIX, d date, dt datetime$DDL_POSTFIX, ts timestamp$DDL_POSTFIX, f double) engine=innodb"
+    $MYSQL -h $NODE -e "create table test.t$COUNT(id int not null primary key, c char(20), b blob, t text, ti time$DDL_POSTFIX, d date, dt datetime$DDL_POSTFIX, ts timestamp$DDL_POSTFIX, f double(20,15)) engine=innodb"
     $MYSQL -h $NODE -e "create or replace view test.v$COUNT as select * from test.t$COUNT"
     $MYSQL -h $NODE -e "insert into test.v$COUNT values (1, 'inserted by node #$COUNT', '$SAMPLE_BLOB', '$SAMPLE_T', '$SAMPLE_TIME', '$SAMPLE_D', '$SAMPLE_DT', '$SAMPLE_TS', $SAMPLE_F)"
     # echo "############"
