@@ -51,3 +51,9 @@ echo ""
 echo "# tests : $TESTS"
 echo "# pass  : $OK ($(($OK/$TESTS*100)))"
 echo "# fail  : $NOTOK ($(($NOTOK/$TESTS*100)))"
+
+#
+# The desired number of NOT OK tests is 0.
+# We exit with this number, which will make the test fail if there were any 'not ok' in the results
+#
+exit $NOTOK
