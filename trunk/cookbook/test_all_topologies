@@ -22,7 +22,7 @@ do
     do
         for MASTER in ${MASTERS[*]}
         do
-            mysql -h $MASTER -u $DATABASE_USER -p$DATABASE_PASSWORD -P $DATABASE_PORT -e "set global binlog_format=$MODE"
+            $MYSQL -h $MASTER -e "set global binlog_format=$MODE"
         done 
         echo "# testing with binlog_format=$MODE" >> /tmp/test_log$$ 
         # echo "# testing with binlog_format=$MODE" 
