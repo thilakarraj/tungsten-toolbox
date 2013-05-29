@@ -136,6 +136,7 @@ export REPLICATOR=$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/replicator
 export TREPCTL="$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/trepctl -port $RMI_PORT"
 export THL=$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/thl
 export INSTALL_LOG=$cookbook_dir/current_install.log
+export INSTALL_SUMMARY=$cookbook_dir/current_install.summary
 
 CURRENT_TOPOLOGY=$cookbook_dir/../CURRENT_TOPOLOGY
 MY_COOKBOOK_CNF=$cookbook_dir/my.cookbook.cnf
@@ -208,10 +209,17 @@ function are_you_sure_you_want_to_clear
         echo "* Set the binlog format to MIXED;             [\$CLEAN_NODE_DATABASE_SERVER]"
         echo "* Reset the master (removes all binary logs); [\$CLEAN_NODE_DATABASE_SERVER]"
     fi
-    echo "If this is what you want, either set the variable I_WANT_TO_UNINSTALL "
-    echo "or answer 'y' to the question below"
-    echo "You may also set the variables in brackets to fine tune the execution."
-    echo "Alternatively, have a look at $0 and customize it to your needs."
+    if [ -z "$I_WANT_TO_UNINSTALL" ]
+    then
+        echo "If this is what you want, either set the variable I_WANT_TO_UNINSTALL "
+        echo "or answer 'y' to the question below"
+        echo "You may also set the variables in brackets to fine tune the execution."
+        echo "Alternatively, have a look at $0 and customize it to your needs."
+    else
+        echo "***"
+        echo "The variable \$I_WANT_TO_UNINSTALL was set. No confirmation is required."
+        echo "***"
+    fi
     echo "--------------------------------------------------------------------------------------"
 
     while [ -z "$I_WANT_TO_UNINSTALL" ] ; do
@@ -244,12 +252,20 @@ function post_installation
         fi
     done
     TOPOLOGY=$(cat $CURRENT_TOPOLOGY)
+    TUNGSTEN_RELEASE=$(grep RELEASE $cookbook_dir/../.manifest| awk '{print $2}')  
     echo "Deployment completed "
-    echo "Topology       :'$TOPOLOGY'"
-    echo "Tungsten path  : $TUNGSTEN_BASE "
-    echo "Nodes          : (${ALL_NODES[*]})"
-    echo "MySQL version  : $($MYSQL -h ${MASTERS[0]} -BN -e 'select @@version')" 
-    echo "MySQL port     : $DATABASE_PORT"
-    echo "MySQL shortcut : $MYSQL"
+    echo "Topology         :'$TOPOLOGY'"                                            > $INSTALL_SUMMARY
+    echo "Tungsten path    : $TUNGSTEN_BASE "                                      >> $INSTALL_SUMMARY
+    echo "Nodes            : (${ALL_NODES[*]})"                                    >> $INSTALL_SUMMARY
+    echo "Master services  : (${MASTERS[*]})"                                      >> $INSTALL_SUMMARY
+    echo "Slave services   : (${SLAVES[*]})"                                       >> $INSTALL_SUMMARY
+    echo "MySQL version    : $($MYSQL -h ${MASTERS[0]} -BN -e 'select @@version')" >> $INSTALL_SUMMARY
+    echo "MySQL port       : $DATABASE_PORT"                                       >> $INSTALL_SUMMARY
+    echo "MySQL shortcut   : $MYSQL"                                               >> $INSTALL_SUMMARY
+    echo "Tungsten release : $TUNGSTEN_RELEASE"                                    >> $INSTALL_SUMMARY
+    echo "Installation log : $INSTALL_LOG"                                         >> $INSTALL_SUMMARY
+
+    cat $INSTALL_SUMMARY
+
 }
 
