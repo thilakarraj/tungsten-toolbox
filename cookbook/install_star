@@ -48,6 +48,7 @@ do
     --datasource-mysql-conf=$MY_CNF \
     --datasource-log-directory=$BINLOG_DIRECTORY \
     -a --datasource-boot-script=$MYSQL_BOOT_SCRIPT \
+    --property=replicator.service.comments=true \
     --rmi-port=$RMI_PORT \
     --thl-port=$THL_PORT \
     $MORE_OPTIONS $START_OPTION "
