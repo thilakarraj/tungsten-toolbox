@@ -19,7 +19,7 @@ use Getopt::Long;
 use File::Basename;
 use English '-no_match_vars';
 
-our $VERSION = '2.0.12';
+our $VERSION = '2.0.13';
 # our $DRY_RUN = 0;
 our $VERBOSE = 0;
 
@@ -307,6 +307,10 @@ sub install_master_slave_replicator
         $master_thl_port = "--master-thl-port=$params->{master_thl_port}";
     }
     $extra = '' unless defined $extra;
+    if ($options->{topology} eq 'star')
+    {
+        $extra .= ' --property=replicator.service.comments=true ';
+    }
     my $command = "./tools/tungsten-installer";
     my $args = 
       " --master-slave "
@@ -1615,7 +1619,7 @@ else
     my $additional_flags='';
     if ($options{mysql_version} =~ /^5\.6/)
     { 
-        $additional_flags='-c binlog_checksum=none';
+        $additional_flags='-c binlog_checksum=none -c log_bin_use_v1_row_events';
     }
     my $mms_cmd =   "$make_multiple_sandbox "
               . " --node_options='$ENV{MSB_NODE_OPTIONS} $additional_flags -c log-bin=mysql-bin -c innodb_flush_log_at_trx_commit=1 -c max_allowed_packet=48M'"
