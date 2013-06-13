@@ -36,6 +36,7 @@ install_fan_in                         Installs a fan-in topology
 install_star                           Installs a star topology
 install_master_slave_direct            Installs a master-slave topology with 'direct mode'
 install_standard_replication           Installs standard MySQL replication
+upgrade                                Provides the commands needed to upgrade from the previous version
 
 #########################
 ## Administrative tools

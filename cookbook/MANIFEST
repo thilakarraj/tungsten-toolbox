@@ -65,6 +65,7 @@ thl
 tool.sh
 trepctl
 tungsten_service
+upgrade
 utilities.sh
 validate_cluster
 vilog
