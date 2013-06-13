@@ -1,6 +1,6 @@
 The Tungsten Replicator cookbook
 
-(C) Continuent, Inc, 2012
+(C) Continuent, Inc, 2012,2013
 Released under the New BSD license. 
 See http://code.google.com/p/tungsten-toolbox/ for more information.
 
