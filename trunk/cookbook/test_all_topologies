@@ -3,6 +3,15 @@
 # Version 1.0.5 - 2013-04-03
 cookbook_dir=$(dirname $0)
 
+if [ -f $cookbook_dir/../CURRENT_TOPOLOGY ]
+then
+    echo "There is already a cluster installed - Can't proceed."
+    echo -n "Currently installed topology: "
+    cat $cookbook_dir/../CURRENT_TOPOLOGY
+    exit 1
+fi
+
+
 INSTALL_LOG=install_log.txt
 TEST_LOG=test_log.txt
 
