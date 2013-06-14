@@ -54,21 +54,12 @@ copy_backup                            Copies backup from a given node to anothe
 #########################
 clear_all                              Clears the cluster inconditionally
 clear_cluster                          Clears the cluster regardless of the topology
-clear_cluster_all_masters.sh           Clears an all-masters topology (DEPRECATED)
-clear_cluster_fan_in.sh                Clears a fan-in topology (DEPRECATED)
-clear_cluster_master_slave.sh          Clears a master-slave topology (DEPRECATED)
-clear_cluster_master_slave_direct.sh   Clears a master-slave (direct) topology (DEPRECATED)
-clear_cluster_star.sh                  Clears a star topology (DEPRECATED)
 
 #########################
 ## Monitoring tools
 #########################
 simple_services                        Filter the output of 'trepctl services'
 show_cluster                           Shows the services across all hosts 
-show_all_masters.sh                    Shows the services across all hosts (all-masters topology) (DEPRECATED)
-show_fan_in.sh                         Shows the services across all hosts (fan-in topology) (DEPRECATED)
-show_master_slave.sh                   Shows the services across all hosts (master-slave topology) (DEPRECATED)
-show_star.sh                           Shows the services across all hosts (star topology) (DEPRECATED)
 
 
 #########################
@@ -104,10 +95,6 @@ backups                                Shows which backups were taken in all nod
 #########################
 test_all_topologies                    Installs and tests all topologies
 test_cluster                           Tests a cluster 
-test_all_masters.sh                    Tests an all-masters topology (DEPRECATED)
-test_fan_in.sh                         Tests a fan-in topology (DEPRECATED)
-test_master_slave.sh                   Tests a master-slave topology (DEPRECATED)
-test_star.sh                           Tests a star topology (DEPRECATED)
 insert_retrieve  node1 node2           Creates a table in node1 and retrieves it from node2
 tungsten_service {node|all} [service]  Shows the contents of trep_commit_seqno for a given node for all nodes. If 'service' is not given, it shows all
 
