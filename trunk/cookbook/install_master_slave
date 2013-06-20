@@ -72,21 +72,44 @@ then
     done
 
 else
-    INSTALL_COMMAND="./tools/tungsten-installer \
-        --master-slave \
-        --master-host=$MASTER \
-        --datasource-user=$DATABASE_USER \
-        --datasource-password=$DATABASE_PASSWORD \
-        --datasource-port=$DATABASE_PORT \
-        --service-name=$TUNGSTEN_SERVICE \
+    if [ -n "$USE_TPM" ]
+    then
+        rm -f deploy.cfg*
+        if [ -n "$VERBOSE" ]
+        then
+            echo "# Using tpm"
+        fi
+        INSTALL_COMMAND="./tools/tpm install $TUNGSTEN_SERVICE \
+        --master=$MASTER \
+        --replication-user=$DATABASE_USER \
+        --replication-password=$DATABASE_PASSWORD \
+        --replication-port=$DATABASE_PORT \
         --home-directory=$TUNGSTEN_BASE \
-        --cluster-hosts=$HOSTS_LIST \
+        --members=$HOSTS_LIST \
+        --skip-validation-check=InstallationScriptCheck
         --datasource-mysql-conf=$MY_CNF \
         --datasource-log-directory=$BINLOG_DIRECTORY \
         -a --datasource-boot-script=$MYSQL_BOOT_SCRIPT \
         --rmi-port=$RMI_PORT \
         --thl-port=$THL_PORT \
         $MORE_OPTIONS --$START_OPTION"     
+    else
+        INSTALL_COMMAND="./tools/tungsten-installer \
+            --master-slave \
+            --master-host=$MASTER \
+            --datasource-user=$DATABASE_USER \
+            --datasource-password=$DATABASE_PASSWORD \
+            --datasource-port=$DATABASE_PORT \
+            --service-name=$TUNGSTEN_SERVICE \
+            --home-directory=$TUNGSTEN_BASE \
+            --cluster-hosts=$HOSTS_LIST \
+            --datasource-mysql-conf=$MY_CNF \
+            --datasource-log-directory=$BINLOG_DIRECTORY \
+            -a --datasource-boot-script=$MYSQL_BOOT_SCRIPT \
+            --rmi-port=$RMI_PORT \
+            --thl-port=$THL_PORT \
+            $MORE_OPTIONS --$START_OPTION"     
+    fi
 
     if [ -n "$VERBOSE" ]
     then

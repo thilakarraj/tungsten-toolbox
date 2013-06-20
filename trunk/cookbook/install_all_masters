@@ -25,98 +25,146 @@ fi
 
 COMMAND_SEQUENCE=1
 
-
-# install all masters
-INDEX=0
-for NODE in ${MASTERS[*]}
-do
-  INSTALL_COMMAND="./tools/tungsten-installer \
-    --master-slave \
-    --master-host=$NODE \
-    --datasource-port=$DATABASE_PORT \
-    --datasource-user=$DATABASE_USER \
-    --datasource-password=$DATABASE_PASSWORD \
-    --datasource-log-directory=$BINLOG_DIRECTORY \
-    --service-name=${MM_SERVICES[$INDEX]} \
-    --home-directory=$TUNGSTEN_BASE \
-    --cluster-hosts=$NODE \
-    --datasource-mysql-conf=$MY_CNF \
-    --datasource-log-directory=$BINLOG_DIRECTORY \
-    -a --datasource-boot-script=$MYSQL_BOOT_SCRIPT \
-    --rmi-port=$RMI_PORT \
-    --thl-port=$THL_PORT \
-    $MORE_OPTIONS --$START_OPTION"
-
-    echo "## $COMMAND_SEQUENCE (host: $NODE)" >> $INSTALL_LOG
-    echo $INSTALL_COMMAND  | perl -pe 's/--/\\\n\t--/g' >> $INSTALL_LOG
+function run_command
+{
+    command="$*"
     if [ -n "$VERBOSE" ]
     then
-        echo "## $COMMAND_SEQUENCE (host: $NODE)"
-        echo $INSTALL_COMMAND | perl -pe 's/--/\\\n\t--/g'
+        echo $command  | perl -pe 's/--/\\\n\t--/g'
     fi
-    COMMAND_SEQUENCE=$(($COMMAND_SEQUENCE+1))
-
     if [ -z "$DRYRUN" ]
     then
-        $INSTALL_COMMAND
-
-        if [ "$?" != "0"  ]
-        then
-            exit
-        fi
+        $command
     fi
-    INDEX=$(($INDEX+1))
-done
+    if [ "$?" != "0" ]
+    then
+        exit 1
+    fi
+}
 
-TUNGSTEN_TOOLS=$TUNGSTEN_BASE/tungsten/tools
+# install all masters
+if [ -n "$USE_TPM" ]
+then
+    MEMBERS=${MASTERS[*]}
+    MEMBER_LIST=$(echo $MEMBERS | tr ' ' ',')
+    SERVICE_INDEX=0
+    INSTALL_COMMAND="./tools/tpm configure defaults --reset \
+        --replication-port=$DATABASE_PORT \
+        --replication-user=$DATABASE_USER \
+        --replication-password=$DATABASE_PASSWORD \
+        --datasource-log-directory=$BINLOG_DIRECTORY \
+        --home-directory=$TUNGSTEN_BASE \
+        --datasource-mysql-conf=$MY_CNF \
+        --datasource-log-directory=$BINLOG_DIRECTORY \
+        -a --datasource-boot-script=$MYSQL_BOOT_SCRIPT \
+		--enable-slave-thl-listener=false \
+        --rmi-port=$RMI_PORT \
+        --thl-port=$THL_PORT \
+        $MORE_OPTIONS --$START_OPTION"
 
-# set -x
-S_INDEX=0
-for SLAVE in ${SLAVES[*]}
-do
-    M_INDEX=0
-    for MASTER in ${MASTERS[*]}
+    run_command $INSTALL_COMMAND 
+    for MASTER in $MEMBERS
     do
-        if [ "$SLAVE" != "$MASTER" ]
+        SERVICE=${MM_SERVICES[$SERVICE_INDEX]}
+        INSTALL_COMMAND="./tools/tpm configure $SERVICE --members=$MEMBER_LIST --master=$MASTER "
+        run_command $INSTALL_COMMAND
+        SERVICE_INDEX=$(($SERVICE_INDEX+1))
+    done
+    INSTALL_COMMAND='./tools/tpm install'
+    run_command $INSTALL_COMMAND
+ else
+    INDEX=0
+    for NODE in ${MASTERS[*]}
+    do
+      INSTALL_COMMAND="./tools/tungsten-installer \
+        --master-slave \
+        --master-host=$NODE \
+        --datasource-port=$DATABASE_PORT \
+        --datasource-user=$DATABASE_USER \
+        --datasource-password=$DATABASE_PASSWORD \
+        --datasource-log-directory=$BINLOG_DIRECTORY \
+        --service-name=${MM_SERVICES[$INDEX]} \
+        --home-directory=$TUNGSTEN_BASE \
+        --cluster-hosts=$NODE \
+        --datasource-mysql-conf=$MY_CNF \
+        --datasource-log-directory=$BINLOG_DIRECTORY \
+        -a --datasource-boot-script=$MYSQL_BOOT_SCRIPT \
+        --rmi-port=$RMI_PORT \
+        --thl-port=$THL_PORT \
+        $MORE_OPTIONS --$START_OPTION"
+
+        echo "## $COMMAND_SEQUENCE (host: $NODE)" >> $INSTALL_LOG
+        echo $INSTALL_COMMAND  | perl -pe 's/--/\\\n\t--/g' >> $INSTALL_LOG
+        if [ -n "$VERBOSE" ]
         then
-            SLAVE_DS=`echo $SLAVE|perl -lpe's/\W/_/g'`
+            echo "## $COMMAND_SEQUENCE (host: $NODE)"
+            echo $INSTALL_COMMAND | perl -pe 's/--/\\\n\t--/g'
+        fi
+        COMMAND_SEQUENCE=$(($COMMAND_SEQUENCE+1))
 
-            INSTALL_COMMAND="$TUNGSTEN_TOOLS/configure-service \
-            -C --quiet \
-            --host=$SLAVE \
-            --datasource=$SLAVE_DS \
-            --local-service-name=${MM_SERVICES[$S_INDEX]} \
-            --role=slave \
-            --service-type=remote \
-            --release-directory=$TUNGSTEN_BASE/tungsten \
-            --skip-validation-check=THLStorageCheck \
-            --master-thl-host=$MASTER \
-            --master-thl-port=$THL_PORT \
-            --svc-$START_OPTION ${MM_SERVICES[$M_INDEX]} "
+        if [ -z "$DRYRUN" ]
+        then
+            $INSTALL_COMMAND
 
-            echo "## $COMMAND_SEQUENCE (host: $SLAVE)" >> $INSTALL_LOG
-            echo $INSTALL_COMMAND | perl -pe 's/--/\\\n\t--/g' >> $INSTALL_LOG
-            if [ -n "$VERBOSE" ]
+            if [ "$?" != "0"  ]
             then
-                echo "## $COMMAND_SEQUENCE (host: $SLAVE)"
-                echo $INSTALL_COMMAND | perl -pe 's/--/\\\n\t--/g'
+                exit
             fi
+        fi
+        INDEX=$(($INDEX+1))
+    done
 
-            COMMAND_SEQUENCE=$(($COMMAND_SEQUENCE+1))
+    TUNGSTEN_TOOLS=$TUNGSTEN_BASE/tungsten/tools
 
-            if [ -z "$DRYRUN" ]
+    # set -x
+    S_INDEX=0
+    for SLAVE in ${SLAVES[*]}
+    do
+        M_INDEX=0
+        for MASTER in ${MASTERS[*]}
+        do
+            if [ "$SLAVE" != "$MASTER" ]
             then
-                $INSTALL_COMMAND
-                if [ "$?" != "0"  ]
+                SLAVE_DS=`echo $SLAVE|perl -lpe's/\W/_/g'`
+
+                INSTALL_COMMAND="$TUNGSTEN_TOOLS/configure-service \
+                -C --quiet \
+                --host=$SLAVE \
+                --datasource=$SLAVE_DS \
+                --local-service-name=${MM_SERVICES[$S_INDEX]} \
+                --role=slave \
+                --service-type=remote \
+                --release-directory=$TUNGSTEN_BASE/tungsten \
+                --skip-validation-check=THLStorageCheck \
+                --master-thl-host=$MASTER \
+                --master-thl-port=$THL_PORT \
+                --svc-$START_OPTION ${MM_SERVICES[$M_INDEX]} "
+
+                echo "## $COMMAND_SEQUENCE (host: $SLAVE)" >> $INSTALL_LOG
+                echo $INSTALL_COMMAND | perl -pe 's/--/\\\n\t--/g' >> $INSTALL_LOG
+                if [ -n "$VERBOSE" ]
                 then
-                    exit
+                    echo "## $COMMAND_SEQUENCE (host: $SLAVE)"
+                    echo $INSTALL_COMMAND | perl -pe 's/--/\\\n\t--/g'
+                fi
+
+                COMMAND_SEQUENCE=$(($COMMAND_SEQUENCE+1))
+
+                if [ -z "$DRYRUN" ]
+                then
+                    $INSTALL_COMMAND
+                    if [ "$?" != "0"  ]
+                    then
+                        exit
+                    fi
                 fi
             fi
-        fi
-        M_INDEX=$(($M_INDEX+1))
+            M_INDEX=$(($M_INDEX+1))
+        done
+        S_INDEX=$(($S_INDEX+1))
     done
-    S_INDEX=$(($S_INDEX+1))
-done
+fi
+
 # set +x
 if  [ -n "$DRYRUN" ]
 then
