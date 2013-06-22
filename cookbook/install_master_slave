@@ -81,6 +81,7 @@ else
         fi
         INSTALL_COMMAND="./tools/tpm install $TUNGSTEN_SERVICE \
         --master=$MASTER \
+        --log=timestamp \
         --replication-user=$DATABASE_USER \
         --replication-password=$DATABASE_PASSWORD \
         --replication-port=$DATABASE_PORT \
@@ -92,7 +93,7 @@ else
         -a --datasource-boot-script=$MYSQL_BOOT_SCRIPT \
         --rmi-port=$RMI_PORT \
         --thl-port=$THL_PORT \
-        $MORE_OPTIONS --$START_OPTION"     
+        $MORE_OPTIONS $MORE_TPM_OPTIONS --$START_OPTION"     
     else
         INSTALL_COMMAND="./tools/tungsten-installer \
             --master-slave \

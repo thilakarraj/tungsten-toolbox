@@ -49,6 +49,7 @@ then
     MEMBER_LIST=$(echo $MEMBERS | tr ' ' ',')
     SERVICE_INDEX=0
     INSTALL_COMMAND="./tools/tpm configure defaults --reset \
+        --log=timestamp \
         --replication-port=$DATABASE_PORT \
         --replication-user=$DATABASE_USER \
         --replication-password=$DATABASE_PASSWORD \
@@ -60,7 +61,7 @@ then
 		--enable-slave-thl-listener=false \
         --rmi-port=$RMI_PORT \
         --thl-port=$THL_PORT \
-        $MORE_OPTIONS --$START_OPTION"
+        $MORE_OPTIONS $MORE_TPM_OPTIONS --$START_OPTION"
 
     run_command $INSTALL_COMMAND 
     for MASTER in $MEMBERS

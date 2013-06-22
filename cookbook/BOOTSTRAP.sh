@@ -232,7 +232,7 @@ function are_you_sure_you_want_to_clear
     done
 }
 
-function post_installation
+function write_my_cookbook_cnf
 {
     echo '[client]'                           > $MY_COOKBOOK_CNF
     echo "user=$DATABASE_USER"               >> $MY_COOKBOOK_CNF
@@ -241,7 +241,11 @@ function post_installation
     echo ''                                  >> $MY_COOKBOOK_CNF
     echo '[mysql]'                           >> $MY_COOKBOOK_CNF
     echo "prompt='*mysql [\h] {\u} (\d) > '" >> $MY_COOKBOOK_CNF
+}
 
+function post_installation
+{
+    write_my_cookbook_cnf
     for NODE in ${ALL_NODES[*]}
     do  
         DEPLOYED=$(ssh $NODE "if [ -d $TUNGSTEN_BASE ] ; then echo 'yes' ; fi")
