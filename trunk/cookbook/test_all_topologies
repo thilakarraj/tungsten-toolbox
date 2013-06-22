@@ -25,11 +25,7 @@ do
         skip=true
         if [ "$TOPOLOGY" == "all_masters" -o "$TOPOLOGY" == "master_slave" -o "$METHOD" == "installer" ]
         then
-            # 
-            # skip=false
-            #
-            # Disabling tpm tests temporarily, while we sort out how to test with sandboxes
-            skip=true
+            skip=false
         fi
         if [ "$skip" == "true" ]
         then

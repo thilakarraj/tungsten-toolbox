@@ -14,7 +14,8 @@ fi
 
 are_you_sure_you_want_to_clear
 
-MYSQL="mysql -u $DATABASE_USER -p$DATABASE_PASSWORD -P $DATABASE_PORT"
+write_my_cookbook_cnf
+# MYSQL="mysql -u $DATABASE_USER -p$DATABASE_PASSWORD -P $DATABASE_PORT"
 for NODE in ${ALL_NODES[*]} 
 do 
     if [ "$STOP_REPLICATORS" == "1" ]
