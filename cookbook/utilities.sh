@@ -157,6 +157,7 @@ function run_command
     then
         echo $command  | perl -pe 's/--/\\\n\t--/g'
     fi
+    echo $command  | perl -pe 's/--/\\\n\t--/g' >> $INSTALL_LOG
     if [ -z "$DRYRUN" ]
     then
         $command

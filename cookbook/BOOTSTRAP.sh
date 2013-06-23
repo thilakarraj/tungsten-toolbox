@@ -246,15 +246,6 @@ function write_my_cookbook_cnf
 function post_installation
 {
     write_my_cookbook_cnf
-    for NODE in ${ALL_NODES[*]}
-    do  
-        DEPLOYED=$(ssh $NODE "if [ -d $TUNGSTEN_BASE ] ; then echo 'yes' ; fi")
-        if [ "$DEPLOYED" == "yes" ]
-        then
-            scp -q $CURRENT_TOPOLOGY $NODE:$TUNGSTEN_BASE/tungsten/  
-            scp -q $MY_COOKBOOK_CNF $NODE:$TUNGSTEN_BASE/tungsten/cookbook/
-        fi
-    done
     TOPOLOGY=$(cat $CURRENT_TOPOLOGY)
     TUNGSTEN_RELEASE=$(grep RELEASE $cookbook_dir/../.manifest| awk '{print $2}')  
     echo "Deployment completed "
@@ -268,6 +259,18 @@ function post_installation
     echo "MySQL shortcut   : $MYSQL"                                               >> $INSTALL_SUMMARY
     echo "Tungsten release : $TUNGSTEN_RELEASE"                                    >> $INSTALL_SUMMARY
     echo "Installation log : $INSTALL_LOG"                                         >> $INSTALL_SUMMARY
+
+    for NODE in ${ALL_NODES[*]}
+    do  
+        DEPLOYED=$(ssh $NODE "if [ -d $TUNGSTEN_BASE ] ; then echo 'yes' ; fi")
+        if [ "$DEPLOYED" == "yes" ]
+        then
+            scp -q $CURRENT_TOPOLOGY $NODE:$TUNGSTEN_BASE/tungsten/  
+            scp -q $MY_COOKBOOK_CNF $NODE:$TUNGSTEN_BASE/tungsten/cookbook/
+            scp -q $INSTALL_LOG $NODE:$TUNGSTEN_BASE/tungsten/cookbook/
+            scp -q $INSTALL_SUMMARY $NODE:$TUNGSTEN_BASE/tungsten/cookbook/
+        fi
+    done
 
     cat $INSTALL_SUMMARY
 
