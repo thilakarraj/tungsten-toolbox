@@ -11,6 +11,7 @@ then
     exit 1
 fi
 . $cookbook_dir/BOOTSTRAP.sh NODES_ALL_MASTERS.sh
+. $cookbook_dir/utilities.sh
 
 check_installed
 
@@ -24,23 +25,6 @@ then
 fi 
 
 COMMAND_SEQUENCE=1
-
-function run_command
-{
-    command="$*"
-    if [ -n "$VERBOSE" ]
-    then
-        echo $command  | perl -pe 's/--/\\\n\t--/g'
-    fi
-    if [ -z "$DRYRUN" ]
-    then
-        $command
-    fi
-    if [ "$?" != "0" ]
-    then
-        exit 1
-    fi
-}
 
 # install all masters
 if [ -n "$USE_TPM" ]
