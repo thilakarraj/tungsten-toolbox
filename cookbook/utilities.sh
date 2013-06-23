@@ -149,3 +149,22 @@ function find_used_serviceName {
     USED_SERVICE_U=$(echo "${USED_SERVICE[*]}"|tr " " "\n"|sort|uniq|tr "\n" " ")
     export USED_SERVICE=(${USED_SERVICE_U[*]})
 }
+
+function run_command
+{
+    command="$*"
+    if [ -n "$VERBOSE" ]
+    then
+        echo $command  | perl -pe 's/--/\\\n\t--/g'
+    fi
+    if [ -z "$DRYRUN" ]
+    then
+        $command
+    fi
+    if [ "$?" != "0" ]
+    then
+        exit 1
+    fi
+}
+
+

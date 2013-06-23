@@ -18,12 +18,21 @@ TEST_LOG=test_log.txt
 echo "# `date`" > $INSTALL_LOG
 echo "# `date`" > $TEST_LOG
 
+TPM_ENABLED=(master_slave all_masters fan_in)
+
 for TOPOLOGY in master_slave fan_in all_masters star
 do
     for METHOD in installer tpm
     do
         skip=true
-        if [ "$TOPOLOGY" == "all_masters" -o "$TOPOLOGY" == "master_slave" -o "$METHOD" == "installer" ]
+        for enabled in ${TPM_ENABLED[*]}
+        do
+            if [ "$enabled" == "$TOPOLOGY" ]
+            then
+                skip=false
+            fi
+        done
+        if [ "$METHOD" == "installer" ]
         then
             skip=false
         fi
