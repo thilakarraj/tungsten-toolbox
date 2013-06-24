@@ -64,6 +64,8 @@ echo "# Testing cluster with installed topology '$TOPOLOGY'"
 echo "# $LONG_LINE"
 
 TESTS=0
+PASSED=0
+FAILED=0
 
 function ok_equal
 {
@@ -74,11 +76,13 @@ function ok_equal
     if [ "$fact" == "$expected" ]
     then
         echo -n "ok"
+        PASSED=$(($PASSED+1))
     else
         echo -n "not ok"
+        FAILED=$(($FAILED+1))
     fi
     echo " - $msg"
-    TESTS=$((TESTS+1))
+    TESTS=$(($TESTS+1))
 }
 
 
@@ -90,12 +94,23 @@ function ok_greater
     if [ $fact -ge $expected ]
     then
         echo -n "ok"
+        PASSED=$(($PASSED+1))
     else
         echo -n "not ok"
+        FAILED=$(($FAILED+1))
     fi
     echo " - $msg"
-    TESTS=$((TESTS+1))
+    TESTS=$(($TESTS+1))
 }
+
+for NODE in ${ALL_NODES[*]}
+do
+    for SERVICE in $($TREPCTL -host $NODE services | grep -w serviceName | awk '{print $3}')
+    do
+        STATE=$($TREPCTL -host $NODE -service $SERVICE status | grep -w state | awk '{print $3}')
+        ok_equal $STATE ONLINE "Node $NODE - Service $SERVICE is running ($STATE)"
+    done
+done
 
 DATA_POSTFIX=''
 DDL_POSTFIX=''
@@ -211,5 +226,8 @@ do
 done
 
 done  # iter
+
+printf "# passed: %4d (%6.2f%%)\n" $PASSED $(($PASSED/$TESTS*100))
+printf "# failed: %4d (%6.2f%%)\n" $FAILED $(($FAILED/$TESTS*100))
 
 echo "1..$TESTS"

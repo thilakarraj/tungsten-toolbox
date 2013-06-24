@@ -45,6 +45,7 @@ do
     --service-name=${MM_SERVICES[$INDEX]} \
     --home-directory=$TUNGSTEN_BASE \
     --cluster-hosts=$NODE \
+    --disable-relay-logs \
     --datasource-mysql-conf=$MY_CNF \
     --datasource-log-directory=$BINLOG_DIRECTORY \
     -a --datasource-boot-script=$MYSQL_BOOT_SCRIPT \
