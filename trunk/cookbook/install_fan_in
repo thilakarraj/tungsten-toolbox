@@ -43,6 +43,7 @@ then
         --datasource-log-directory=$BINLOG_DIRECTORY \
         -a --datasource-boot-script=$MYSQL_BOOT_SCRIPT \
 		--enable-slave-thl-listener=false \
+        --repl-disable-relay-logs=true \
         --rmi-port=$RMI_PORT \
         --thl-port=$THL_PORT \
         $MORE_OPTIONS $MORE_TPM_OPTIONS --$START_OPTION"
@@ -78,6 +79,7 @@ else
         --cluster-hosts=$NODE \
         --datasource-mysql-conf=$MY_CNF \
         --datasource-log-directory=$BINLOG_DIRECTORY \
+        --disable-relay-logs \
         -a --datasource-boot-script=$MYSQL_BOOT_SCRIPT \
         --rmi-port=$RMI_PORT \
         --thl-port=$THL_PORT \

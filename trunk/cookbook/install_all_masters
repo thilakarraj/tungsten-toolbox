@@ -41,6 +41,7 @@ then
         --home-directory=$TUNGSTEN_BASE \
         --datasource-mysql-conf=$MY_CNF \
         --datasource-log-directory=$BINLOG_DIRECTORY \
+        --repl-disable-relay-logs=true \
         -a --datasource-boot-script=$MYSQL_BOOT_SCRIPT \
 		--enable-slave-thl-listener=false \
         --rmi-port=$RMI_PORT \
@@ -71,6 +72,7 @@ then
         --service-name=${MM_SERVICES[$INDEX]} \
         --home-directory=$TUNGSTEN_BASE \
         --cluster-hosts=$NODE \
+        --disable-relay-logs \
         --datasource-mysql-conf=$MY_CNF \
         --datasource-log-directory=$BINLOG_DIRECTORY \
         -a --datasource-boot-script=$MYSQL_BOOT_SCRIPT \

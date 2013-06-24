@@ -91,6 +91,7 @@ else
         --datasource-mysql-conf=$MY_CNF \
         --datasource-log-directory=$BINLOG_DIRECTORY \
         -a --datasource-boot-script=$MYSQL_BOOT_SCRIPT \
+        --repl-disable-relay-logs=true \
         --rmi-port=$RMI_PORT \
         --thl-port=$THL_PORT \
         $MORE_OPTIONS $MORE_TPM_OPTIONS --$START_OPTION"     
@@ -105,6 +106,7 @@ else
             --home-directory=$TUNGSTEN_BASE \
             --cluster-hosts=$HOSTS_LIST \
             --datasource-mysql-conf=$MY_CNF \
+            --disable-relay-logs \
             --datasource-log-directory=$BINLOG_DIRECTORY \
             -a --datasource-boot-script=$MYSQL_BOOT_SCRIPT \
             --rmi-port=$RMI_PORT \
