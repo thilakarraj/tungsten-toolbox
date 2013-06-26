@@ -19,7 +19,7 @@ echo "# `date`" > $INSTALL_LOG
 echo "# `date`" > $TEST_LOG
 
 exportVERBOSE=1
-
+exit_code=0
 for TOPOLOGY in master_slave fan_in all_masters star 
 do
     for METHOD in tungsten_installer tpm
@@ -45,7 +45,7 @@ do
         fi
         if [ -f /tmp/test_log$$ ] ; then rm /tmp/test_log$$ ; fi
         . $cookbook_dir/BOOTSTRAP.sh NODES_$UCTOPOLOGY.sh
-        $cookbook_dir/load_data >> $INSTALL_LOG
+        ###  $cookbook_dir/load_data >> $INSTALL_LOG
         for MODE in row statement
         do
             for MASTER in ${MASTERS[*]}
@@ -58,27 +58,22 @@ do
             $cookbook_dir/show_cluster >> $INSTALL_LOG
             ##############################################
             $cookbook_dir/test_cluster >> /tmp/test_log$$
-            if [ "$exit_code" == "0" ]
+            exit_code=$?
+            if [ "$exit_code" != "0" ]
             then
-                exit_code=$?
+                echo "# ERROR testing $TOPOLOGY (using $METHOD)"
+                cat /tmp/test_log$$
+                exit $exit_code
             fi
             ##############################################
             $cookbook_dir/show_cluster 
             $cookbook_dir/show_cluster >> $INSTALL_LOG
             cat /tmp/test_log$$ >> $TEST_LOG
         done
-        $cookbook_dir/load_data stop >> $INSTALL_LOG
-        # Making sure that all the Evaluator processes are removed
-
-        kill $(jps | grep Evaluator| awk '{print $1}')
+        ### $cookbook_dir/load_data stop >> $INSTALL_LOG
 
         cat /tmp/test_log$$
         rm /tmp/test_log$$
-        if [ "$exit_code" != "0" ]
-        then
-            echo "# ERROR testing $TOPOLOGY (using $METHOD)"
-            exit $exit_code
-        fi
         export I_WANT_TO_UNINSTALL=1
         export STOP_REPLICATORS=1
         export REMOVE_TUNGSTEN_BASE=1
@@ -87,7 +82,9 @@ do
         export CLEAN_NODE_DATABASE_SERVER=1
         $cookbook_dir/clear_cluster >> $INSTALL_LOG
         unset I_WANT_TO_UNINSTALL
-       
+        # Making sure that all the remaining processes are removed
+        pkill -9 wrapper
+        pkill -9 java 
     done
 done
 
