@@ -10,6 +10,7 @@ then
     exit 1
 fi
 . $cookbook_dir/BOOTSTRAP.sh NODES_STAR.sh
+. $cookbook_dir/utilities.sh 
 
 check_installed
 
@@ -30,7 +31,61 @@ then
 fi 
 
 COMMAND_SEQUENCE=1
+if [ -n "$USE_TPM" ]
+then
+    MEMBERS=${MASTERS[*]}
+    MEMBER_LIST=$(echo $MEMBERS | tr ' ' ',')
+    SERVICE_INDEX=0
+    INSTALL_COMMAND="./tools/tpm configure defaults --reset \
+        --log=timestamp \
+        --replication-port=$DATABASE_PORT \
+        --replication-user=$DATABASE_USER \
+        --replication-password=$DATABASE_PASSWORD \
+        --datasource-log-directory=$BINLOG_DIRECTORY \
+        --home-directory=$TUNGSTEN_BASE \
+        --datasource-mysql-conf=$MY_CNF \
+        --datasource-log-directory=$BINLOG_DIRECTORY \
+        --repl-disable-relay-logs=true \
+        -a --datasource-boot-script=$MYSQL_BOOT_SCRIPT \
+        --property=replicator.service.comments=true \
+		--enable-slave-thl-listener=false \
+        --rmi-port=$RMI_PORT \
+        --thl-port=$THL_PORT \
+        $MORE_OPTIONS $MORE_TPM_OPTIONS --$START_OPTION"
 
+    run_command $INSTALL_COMMAND 
+
+    INSTALL_COMMAND="./tools/tpm configure $HUB_SERVICE \
+        --members=$MEMBER_LIST \
+        --master=$HUB \
+        --svc-applier-filters=bidiSlave 
+    "
+    run_command $INSTALL_COMMAND 
+
+    for NODE in $MEMBERS
+    do
+        if [ "$NODE" != "$HUB" ]
+        then
+            SERVICE=${MM_SERVICES[$SERVICE_INDEX]}
+            if [ "$SERVICE" == "$HUB_SERVICE" ]
+            then
+                SERVICE_INDEX=$(($SERVICE_INDEX+1))
+                SERVICE=${MM_SERVICES[$SERVICE_INDEX]}
+            fi
+            INSTALL_COMMAND1="./tools/tpm configure $SERVICE --members=$NODE,$HUB --master=$NODE"
+            INSTALL_COMMAND2="./tools/tpm configure $SERVICE --hosts=$HUB --log-slave-updates=true"
+            INSTALL_COMMAND3="./tools/tpm configure $HUB_SERVICE --hosts=$NODE \
+                --property=local.service.name=$SERVICE \
+                --svc-allow-any-remote-service=true"
+            run_command $INSTALL_COMMAND1
+            run_command $INSTALL_COMMAND2
+            run_command $INSTALL_COMMAND3
+            SERVICE_INDEX=$(($SERVICE_INDEX+1))
+        fi
+    done
+    INSTALL_COMMAND='./tools/tpm install'
+    run_command $INSTALL_COMMAND
+else
 # install STAR
 INDEX=0
 for NODE in ${MASTERS[*]}
@@ -156,6 +211,8 @@ do
     fi
     INDEX=$(($INDEX+1))
 done
+fi
+
 # set +x
 
 if  [ -n "$DRYRUN" ]

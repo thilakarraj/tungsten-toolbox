@@ -103,14 +103,27 @@ function ok_greater
     TESTS=$(($TESTS+1))
 }
 
-for NODE in ${ALL_NODES[*]}
-do
-    for SERVICE in $($TREPCTL -host $NODE services | grep -w serviceName | awk '{print $3}')
+function check_if_replicators_are_running
+{
+    msg=$1
+    echo "# Testing for running replicators - $msg"
+    for NODE in ${ALL_NODES[*]}
     do
-        STATE=$($TREPCTL -host $NODE -service $SERVICE status | grep -w state | awk '{print $3}')
-        ok_equal $STATE ONLINE "Node $NODE - Service $SERVICE is running ($STATE)"
+        for SERVICE in $($TREPCTL -host $NODE services | grep -w serviceName | awk '{print $3}')
+        do
+            TMPSTATUS=status$$.txt
+            $TREPCTL -host $NODE -service $SERVICE status > $TMPSTATUS
+            STATE=$(grep -w state $TMPSTATUS | awk '{print $3}')
+            SEQNO=$( grep appliedLastSeqno $TMPSTATUS | awk '{print $3}')
+            ROLE=$( grep -w role $TMPSTATUS | awk '{print $3}')
+            SERVICENAME=$( grep -w serviceName $TMPSTATUS | awk '{print $3}')
+            rm -f $TMPSTATUS
+            ok_equal $STATE ONLINE "Node $NODE - Service $SERVICE is running ($SERVICENAME [$ROLE]: $STATE - $SEQNO)"
+        done
     done
-done
+}
+
+check_if_replicators_are_running 'Before tests'
 
 DATA_POSTFIX=''
 DDL_POSTFIX=''
@@ -144,90 +157,93 @@ do
     # echo "# data: <$DATA_POSTFIX> ddl: <$DDL_POSTFIX> counter: <$COUNTER> iter: <$ITER>"
     COUNTER=$(($COUNTER+1))
 
-SAMPLE_BLOB="%!+?/.,[]{}()*^&#@-_=abcdefghi0123456789"
-SAMPLE_T=xyz
-# SAMPLE_F=1.512345678901234
-SAMPLE_F=1.012345678901234
-SAMPLE_D=1969-09-01
-SAMPLE_TIME=12:13:56$DATA_POSTFIX
-SAMPLE_DT="2003-04-26 09:15:57$DATA_POSTFIX"
-SAMPLE_TS="2003-04-26 09:15:58$DATA_POSTFIX"
+    SAMPLE_BLOB="%!+?/.,[]{}()*^&#@-_=abcdefghi0123456789"
+    SAMPLE_T=xyz
+    # SAMPLE_F=1.512345678901234
+    SAMPLE_F=1.012345678901234
+    SAMPLE_D=1969-09-01
+    SAMPLE_TIME=12:13:56$DATA_POSTFIX
+    SAMPLE_DT="2003-04-26 09:15:57$DATA_POSTFIX"
+    SAMPLE_TS="2003-04-26 09:15:58$DATA_POSTFIX"
 
-COUNT=0
-for NODE in ${MASTERS[*]} 
-do 
-    COUNT=$(($COUNT+1))
-    if [ -n "$BINLOG_FORMAT" ]
-    then
-        echo "# Setting binlog format to '$BINLOG_FORMAT'"
-        $MYSQL -h $NODE -e "set global binlog_format=$BINLOG_FORMAT"
-    fi
-    $MYSQL -h $NODE -e "drop table if exists test.t$COUNT"
-    $MYSQL -h $NODE -e "drop table if exists test.v$COUNT"
-    $MYSQL -h $NODE -e "create table test.t$COUNT(id int not null primary key, c char(20), b blob, t text, ti time$DDL_POSTFIX, d date, dt datetime$DDL_POSTFIX, ts timestamp$DDL_POSTFIX, f double(20,15)) engine=innodb"
-    $MYSQL -h $NODE -e "create or replace view test.v$COUNT as select * from test.t$COUNT"
-    $MYSQL -h $NODE -e "insert into test.v$COUNT values (1, 'inserted by node #$COUNT', '$SAMPLE_BLOB', '$SAMPLE_T', '$SAMPLE_TIME', '$SAMPLE_D', '$SAMPLE_DT', '$SAMPLE_TS', $SAMPLE_F)"
-    # echo "############"
-    # $MYSQL -h $NODE -e "select * from test.v$COUNT"
-    # echo "############"
-
-    HOW_MANY_SERVICES=$($TREPCTL -host $NODE services | grep role | grep master| wc -l)
-    # echo "#M> $HOW_MANY_SERVICES"
-    ok_greater $HOW_MANY_SERVICES $EXPECTED_SERVICES_MASTER "Master $NODE has at least $EXPECTED_SERVICES_MASTER master services"
-    
-    if [ -n "$HUB" ]
-    then
-        if [ -n "$EXPECTED_SERVICES_HUB" ]
-        then
-            if [ "$NODE" == "$HUB" ]
-            then
-                HOW_MANY_SERVICES=$($TREPCTL -host $NODE services | grep role |grep slave | wc -l)
-                # echo "#H> $HOW_MANY_SERVICES"
-                ok_greater $HOW_MANY_SERVICES $EXPECTED_SERVICES_HUB "HUB $NODE has at least $EXPECTED_SERVICES_HUB slave services"
-            fi
-        fi
-    fi
-done
-
-sleep 2
-# set -x
-for SLAVE in ${SLAVES[*]} 
-do
-    echo "# slave: $SLAVE"
     COUNT=0
     for NODE in ${MASTERS[*]} 
     do 
         COUNT=$(($COUNT+1))
-        TABLE_COUNT=$($MYSQL -BN -h $NODE -e "select count(*) from information_schema.tables where table_schema='test' and  table_name = 't$COUNT'")
-        VIEW_COUNT=$($MYSQL -BN -h $NODE -e "select count(*) from information_schema.tables where table_schema='test' and  table_name = 'v$COUNT'")
-        RECORD_COUNT=$($MYSQL -BN -h $NODE -e "select count(*) from test.t$COUNT where c = 'inserted by node #$COUNT' ")
-        BLOB_CONTENT=$($MYSQL -BN -h $NODE -e "select b from test.t$COUNT where c = 'inserted by node #$COUNT' ")
-        TEXT_CONTENT=$($MYSQL -BN -h $NODE -e "select t from test.t$COUNT where c = 'inserted by node #$COUNT' ")
-        DATE_CONTENT=$($MYSQL -BN -h $NODE -e "select d from test.t$COUNT where c = 'inserted by node #$COUNT' ")
-        TIME_CONTENT=$($MYSQL -BN -h $NODE -e "select ti from test.t$COUNT where c = 'inserted by node #$COUNT' ")
-        DT_CONTENT=$($MYSQL -BN -h $NODE -e "select dt from test.t$COUNT where c = 'inserted by node #$COUNT' ")
-        TS_CONTENT=$($MYSQL -BN -h $NODE -e "select ts from test.t$COUNT where c = 'inserted by node #$COUNT' ")
-        F_CONTENT=$($MYSQL -BN -h $NODE -e "select f from test.t$COUNT where c = 'inserted by node #$COUNT' ")
-        ok_equal $TABLE_COUNT 1 "Tables from master #$COUNT"
-        ok_equal $VIEW_COUNT 1 "Views from master #$COUNT"
-        ok_equal $RECORD_COUNT 1 "Records from master #$COUNT : <$RECORD_COUNT>"
-        ok_equal $BLOB_CONTENT "$SAMPLE_BLOB" "Blob from master #$COUNT : <$BLOB_CONTENT>"
-        ok_equal $TEXT_CONTENT "$SAMPLE_T" "Text from master #$COUNT : <$TEXT_CONTENT>"
-        ok_equal $DATE_CONTENT "$SAMPLE_D" "Date from master #$COUNT : <$DATE_CONTENT>"
-        ok_equal $TIME_CONTENT "$SAMPLE_TIME" "Time from master #$COUNT : <$TIME_CONTENT>"
-        ok_equal "$DT_CONTENT" "$SAMPLE_DT" "Datetime from master #$COUNT : <$DT_CONTENT>"
-        ok_equal "$TS_CONTENT" "$SAMPLE_TS" "Timestamp from master #$COUNT : <$TS_CONTENT>"
-        ok_equal "$F_CONTENT" "$SAMPLE_F" "Double from master #$COUNT : <$F_CONTENT>"
-        # $MYSQL -h $NODE -e "select * from test.t$COUNT"
+        if [ -n "$BINLOG_FORMAT" ]
+        then
+            echo "# Setting binlog format to '$BINLOG_FORMAT'"
+            $MYSQL -h $NODE -e "set global binlog_format=$BINLOG_FORMAT"
+        fi
+        $MYSQL -h $NODE -e "drop table if exists test.t$COUNT"
+        $MYSQL -h $NODE -e "drop table if exists test.v$COUNT"
+        $MYSQL -h $NODE -e "create table test.t$COUNT(id int not null primary key, c char(20), b blob, t text, ti time$DDL_POSTFIX, d date, dt datetime$DDL_POSTFIX, ts timestamp$DDL_POSTFIX, f double(20,15)) engine=innodb"
+        $MYSQL -h $NODE -e "create or replace view test.v$COUNT as select * from test.t$COUNT"
+        $MYSQL -h $NODE -e "insert into test.v$COUNT values (1, 'inserted by node #$COUNT', '$SAMPLE_BLOB', '$SAMPLE_T', '$SAMPLE_TIME', '$SAMPLE_D', '$SAMPLE_DT', '$SAMPLE_TS', $SAMPLE_F)"
+        # echo "############"
+        # $MYSQL -h $NODE -e "select * from test.v$COUNT"
+        # echo "############"
+
+        HOW_MANY_SERVICES=$($TREPCTL -host $NODE services | grep role | grep master| wc -l)
+        # echo "#M> $HOW_MANY_SERVICES"
+        ok_greater $HOW_MANY_SERVICES $EXPECTED_SERVICES_MASTER "Master $NODE has at least $EXPECTED_SERVICES_MASTER master services"
+        
+        if [ -n "$HUB" ]
+        then
+            if [ -n "$EXPECTED_SERVICES_HUB" ]
+            then
+                if [ "$NODE" == "$HUB" ]
+                then
+                    HOW_MANY_SERVICES=$($TREPCTL -host $NODE services | grep role |grep slave | wc -l)
+                    # echo "#H> $HOW_MANY_SERVICES"
+                    ok_greater $HOW_MANY_SERVICES $EXPECTED_SERVICES_HUB "HUB $NODE has at least $EXPECTED_SERVICES_HUB slave services"
+                fi
+            fi
+        fi
     done
-    HOW_MANY_SERVICES=$($TREPCTL -host $SLAVE services | grep role | grep slave| wc -l)
-    # echo "#S> $HOW_MANY_SERVICES"
-    ok_greater  $HOW_MANY_SERVICES $EXPECTED_SERVICES_SLAVE "Slave $SLAVE has at least $EXPECTED_SERVICES_SLAVE services"
-done
+
+    sleep 2
+    # set -x
+    for SLAVE in ${SLAVES[*]} 
+    do
+        echo "# slave: $SLAVE"
+        COUNT=0
+        for NODE in ${MASTERS[*]} 
+        do 
+            COUNT=$(($COUNT+1))
+            TABLE_COUNT=$($MYSQL -BN -h $NODE -e "select count(*) from information_schema.tables where table_schema='test' and  table_name = 't$COUNT'")
+            VIEW_COUNT=$($MYSQL -BN -h $NODE -e "select count(*) from information_schema.tables where table_schema='test' and  table_name = 'v$COUNT'")
+            RECORD_COUNT=$($MYSQL -BN -h $NODE -e "select count(*) from test.t$COUNT where c = 'inserted by node #$COUNT' ")
+            BLOB_CONTENT=$($MYSQL -BN -h $NODE -e "select b from test.t$COUNT where c = 'inserted by node #$COUNT' ")
+            TEXT_CONTENT=$($MYSQL -BN -h $NODE -e "select t from test.t$COUNT where c = 'inserted by node #$COUNT' ")
+            DATE_CONTENT=$($MYSQL -BN -h $NODE -e "select d from test.t$COUNT where c = 'inserted by node #$COUNT' ")
+            TIME_CONTENT=$($MYSQL -BN -h $NODE -e "select ti from test.t$COUNT where c = 'inserted by node #$COUNT' ")
+            DT_CONTENT=$($MYSQL -BN -h $NODE -e "select dt from test.t$COUNT where c = 'inserted by node #$COUNT' ")
+            TS_CONTENT=$($MYSQL -BN -h $NODE -e "select ts from test.t$COUNT where c = 'inserted by node #$COUNT' ")
+            F_CONTENT=$($MYSQL -BN -h $NODE -e "select f from test.t$COUNT where c = 'inserted by node #$COUNT' ")
+            ok_equal $TABLE_COUNT 1 "Tables from master #$COUNT"
+            ok_equal $VIEW_COUNT 1 "Views from master #$COUNT"
+            ok_equal $RECORD_COUNT 1 "Records from master #$COUNT : <$RECORD_COUNT>"
+            ok_equal $BLOB_CONTENT "$SAMPLE_BLOB" "Blob from master #$COUNT : <$BLOB_CONTENT>"
+            ok_equal $TEXT_CONTENT "$SAMPLE_T" "Text from master #$COUNT : <$TEXT_CONTENT>"
+            ok_equal $DATE_CONTENT "$SAMPLE_D" "Date from master #$COUNT : <$DATE_CONTENT>"
+            ok_equal $TIME_CONTENT "$SAMPLE_TIME" "Time from master #$COUNT : <$TIME_CONTENT>"
+            ok_equal "$DT_CONTENT" "$SAMPLE_DT" "Datetime from master #$COUNT : <$DT_CONTENT>"
+            ok_equal "$TS_CONTENT" "$SAMPLE_TS" "Timestamp from master #$COUNT : <$TS_CONTENT>"
+            ok_equal "$F_CONTENT" "$SAMPLE_F" "Double from master #$COUNT : <$F_CONTENT>"
+            # $MYSQL -h $NODE -e "select * from test.t$COUNT"
+        done
+        HOW_MANY_SERVICES=$($TREPCTL -host $SLAVE services | grep role | grep slave| wc -l)
+        # echo "#S> $HOW_MANY_SERVICES"
+        ok_greater  $HOW_MANY_SERVICES $EXPECTED_SERVICES_SLAVE "Slave $SLAVE has at least $EXPECTED_SERVICES_SLAVE services"
+    done
 
 done  # iter
+
+check_if_replicators_are_running 'After tests'
 
 printf "# passed: %4d (%6.2f%%)\n" $PASSED $(($PASSED/$TESTS*100))
 printf "# failed: %4d (%6.2f%%)\n" $FAILED $(($FAILED/$TESTS*100))
 
 echo "1..$TESTS"
+exit $FAILED
