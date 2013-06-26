@@ -18,28 +18,12 @@ TEST_LOG=test_log.txt
 echo "# `date`" > $INSTALL_LOG
 echo "# `date`" > $TEST_LOG
 
-TPM_ENABLED=(master_slave all_masters fan_in)
+exportVERBOSE=1
 
-for TOPOLOGY in master_slave fan_in all_masters star
+for TOPOLOGY in star master_slave fan_in all_masters
 do
-    for METHOD in installer tpm
+    for METHOD in tpm installer
     do
-        skip=true
-        for enabled in ${TPM_ENABLED[*]}
-        do
-            if [ "$enabled" == "$TOPOLOGY" ]
-            then
-                skip=false
-            fi
-        done
-        if [ "$METHOD" == "installer" ]
-        then
-            skip=false
-        fi
-        if [ "$skip" == "true" ]
-        then
-            break
-        fi
         if [ "$METHOD" == "tpm" ]
         then
             export USE_TPM=1
@@ -68,13 +52,27 @@ do
                 $MYSQL -h $MASTER -e "set global binlog_format=$MODE"
             done 
             echo "# testing with binlog_format=$MODE" >> /tmp/test_log$$ 
-            # echo "# testing with binlog_format=$MODE" 
-
+            echo "# testing with binlog_format=$MODE" 
+            $cookbook_dir/show_cluster 
+            $cookbook_dir/show_cluster >> $INSTALL_LOG
+            ##############################################
             $cookbook_dir/test_cluster >> /tmp/test_log$$
+            if [ "$exit_code" == "0" ]
+            then
+                exit_code=$?
+            fi
+            ##############################################
+            $cookbook_dir/show_cluster 
+            $cookbook_dir/show_cluster >> $INSTALL_LOG
             cat /tmp/test_log$$ >> $TEST_LOG
         done
         cat /tmp/test_log$$
         rm /tmp/test_log$$
+        if [ "$exit_code" != "0" ]
+        then
+            echo "# ERROR testing $TOPOLOGY (using $METHOD)"
+            exit $exit_code
+        fi
         export I_WANT_TO_UNINSTALL=1
         export STOP_REPLICATORS=1
         export REMOVE_TUNGSTEN_BASE=1
@@ -83,6 +81,7 @@ do
         export CLEAN_NODE_DATABASE_SERVER=1
         $cookbook_dir/clear_cluster >> $INSTALL_LOG
         unset I_WANT_TO_UNINSTALL
+       
     done
 done
 
