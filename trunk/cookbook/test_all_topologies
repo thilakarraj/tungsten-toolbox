@@ -45,7 +45,10 @@ do
         fi
         if [ -f /tmp/test_log$$ ] ; then rm /tmp/test_log$$ ; fi
         . $cookbook_dir/BOOTSTRAP.sh NODES_$UCTOPOLOGY.sh
-        $cookbook_dir/load_data >> $INSTALL_LOG
+        if [ -n "$TEST_UNDER_LOAD" ]
+        then
+            $cookbook_dir/load_data >> $INSTALL_LOG
+        fi
         for MODE in row statement
         do
             for MASTER in ${MASTERS[*]}
@@ -70,7 +73,10 @@ do
             $cookbook_dir/show_cluster >> $INSTALL_LOG
             cat /tmp/test_log$$ >> $TEST_LOG
         done
-        $cookbook_dir/load_data stop >> $INSTALL_LOG
+        if [ -n "$TEST_UNDER_LOAD" ]
+        then
+            $cookbook_dir/load_data stop >> $INSTALL_LOG
+        fi
 
         cat /tmp/test_log$$
         rm /tmp/test_log$$
