@@ -68,6 +68,10 @@ do
             cat /tmp/test_log$$ >> $TEST_LOG
         done
         $cookbook_dir/load_data stop >> $INSTALL_LOG
+        # Making sure that all the Evaluator processes are removed
+
+        kill $(jps | grep Evaluator| awk '{print $1}')
+
         cat /tmp/test_log$$
         rm /tmp/test_log$$
         if [ "$exit_code" != "0" ]
