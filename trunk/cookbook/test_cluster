@@ -165,6 +165,8 @@ do
     SAMPLE_TIME=12:13:56$DATA_POSTFIX
     SAMPLE_DT="2003-04-26 09:15:57$DATA_POSTFIX"
     SAMPLE_TS="2003-04-26 09:15:58$DATA_POSTFIX"
+    SAMPLE_ENUM="two"
+    SAMPLE_SET="red,blue"
 
     COUNT=0
     for NODE in ${MASTERS[*]} 
@@ -175,11 +177,13 @@ do
             echo "# Setting binlog format to '$BINLOG_FORMAT'"
             $MYSQL -h $NODE -e "set global binlog_format=$BINLOG_FORMAT"
         fi
+        CURRENT_FORMAT=$($MYSQL -BN -h $NODE -e "select @@binlog_format ")
+        echo "# binlog format: $CURRENT_FORMAT"
         $MYSQL -h $NODE -e "drop table if exists test.t$COUNT"
         $MYSQL -h $NODE -e "drop table if exists test.v$COUNT"
-        $MYSQL -h $NODE -e "create table test.t$COUNT(id int not null primary key, c char(20), b blob, t text, ti time$DDL_POSTFIX, d date, dt datetime$DDL_POSTFIX, ts timestamp$DDL_POSTFIX, f double(20,15)) engine=innodb"
+        $MYSQL -h $NODE -e "create table test.t$COUNT(id int not null primary key, c char(20), b blob, t text, ti time$DDL_POSTFIX, d date, dt datetime$DDL_POSTFIX, ts timestamp$DDL_POSTFIX, f double(20,15), e enum ('one', 'two', 'three'), s set ('yellow','red', 'white','blue')) engine=innodb"
         $MYSQL -h $NODE -e "create or replace view test.v$COUNT as select * from test.t$COUNT"
-        $MYSQL -h $NODE -e "insert into test.v$COUNT values (1, 'inserted by node #$COUNT', '$SAMPLE_BLOB', '$SAMPLE_T', '$SAMPLE_TIME', '$SAMPLE_D', '$SAMPLE_DT', '$SAMPLE_TS', $SAMPLE_F)"
+        $MYSQL -h $NODE -e "insert into test.v$COUNT values (1, 'inserted by node #$COUNT', '$SAMPLE_BLOB', '$SAMPLE_T', '$SAMPLE_TIME', '$SAMPLE_D', '$SAMPLE_DT', '$SAMPLE_TS', $SAMPLE_F,'$SAMPLE_ENUM', '$SAMPLE_SET')"
         # echo "############"
         # $MYSQL -h $NODE -e "select * from test.v$COUNT"
         # echo "############"
@@ -221,6 +225,8 @@ do
             DT_CONTENT=$($MYSQL -BN -h $NODE -e "select dt from test.t$COUNT where c = 'inserted by node #$COUNT' ")
             TS_CONTENT=$($MYSQL -BN -h $NODE -e "select ts from test.t$COUNT where c = 'inserted by node #$COUNT' ")
             F_CONTENT=$($MYSQL -BN -h $NODE -e "select f from test.t$COUNT where c = 'inserted by node #$COUNT' ")
+            SET_CONTENT=$($MYSQL -BN -h $NODE -e "select s from test.t$COUNT where c = 'inserted by node #$COUNT' ")
+            ENUM_CONTENT=$($MYSQL -BN -h $NODE -e "select e from test.t$COUNT where c = 'inserted by node #$COUNT' ")
             ok_equal $TABLE_COUNT 1 "Tables from master #$COUNT"
             ok_equal $VIEW_COUNT 1 "Views from master #$COUNT"
             ok_equal $RECORD_COUNT 1 "Records from master #$COUNT : <$RECORD_COUNT>"
@@ -231,6 +237,8 @@ do
             ok_equal "$DT_CONTENT" "$SAMPLE_DT" "Datetime from master #$COUNT : <$DT_CONTENT>"
             ok_equal "$TS_CONTENT" "$SAMPLE_TS" "Timestamp from master #$COUNT : <$TS_CONTENT>"
             ok_equal "$F_CONTENT" "$SAMPLE_F" "Double from master #$COUNT : <$F_CONTENT>"
+            ok_equal "$ENUM_CONTENT" "$SAMPLE_ENUM" "ENUM from master #$COUNT : <$ENUM_CONTENT>"
+            ok_equal "$SET_CONTENT" "$SAMPLE_SET" "SET from master #$COUNT : <$SET_CONTENT>"
             # $MYSQL -h $NODE -e "select * from test.t$COUNT"
         done
         HOW_MANY_SERVICES=$($TREPCTL -host $SLAVE services | grep role | grep slave| wc -l)
