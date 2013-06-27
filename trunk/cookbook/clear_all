@@ -18,6 +18,10 @@ write_my_cookbook_cnf
 # MYSQL="mysql -u $DATABASE_USER -p$DATABASE_PASSWORD -P $DATABASE_PORT"
 for NODE in ${ALL_NODES[*]} 
 do 
+    if [ -f $cookbook_dir/data_loading ]
+    then
+        $cookbook_dir/load_data stop
+    fi
     if [ "$STOP_REPLICATORS" == "1" ]
     then
         ssh $NODE "if [ -x $REPLICATOR ] ; then $REPLICATOR stop;  fi" 

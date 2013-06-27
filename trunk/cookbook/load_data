@@ -94,5 +94,13 @@ do
     if [ -z "$DRYRUN" ]
     then
         $CMD
+        case "$OPERATION" in
+            start) 
+                touch $cookbook_dir/data_loading
+                ;;
+            stop)
+                rm -f $cookbook_dir/data_loading
+                ;;
+        esac
     fi
 done
