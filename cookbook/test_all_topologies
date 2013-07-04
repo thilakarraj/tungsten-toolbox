@@ -84,7 +84,7 @@ do
         export REMOVE_TUNGSTEN_BASE=1
         export REMOVE_SERVICE_SCHEMA=1
         export REMOVE_TEST_SCHEMAS=1
-        export CLEAN_NODE_DATABASE_SERVER=1
+        export REMOVE_DATABASE_CONTENTS=1
         $cookbook_dir/clear_cluster >> $INSTALL_LOG
         unset I_WANT_TO_UNINSTALL
         if [ -n "$KILL_JAVA_PROCESS" ]
