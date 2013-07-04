@@ -11,14 +11,13 @@ then
     exit 1
 fi
 
-
 INSTALL_LOG=install_log.txt
 TEST_LOG=test_log.txt
 
 echo "# `date`" > $INSTALL_LOG
 echo "# `date`" > $TEST_LOG
 
-exportVERBOSE=1
+export VERBOSE=1
 exit_code=0
 for TOPOLOGY in master_slave fan_in all_masters star 
 do
@@ -88,9 +87,12 @@ do
         export CLEAN_NODE_DATABASE_SERVER=1
         $cookbook_dir/clear_cluster >> $INSTALL_LOG
         unset I_WANT_TO_UNINSTALL
-        # Making sure that all the remaining processes are removed
-        pkill -9 wrapper
-        pkill -9 java 
+        if [ -n "$KILL_JAVA_PROCESS" ]
+        then
+            # Making sure that all the remaining processes are removed
+            pkill -9 wrapper
+            pkill -9 java 
+        fi
     done
 done
 
