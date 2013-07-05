@@ -135,7 +135,7 @@ function show_backups
     get_property_value $CONF_DIR 'backup-dir' 'replicator.storage.agent.fs.directory' 
     for DIR in $(get_property_value $CONF_DIR '0' 'replicator.storage.agent.fs.directory' 1) 
     do
-        echo $(dirname $DIR) >> dirs$$
+        echo $DIR >> dirs$$
     done
     for DIR in $(sort dirs$$ | uniq)
     do
