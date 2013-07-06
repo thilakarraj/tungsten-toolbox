@@ -80,7 +80,7 @@ do
             mkdir -p $JOB_INFO_PATH/$db
         fi
     fi
-   BRISTLECONE_OPTIONS="--deletes=1 --updates=1 --inserts=3 --test-duration=3600"
+   BRISTLECONE_OPTIONS="--deletes=1 --updates=1 --inserts=1 --test-duration=3600"
    EVALUATOR="$TUNGSTEN_BASE/tungsten/bristlecone/bin/concurrent_evaluator.pl"
    DB_OPTIONS="--host=$HOST --port=$DATABASE_PORT -u $DATABASE_USER -p $DATABASE_PASSWORD "
    EV_OPTIONS="--continuent-root=$TUNGSTEN_BASE -d $db -s $JOB_INFO_PATH/$db"
