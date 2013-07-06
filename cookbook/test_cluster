@@ -80,6 +80,7 @@ function ok_equal
     else
         echo -n "not ok"
         FAILED=$(($FAILED+1))
+        msg="$msg (expected: <$expected>)"
     fi
     echo " - $msg"
     TESTS=$(($TESTS+1))
@@ -215,18 +216,18 @@ do
         for NODE in ${MASTERS[*]} 
         do 
             COUNT=$(($COUNT+1))
-            TABLE_COUNT=$($MYSQL -BN -h $NODE -e "select count(*) from information_schema.tables where table_schema='test' and  table_name = 't$COUNT'")
-            VIEW_COUNT=$($MYSQL -BN -h $NODE -e "select count(*) from information_schema.tables where table_schema='test' and  table_name = 'v$COUNT'")
-            RECORD_COUNT=$($MYSQL -BN -h $NODE -e "select count(*) from test.t$COUNT where c = 'inserted by node #$COUNT' ")
-            BLOB_CONTENT=$($MYSQL -BN -h $NODE -e "select b from test.t$COUNT where c = 'inserted by node #$COUNT' ")
-            TEXT_CONTENT=$($MYSQL -BN -h $NODE -e "select t from test.t$COUNT where c = 'inserted by node #$COUNT' ")
-            DATE_CONTENT=$($MYSQL -BN -h $NODE -e "select d from test.t$COUNT where c = 'inserted by node #$COUNT' ")
-            TIME_CONTENT=$($MYSQL -BN -h $NODE -e "select ti from test.t$COUNT where c = 'inserted by node #$COUNT' ")
-            DT_CONTENT=$($MYSQL -BN -h $NODE -e "select dt from test.t$COUNT where c = 'inserted by node #$COUNT' ")
-            TS_CONTENT=$($MYSQL -BN -h $NODE -e "select ts from test.t$COUNT where c = 'inserted by node #$COUNT' ")
-            F_CONTENT=$($MYSQL -BN -h $NODE -e "select f from test.t$COUNT where c = 'inserted by node #$COUNT' ")
-            SET_CONTENT=$($MYSQL -BN -h $NODE -e "select s from test.t$COUNT where c = 'inserted by node #$COUNT' ")
-            ENUM_CONTENT=$($MYSQL -BN -h $NODE -e "select e from test.t$COUNT where c = 'inserted by node #$COUNT' ")
+            TABLE_COUNT=$($MYSQL -BN -h $SLAVE -e "select count(*) from information_schema.tables where table_schema='test' and  table_name = 't$COUNT'")
+            VIEW_COUNT=$($MYSQL -BN -h $SLAVE -e "select count(*) from information_schema.tables where table_schema='test' and  table_name = 'v$COUNT'")
+            RECORD_COUNT=$($MYSQL -BN -h $SLAVE -e "select count(*) from test.t$COUNT where c = 'inserted by node #$COUNT' ")
+            BLOB_CONTENT=$($MYSQL -BN -h $SLAVE -e "select b from test.t$COUNT where c = 'inserted by node #$COUNT' ")
+            TEXT_CONTENT=$($MYSQL -BN -h $SLAVE -e "select t from test.t$COUNT where c = 'inserted by node #$COUNT' ")
+            DATE_CONTENT=$($MYSQL -BN -h $SLAVE -e "select d from test.t$COUNT where c = 'inserted by node #$COUNT' ")
+            TIME_CONTENT=$($MYSQL -BN -h $SLAVE -e "select ti from test.t$COUNT where c = 'inserted by node #$COUNT' ")
+            DT_CONTENT=$($MYSQL -BN -h $SLAVE -e "select dt from test.t$COUNT where c = 'inserted by node #$COUNT' ")
+            TS_CONTENT=$($MYSQL -BN -h $SLAVE -e "select ts from test.t$COUNT where c = 'inserted by node #$COUNT' ")
+            F_CONTENT=$($MYSQL -BN -h $SLAVE -e "select f from test.t$COUNT where c = 'inserted by node #$COUNT' ")
+            SET_CONTENT=$($MYSQL -BN -h $SLAVE -e "select s from test.t$COUNT where c = 'inserted by node #$COUNT' ")
+            ENUM_CONTENT=$($MYSQL -BN -h $SLAVE -e "select e from test.t$COUNT where c = 'inserted by node #$COUNT' ")
             ok_equal $TABLE_COUNT 1 "Tables from master #$COUNT"
             ok_equal $VIEW_COUNT 1 "Views from master #$COUNT"
             ok_equal $RECORD_COUNT 1 "Records from master #$COUNT : <$RECORD_COUNT>"
@@ -239,7 +240,7 @@ do
             ok_equal "$F_CONTENT" "$SAMPLE_F" "Double from master #$COUNT : <$F_CONTENT>"
             ok_equal "$ENUM_CONTENT" "$SAMPLE_ENUM" "ENUM from master #$COUNT : <$ENUM_CONTENT>"
             ok_equal "$SET_CONTENT" "$SAMPLE_SET" "SET from master #$COUNT : <$SET_CONTENT>"
-            # $MYSQL -h $NODE -e "select * from test.t$COUNT"
+            # $MYSQL -h $SLAVE -e "select * from test.t$COUNT"
         done
         HOW_MANY_SERVICES=$($TREPCTL -host $SLAVE services | grep role | grep slave| wc -l)
         # echo "#S> $HOW_MANY_SERVICES"
@@ -249,9 +250,12 @@ do
 done  # iter
 
 check_if_replicators_are_running 'After tests'
+#
+PASSED_PERCENTAGE=$(ruby -e 'print eval(ARGV[0])' "$PASSED.0/$TESTS.0*100" )
+FAILED_PERCENTAGE=$(ruby -e 'print eval(ARGV[0])' "$FAILED.0/$TESTS.0*100" )
 
-printf "# passed: %4d (%6.2f%%)\n" $PASSED $(($PASSED/$TESTS*100))
-printf "# failed: %4d (%6.2f%%)\n" $FAILED $(($FAILED/$TESTS*100))
+printf "# passed: %4d (%6.2f%%)\n" $PASSED $PASSED_PERCENTAGE
+printf "# failed: %4d (%6.2f%%)\n" $FAILED $FAILED_PERCENTAGE
 
 echo "1..$TESTS"
 exit $FAILED

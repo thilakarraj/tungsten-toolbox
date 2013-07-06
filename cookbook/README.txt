@@ -26,7 +26,7 @@ GETTING STARTED:
 4) edit $cookbook_dir/USER_VALUES.sh
 5) Optionally, but recommended: VALIDATE your cluster, i.e check that the installer can work fine in them.
    Run $cookbook_dir/validate_cluster
-   This command does not install anything, but will perform all healthy checks. Thus you will know if your sustem
+   This command does not install anything, but will perform all healthy checks. Thus you will know if your system
    is fit to install Tungsten.
    If anything goes wrong and you want to see more detail, repeat the validation in debug mode:
    VERBOSE=2 $cookbook_dir/validate_cluster
