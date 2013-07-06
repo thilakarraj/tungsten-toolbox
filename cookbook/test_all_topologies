@@ -75,7 +75,9 @@ do
         done
         if [ -n "$TEST_UNDER_LOAD" ]
         then
+            export LOAD_TEST_OPTIONS="--remove=all"
             $cookbook_dir/load_data stop >> $INSTALL_LOG
+            unset LOAD_TEST_OPTIONS
         fi
 
         cat /tmp/test_log$$
