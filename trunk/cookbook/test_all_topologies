@@ -11,13 +11,14 @@ then
     exit 1
 fi
 
+
 INSTALL_LOG=install_log.txt
 TEST_LOG=test_log.txt
 
 echo "# `date`" > $INSTALL_LOG
 echo "# `date`" > $TEST_LOG
 
-export VERBOSE=1
+exportVERBOSE=1
 exit_code=0
 for TOPOLOGY in master_slave fan_in all_masters star 
 do
@@ -84,15 +85,12 @@ do
         export REMOVE_TUNGSTEN_BASE=1
         export REMOVE_SERVICE_SCHEMA=1
         export REMOVE_TEST_SCHEMAS=1
-        export REMOVE_DATABASE_CONTENTS=1
+        export CLEAN_NODE_DATABASE_SERVER=1
         $cookbook_dir/clear_cluster >> $INSTALL_LOG
         unset I_WANT_TO_UNINSTALL
-        if [ -n "$KILL_JAVA_PROCESS" ]
-        then
-            # Making sure that all the remaining processes are removed
-            pkill -9 wrapper
-            pkill -9 java 
-        fi
+        # Making sure that all the remaining processes are removed
+        pkill -9 wrapper
+        pkill -9 java 
     done
 done
 
@@ -102,9 +100,12 @@ if [ -z "$OK" ] ; then OK='0' ; fi
 if [ -z "$NOTOK" ] ; then NOTOK='0' ; fi
 TESTS=$(($OK+$NOTOK))
 echo ""
+
+PASSED_PERCENTAGE=$(ruby -e 'printf "%6.2f", eval(ARGV[0])' "$OK.0/$TESTS.0*100" )
+FAILED_PERCENTAGE=$(ruby -e 'printf "%6.2f", eval(ARGV[0])' "$NOTOK.0/$TESTS.0*100" )
 echo "# tests : $TESTS"
-echo "# pass  : $OK ($(($OK/$TESTS*100)))"
-echo "# fail  : $NOTOK ($(($NOTOK/$TESTS*100)))"
+echo "# pass  : $OK ($PASSED_PERCENTAGE%)"
+echo "# fail  : $NOTOK ($FAILED_PERCENTAGE%)"
 
 #
 # The desired number of NOT OK tests is 0.
