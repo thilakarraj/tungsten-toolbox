@@ -150,6 +150,72 @@ then
     ITERATIONS=6
 fi
 
+function check_for_table
+{
+    table_schema=$1
+    table_name=$2
+    expected_count=$3
+    from_which_master=$4
+    count_mode='table'
+    [ -n "$5" ] && count_mode=$5
+    
+    wanted_matches=${#SLAVES[*]}
+    found_matches=0
+    expected_text="exists"
+    if [ "$count_mode" == "records" ]
+    then
+        expected_text="has records"
+    fi
+    TIMEOUT=60
+    ELAPSED=0
+    if [ "$expected_count" == "0" ]
+    then
+        expected_text="doesn't exist"
+        if [ "$count_mode" == "records" ]
+        then
+            expected_text="has no records"
+        fi
+    fi
+    while [ "$found_matches" != "$wanted_matches" ]
+    do
+        found_matches=0
+        sleep 1
+        for SLAVE in ${SLAVES[*]}
+        do
+            if [ "$SLAVE" == "$from_which_master" ]
+            then
+                found_matches=$(($found_matches+1))
+                continue
+            fi
+            if [ "$count_mode" == "table" ]
+            then
+                FOUND_COUNT=$($MYSQL -BN -h $SLAVE -e "select count(*) from information_schema.tables where table_schema='$table_schema' and  table_name = '$table_name'")
+            else
+                FOUND_COUNT=$($MYSQL -BN -h $SLAVE -e "select count(*) from $table_schema.$table_name")
+            fi
+            if [ "$FOUND_COUNT" == "$expected_count" ]
+            then
+                found_matches=$(($found_matches+1))
+            fi
+            if [ -n "$VERBOSE" ]
+            then
+                echo "# Checking that table $table_schema.$table_name $expected_text on slave $SLAVE (matches: $found_matches of $wanted_matches) "
+            fi
+        done
+        ELAPSED=$(($ELAPSED+1))
+        if [ "$ELAPSED" == "$TIMEOUT" ]
+        then
+            echo "not ok - Timeout exceeded while searching that table $table_schema.$table_name $expected_text "
+            exit 1
+        fi
+    done
+}
+
+function check_for_records
+{
+    check_for_table $1 $2 $3 $4 'records'
+}
+
 COUNTER=0
 for ITER in $(seq 1 $ITERATIONS)
 do
@@ -181,10 +247,14 @@ do
         CURRENT_FORMAT=$($MYSQL -BN -h $NODE -e "select @@binlog_format ")
         echo "# binlog format: $CURRENT_FORMAT"
         $MYSQL -h $NODE -e "drop table if exists test.t$COUNT"
+        check_for_table "test" "t$COUNT" 0 $NODE
         $MYSQL -h $NODE -e "drop table if exists test.v$COUNT"
         $MYSQL -h $NODE -e "create table test.t$COUNT(id int not null primary key, c char(20), b blob, t text, ti time$DDL_POSTFIX, d date, dt datetime$DDL_POSTFIX, ts timestamp$DDL_POSTFIX, f double(20,15), e enum ('one', 'two', 'three'), s set ('yellow','red', 'white','blue')) engine=innodb"
         $MYSQL -h $NODE -e "create or replace view test.v$COUNT as select * from test.t$COUNT"
+
+        check_for_table "test" "t$COUNT" 1 $NODE
         $MYSQL -h $NODE -e "insert into test.v$COUNT values (1, 'inserted by node #$COUNT', '$SAMPLE_BLOB', '$SAMPLE_T', '$SAMPLE_TIME', '$SAMPLE_D', '$SAMPLE_DT', '$SAMPLE_TS', $SAMPLE_F,'$SAMPLE_ENUM', '$SAMPLE_SET')"
+        check_for_records "test" "t$COUNT" 1 $NODE
         # echo "############"
         # $MYSQL -h $NODE -e "select * from test.v$COUNT"
         # echo "############"
@@ -207,7 +277,6 @@ do
         fi
     done
 
-    sleep 2
     # set -x
     for SLAVE in ${SLAVES[*]} 
     do
