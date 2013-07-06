@@ -83,7 +83,7 @@ do
    BRISTLECONE_OPTIONS="--deletes=1 --updates=1 --inserts=1 --test-duration=3600"
    EVALUATOR="$TUNGSTEN_BASE/tungsten/bristlecone/bin/concurrent_evaluator.pl"
    DB_OPTIONS="--host=$HOST --port=$DATABASE_PORT -u $DATABASE_USER -p $DATABASE_PASSWORD "
-   EV_OPTIONS="--continuent-root=$TUNGSTEN_BASE -d $db -s $JOB_INFO_PATH/$db"
+   EV_OPTIONS="--continuent-root=$TUNGSTEN_BASE -d $db -s $JOB_INFO_PATH/$db $LOAD_TEST_OPTIONS"
    V=''
    [ -n "$VERBOSE" ] && [ "$OPERATION" == "stop" ] && V='--verbose'
    CMD="$EVALUATOR $BRISTLECONE_OPTIONS $DB_OPTIONS $EV_OPTIONS $V $OPERATION"
