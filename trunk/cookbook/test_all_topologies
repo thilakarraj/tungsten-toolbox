@@ -49,7 +49,7 @@ do
         then
             $cookbook_dir/load_data >> $INSTALL_LOG
         fi
-        for MODE in row statement
+        for MODE in statement mixed  row
         do
             for MASTER in ${MASTERS[*]}
             do
@@ -75,9 +75,10 @@ do
         done
         if [ -n "$TEST_UNDER_LOAD" ]
         then
-            export LOAD_TEST_OPTIONS="--remove=all"
+            SAVE_TEST_OPTIONS=$LOAD_TEST_OPTIONS
+            export LOAD_TEST_OPTIONS="$LOAD_TEST_OPTIONS --remove=all"
             $cookbook_dir/load_data stop >> $INSTALL_LOG
-            unset LOAD_TEST_OPTIONS
+            export LOAD_TEST_OPTIONS=$SAVE_TEST_OPTIONS
         fi
 
         cat /tmp/test_log$$
@@ -91,8 +92,11 @@ do
         $cookbook_dir/clear_cluster >> $INSTALL_LOG
         unset I_WANT_TO_UNINSTALL
         # Making sure that all the remaining processes are removed
-        pkill -9 wrapper
-        pkill -9 java 
+        if [ -n "$KILL_JAVA_PROCESS" ]
+        then
+            pkill -9 wrapper
+            pkill -9 java 
+        fi
     done
 done
 
