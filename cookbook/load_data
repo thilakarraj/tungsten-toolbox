@@ -68,8 +68,17 @@ fill_roles
 
 JOB_INFO_PATH=$TUNGSTEN_BASE/tungsten/load
 
+
 for HOST in  ${MASTERS[*]}
 do
+    unset SKIP
+    if [ "$TOPOLOGY" == "STAR" ]
+    then
+        if [ "$HOST" == "$HUB" ]
+        then
+            SKIP=1
+        fi
+    fi
     db=$(echo $HOST | tr '\.' '_' )
     if [ "$OPERATION" == "start" ]
     then
@@ -80,27 +89,36 @@ do
             mkdir -p $JOB_INFO_PATH/$db
         fi
     fi
-   BRISTLECONE_OPTIONS="--deletes=1 --updates=1 --inserts=1 --test-duration=3600"
-   EVALUATOR="$TUNGSTEN_BASE/tungsten/bristlecone/bin/concurrent_evaluator.pl"
-   DB_OPTIONS="--host=$HOST --port=$DATABASE_PORT --mysql-defaults-file=$MY_COOKBOOK_CNF --user=$DATABASE_USER --password=$DATABASE_PASSWORD"
-   EV_OPTIONS="--continuent-root=$TUNGSTEN_BASE -d $db -s $JOB_INFO_PATH/$db $LOAD_TEST_OPTIONS"
-   V=''
-   [ -n "$VERBOSE" ] && [ "$OPERATION" == "stop" ] && V='--verbose'
-   CMD="$EVALUATOR $BRISTLECONE_OPTIONS $DB_OPTIONS $EV_OPTIONS $V $OPERATION"
+
+    BRISTLECONE_OPTIONS="--deletes=1 --updates=1 --inserts=1 --test-duration=3600"
+    EVALUATOR="$TUNGSTEN_BASE/tungsten/bristlecone/bin/concurrent_evaluator.pl"
+    DB_OPTIONS="--host=$HOST --port=$DATABASE_PORT --mysql-defaults-file=$MY_COOKBOOK_CNF --user=$DATABASE_USER --password=$DATABASE_PASSWORD"
+    EV_OPTIONS="--continuent-root=$TUNGSTEN_BASE -d $db -s $JOB_INFO_PATH/$db $LOAD_TEST_OPTIONS"
+    V=''
+    [ -n "$VERBOSE" ] && [ "$OPERATION" == "stop" ] && V='--verbose'
+    CMD="$EVALUATOR $BRISTLECONE_OPTIONS $DB_OPTIONS $EV_OPTIONS $V $OPERATION"
     if [ -n "$VERBOSE" ]
     then
-        echo "$CMD" | perl -pe 's/ -/ \\\n\t-/g'
+        if [ -z "$SKIP" ]
+        then
+            echo "$CMD" | perl -pe 's/ -/ \\\n\t-/g'
+        fi
     fi
     if [ -z "$DRYRUN" ]
     then
-        $CMD
-        case "$OPERATION" in
-            start) 
-                touch $cookbook_dir/data_loading
-                ;;
-            stop)
-                rm -f $cookbook_dir/data_loading
-                ;;
-        esac
+        if [ -z "$SKIP" ]
+        then
+            $CMD
+        fi
     fi
 done
+
+case "$OPERATION" in
+    start) 
+        touch $cookbook_dir/data_loading
+        ;;
+    stop)
+        rm -f $cookbook_dir/data_loading
+        ;;
+esac
+
