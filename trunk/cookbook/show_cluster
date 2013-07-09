@@ -47,7 +47,10 @@ else
     for NODE in ${MASTERS[*]}
     do
         SERVICE=$($TREPCTL -host $NODE services |$SIMPLE_SERVICES -r master -a list)
-        $TREPCTL -host $NODE -service $SERVICE heartbeat
+        if [ -n "$HEARTBEAT" ]
+        then
+            $TREPCTL -host $NODE -service $SERVICE heartbeat
+        fi
     done
 fi
 
