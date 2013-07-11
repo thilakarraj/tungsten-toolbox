@@ -53,3 +53,16 @@ export DIRECT_SLAVE_MY_CNF=$MY_CNF
 [ -z "$CLEAN_NODE_DATABASE_SERVER" ]  && export CLEAN_NODE_DATABASE_SERVER=1
 ##############################################################################
 
+
+#
+# Local values defined by the user.
+# If a file identified by $LOCAL_USER_VALUES exists, it will be sourced
+# and its value can overwrite the values in this file
+#
+if [ -n "$LOCAL_USER_VALUES" ]
+then
+    if [ -f $LOCAL_USER_VALUES ]
+    then
+        . $LOCAL_USER_VALUES
+    fi
+fi
