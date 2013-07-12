@@ -54,6 +54,7 @@ fi
 HOSTS_LIST=""
 MASTERS_LIST=""
 SLAVES_LIST=""
+MASTER_SERVICES_LIST=""
 export LONG_LINE="--------------------------------------------------------------------------------------"
 
 for NODE in ${ALL_NODES[*]}
@@ -62,21 +63,39 @@ do
    HOSTS_LIST="$HOSTS_LIST$NODE"
 done
 
+service_count=0
 for NODE in ${SLAVES[*]}
 do
    [ -n "$SLAVES_LIST" ] && SLAVES_LIST="$SLAVES_LIST,"
    SLAVES_LIST="$SLAVES_LIST$NODE"
 done
 
+service_count=0
 for NODE in ${MASTERS[*]}
 do
-   [ -n "$MASTERS_LIST" ] && MASTERS_LIST="$MASTERS_LIST,"
-   MASTERS_LIST="$MASTERS_LIST$NODE"
+    unset SKIP
+    if [ -n "$HUB" ]
+    then
+        if [ "$HUB" == "$NODE" ]
+        then
+            SKIP=1
+            service_count=$(($service_count+1))
+        fi
+    fi
+    if [ -z "$SKIP" ]
+    then
+        [ -n "$MASTERS_LIST" ] && MASTERS_LIST="$MASTERS_LIST,"
+        [ -n "$MASTER_SERVICES_LIST" ] && MASTER_SERVICES_LIST="$MASTER_SERVICES_LIST,"
+        MASTERS_LIST="$MASTERS_LIST$NODE"
+        MASTER_SERVICES_LIST="$MASTER_SERVICES_LIST${MM_SERVICES[$service_count]}"
+        service_count=$(($service_count+1))
+    fi
 done
 
 export MASTERS_LIST
 export SLAVES_LIST
 export HOSTS_LIST
+export MASTER_SERVICES_LIST
 
 CURRENT_HOST=$(hostname)
 INSTALLER_IN_CLUSTER=0

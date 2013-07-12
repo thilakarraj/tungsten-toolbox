@@ -32,7 +32,8 @@ if [ -n "$USE_TPM" ]
 then
     MEMBERS=${MASTERS[*]}
     SERVICE_INDEX=0
-    INSTALL_COMMAND="./tools/tpm configure defaults --reset \
+    INSTALL_COMMAND="./tools/tpm install fan_in \
+        --reset \
         --log=timestamp \
         --replication-port=$DATABASE_PORT \
         --replication-user=$DATABASE_USER \
@@ -42,23 +43,16 @@ then
         --datasource-mysql-conf=$MY_CNF \
         --datasource-log-directory=$BINLOG_DIRECTORY \
         -a --datasource-boot-script=$MYSQL_BOOT_SCRIPT \
-		--enable-slave-thl-listener=false \
         --repl-disable-relay-logs=true \
         --rmi-port=$RMI_PORT \
         --thl-port=$THL_PORT \
+        --master=$MASTERS_LIST \
+        --members=$HOSTS_LIST \
+        --master-services=$MASTER_SERVICES_LIST \
+        --topology=fan-in \
         $MORE_OPTIONS $MORE_TPM_OPTIONS --$START_OPTION"
 
     run_command $INSTALL_COMMAND 
-    for MASTER in $MEMBERS
-    do
-        MEMBER_LIST=$MASTER,$FAN_IN_SLAVE
-        SERVICE=${MM_SERVICES[$SERVICE_INDEX]}
-        INSTALL_COMMAND="./tools/tpm configure $SERVICE --members=$MEMBER_LIST --master=$MASTER "
-        run_command $INSTALL_COMMAND
-        SERVICE_INDEX=$(($SERVICE_INDEX+1))
-    done
-    INSTALL_COMMAND='./tools/tpm install'
-    run_command $INSTALL_COMMAND
 else
     INDEX=0
 
