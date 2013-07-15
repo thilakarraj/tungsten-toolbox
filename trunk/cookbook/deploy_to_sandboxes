@@ -126,7 +126,7 @@ echo 'SANDBOX_EXISTS=$(for P in `echo $PATH | tr ":" " "` ; do if [ -f $P/make_s
 echo 'if [ -z "$SANDBOX_EXISTS" ] ; then hostname; echo "make_sandbox not found in PATH" ; exit 1; fi' >> $BUILD_SB
 
 echo 'SANDBOX_OPTIONS="--no_confirm  --no_show -c server-id=$1 -c log-bin=mysql-bin -c log-slave-updates -c innodb_flush_log_at_trx_commit=1"' >> $BUILD_SB
-echo 'export SANDBOX_OPTIONS="$SANDBOX_OPTIONS -c max_allowed_packet=48M --remote_access=%"' >> $BUILD_SB
+echo 'export SANDBOX_OPTIONS="$SANDBOX_OPTIONS -c max_allowed_packet=52M -c sync-binlog=1 --remote_access=%"' >> $BUILD_SB
 if [ -n "$TARBALL" ]
 then
     BASE_TARBALL=$(basename $TARBALL)
@@ -150,10 +150,13 @@ do
    ssh $HOST $BUILD_SB $SERVER_ID_COUNTER
 done
 
+. $cookbook_dir/USER_VALUES.sh
+
+GRANT_QUERY="grant all on *.* to $DATABASE_USER identified by '$DATABASE_PASSWORD' with grant option"
 for HOST in  ${NODES[*]}
 do
    $HOME/sandboxes/$SANDBOX_DIR/use -h $HOST -e 'update mysql.user set Grant_Priv="Y" where user="msandbox"; flush privileges'
-   $HOME/sandboxes/$SANDBOX_DIR/use -h $HOST -e 'grant all on *.* to tungsten identified by "secret" with grant option'
+   $HOME/sandboxes/$SANDBOX_DIR/use -h $HOST -e "$GRANT_QUERY"
 done
 
 if [ -z "$UPDATE_USER_VALUES" ]
@@ -163,20 +166,40 @@ fi
 
 # updating USER_VALUES
 
-function replace_text
+INCLUDE_FILE=$cookbook_dir/USER_VALUES.local.sh 
+
+function comment_text
 {
     filename=$1
     find_string=$2
-    replacement=$3
     BAK=''
     if [ -n "$4" ]
     then
         BAK='.bak'
     fi
-    perl -i$BAK -pe "s{$find_string}{$replacement}"  $filename
+    echo "# replacing '$find_string' in $filename"
+    perl -i$BAK -pe "s{^(export\s+$find_string)}{# Replaced by deploy_to_sandboxes - look at $INCLUDE_FILE \\n# \$1}"  $filename
 }
 
-replace_text $cookbook_dir/USER_VALUES.sh '/var/lib/mysql' "$HOME/sandboxes/$SANDBOX_DIR/data" BACKUP
-replace_text $cookbook_dir/USER_VALUES.sh '/etc/my.cnf' "$HOME/sandboxes/$SANDBOX_DIR/my.sandbox.cnf"
-replace_text $cookbook_dir/USER_VALUES.sh 'DATABASE_PORT=3306' "DATABASE_PORT=$MYSQL_PORT"
-replace_text $cookbook_dir/USER_VALUES.sh '/etc/init.d/mysql' "$HOME/sandboxes/$SANDBOX_DIR/msb"
+comment_text $cookbook_dir/USER_VALUES.sh 'BINLOG_DIRECTORY' 
+comment_text $cookbook_dir/USER_VALUES.sh 'MY_CONF'
+comment_text $cookbook_dir/USER_VALUES.sh 'MYSQL_BOOT_SCRIPT'
+comment_text $cookbook_dir/USER_VALUES.sh 'DATABASE_PORT'
+
+LINE='------------------------------------------------------------------------'
+echo "# $LINE" >> $INCLUDE_FILE
+echo "# Updated by $0 at $(date)"
+
+echo "export BINLOG_DIRECTORY=$HOME/sandboxes/$SANDBOX_DIR/data" >> $INCLUDE_FILE
+echo "export MY_CNF=$HOME/sandboxes/$SANDBOX_DIR/my.sandbox.cnf" >> $INCLUDE_FILE
+echo "export MYSQL_BOOT_SCRIPT=$HOME/sandboxes/$SANDBOX_DIR/msb" >> $INCLUDE_FILE
+echo "export DATABASE_PORT=$MYSQL_PORT" >> $INCLUDE_FILE
+echo "# $LINE" >> $INCLUDE_FILE
+
+echo "# Updated $INCLUDE_FILE with the values for the sandboxes"
+echo "# The file $INCLUDE_FILE is loaded within $cookbook_dir/USER_VALUES.sh"
+echo ""
+echo "# The file $INCLUDE_FILE contains:"
+echo ""
+cat $INCLUDE_FILE
+

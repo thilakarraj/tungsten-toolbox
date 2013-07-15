@@ -8,6 +8,7 @@ NODES_STAR.sh
 README.txt
 REFERENCE.txt
 USER_VALUES.sh
+USER_VALUES.local.sh
 add_node_master_slave
 add_node_star
 backups

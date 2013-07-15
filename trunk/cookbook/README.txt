@@ -37,6 +37,19 @@ For example:
    VERBOSE=1 $cookbook_dir/install_fan_in
    VERBOSE=1 $cookbook_dir/install_star
 
+
+TAKING ADVANTAGE OF THE NEW TPM INSTALLATION
+Tungsten Replicator, as of 2.1.1-90, ships with the ability of installing using the tpm (Tungsten Package Manager). The main advantages of tpm compared to tungsten-installer are:
+* generally faster
+* simpler syntax for multi-master (1 command instead of many)
+* parallel execution (results in multi-master deployments 10 times quicker)
+* more flexibility when updating the cluster.
+
+To install using tpm, simply enable the variable USE_TPM
+
+export USE_TPM=1
+./cookbook/install_all_masters
+
 DRY RUN, OR MEETING SPECIAL INSTALLATION NEEDS
 If you don't have SSH access between nodes, the installation scripts in the cookbook will not work.
 Also, if you need to modify options for a single node, the cookbook scripts offer minimal help, or none at all.
