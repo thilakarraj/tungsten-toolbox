@@ -13,6 +13,7 @@ readme                                 Shows the quick start guide
 #########################
 COMMON_NODES.sh                        List of nodes in the cluster
 USER_VALUES.sh                         Cluster configuration (user defined values)
+USER_VALUES.local.sh                   Cluster configuration (iadditional user defined values)
 BOOTSTRAP.sh                           System definition builder (For internal use)
 utilities.sh                           Cluster shared routines
 NODES_MASTER_SLAVE.sh                  Nodes definition for a master-slave topology

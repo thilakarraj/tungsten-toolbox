@@ -4,6 +4,8 @@
 
 # User defined values for the cluster to be installed.
 
+cookbook_dir=$(dirname $0 )
+
 # Where to install Tungsten Replicator
 export TUNGSTEN_BASE=$HOME/installs/cookbook
 
@@ -56,13 +58,10 @@ export DIRECT_SLAVE_MY_CNF=$MY_CNF
 
 #
 # Local values defined by the user.
-# If a file identified by $LOCAL_USER_VALUES exists, it will be sourced
-# and its value can overwrite the values in this file
-#
-if [ -n "$LOCAL_USER_VALUES" ]
+# If ./cookbook/USER_VALUES.local.sh exists,
+# it is loaded at this point
+
+if [ -f $cookbook_dir/USER_VALUES.local.sh ]
 then
-    if [ -f $LOCAL_USER_VALUES ]
-    then
-        . $LOCAL_USER_VALUES
-    fi
+    . $cookbook_dir/USER_VALUES.local.sh
 fi
