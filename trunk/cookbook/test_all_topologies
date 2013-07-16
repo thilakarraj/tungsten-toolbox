@@ -18,9 +18,9 @@ TEST_LOG=test_log.txt
 echo "# `date`" > $INSTALL_LOG
 echo "# `date`" > $TEST_LOG
 
-exportVERBOSE=1
+export VERBOSE=1
 exit_code=0
-
+NODES=''
 
 function install_topology
 {
@@ -47,6 +47,7 @@ function install_topology
     fi
     if [ -f /tmp/test_log$$ ] ; then rm /tmp/test_log$$ ; fi
     . $cookbook_dir/BOOTSTRAP.sh NODES_$UCTOPOLOGY.sh
+    export NODES=$cookbook_dir/NODES_$UCTOPOLOGY.sh
 }
 
 function uninstall_topology
@@ -71,7 +72,8 @@ function test_one_topology
 {
     TOPOLOGY=$1
     METHOD=$2
-    MYSQL_VERSION=$($MYSQL -h ${MASTERS[0]} -BN -e 'select @@version'| perl -lne 'print $1 if /(\d+\.\d+)/')
+    . $NODES
+    MYSQL_VERSION=$($MYSQL -h ${MASTERS[0]} -BN -e 'select version()'| perl -lne 'print $1 if /(\d+\.\d+)/')
     if [ -z "$MYSQL_VERSION" ]
     then
         echo "error detecting MySQL version"
