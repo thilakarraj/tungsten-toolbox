@@ -71,16 +71,31 @@ function test_one_topology
 {
     TOPOLOGY=$1
     METHOD=$2
+    MYSQL_VERSION=$($MYSQL -h ${MASTERS[0]} -BN -e 'select @@version'| perl -lne 'print $1 if /(\d+\.\d+)/')
+    if [ -z "$MYSQL_VERSION" ]
+    then
+        echo "error detecting MySQL version"
+        exit 1
+    fi
+
     if [ -n "$TEST_UNDER_LOAD" ]
     then
         $cookbook_dir/load_data >> $INSTALL_LOG
     fi
-    for MODE in statement row mixed 
+    formats=(statement row mixed)
+    if [ "$MYSQL_VERSION" != "5.0" ]
+    then
+        formats=(statement)
+    fi
+    for MODE in ${formats[*]}
     do
-        for MASTER in ${MASTERS[*]}
-        do
-            $MYSQL -h $MASTER -e "set global binlog_format=$MODE"
-        done 
+        if [ "$MYSQL_VERSION" != "5.0" ]
+        then
+            for MASTER in ${MASTERS[*]}
+            do
+                $MYSQL -h $MASTER -e "set global binlog_format=$MODE"
+            done 
+        fi
         echo "# testing with binlog_format=$MODE" >> /tmp/test_log$$ 
         echo "# testing with binlog_format=$MODE" 
         $cookbook_dir/show_cluster 

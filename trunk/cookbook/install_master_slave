@@ -86,7 +86,7 @@ else
         --replication-password=$DATABASE_PASSWORD \
         --replication-port=$DATABASE_PORT \
         --home-directory=$TUNGSTEN_BASE \
-        --members=$HOSTS_LIST \
+        --slaves=$SLAVES_LIST \
         --skip-validation-check=InstallationScriptCheck
         --datasource-mysql-conf=$MY_CNF \
         --datasource-log-directory=$BINLOG_DIRECTORY \

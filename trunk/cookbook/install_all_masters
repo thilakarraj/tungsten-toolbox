@@ -42,8 +42,7 @@ then
         -a --datasource-boot-script=$MYSQL_BOOT_SCRIPT \
         --rmi-port=$RMI_PORT \
         --thl-port=$THL_PORT \
-        --master=$MASTERS_LIST \
-        --members=$HOSTS_LIST \
+        --masters=$MASTERS_LIST \
         --master-services=$MASTER_SERVICES_LIST \
         --topology=all-masters \
         $MORE_OPTIONS $MORE_TPM_OPTIONS --$START_OPTION"

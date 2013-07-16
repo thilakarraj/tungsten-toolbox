@@ -25,7 +25,7 @@ NODES_FAN_IN.sh                        Nodes definition for a fan-in topology
 ## pre-installation tools
 #########################
 pre_req_checker/tungsten_prereq        Checks and installs pre-requisites
-deploy_to_sandboxes                    Create database sandboxes in all servers for further installation
+deploy_sandboxes                       Create database sandboxes in all servers for further installation
 validate_cluster                       Validates the cluster with all the installation pre-checks
 
 #########################
