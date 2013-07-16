@@ -266,6 +266,7 @@ function post_installation
 {
     write_my_cookbook_cnf
     TOPOLOGY=$(cat $CURRENT_TOPOLOGY)
+    DB_USE=$cookbook_dir/db_use
     TUNGSTEN_RELEASE=$(grep RELEASE $cookbook_dir/../.manifest| awk '{print $2}')  
     echo "Deployment completed "
     echo "Topology         :'$TOPOLOGY'"                                            > $INSTALL_SUMMARY
@@ -276,8 +277,14 @@ function post_installation
     echo "MySQL version    : $($MYSQL -h ${MASTERS[0]} -BN -e 'select @@version')" >> $INSTALL_SUMMARY
     echo "MySQL port       : $DATABASE_PORT"                                       >> $INSTALL_SUMMARY
     echo "MySQL shortcut   : $MYSQL"                                               >> $INSTALL_SUMMARY
+    echo "                 : (or $DB_USE)"                                         >> $INSTALL_SUMMARY
     echo "Tungsten release : $TUNGSTEN_RELEASE"                                    >> $INSTALL_SUMMARY
     echo "Installation log : $INSTALL_LOG"                                         >> $INSTALL_SUMMARY
+
+
+    echo "#!/bin/bash" > $DB_USE
+    echo "mysql --defaults-file=$MY_COOKBOOK_CNF \$*" >> $DB_USE
+    chmod +x $DB_USE
 
     for NODE in ${ALL_NODES[*]}
     do  
@@ -288,6 +295,7 @@ function post_installation
             scp -q $MY_COOKBOOK_CNF $NODE:$TUNGSTEN_BASE/tungsten/cookbook/
             scp -q $INSTALL_LOG $NODE:$TUNGSTEN_BASE/tungsten/cookbook/
             scp -q $INSTALL_SUMMARY $NODE:$TUNGSTEN_BASE/tungsten/cookbook/
+            scp -q $DB_USE $NODE:$TUNGSTEN_BASE/tungsten/cookbook/
         fi
     done
 

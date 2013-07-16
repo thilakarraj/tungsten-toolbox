@@ -241,10 +241,14 @@ do
         COUNT=$(($COUNT+1))
         if [ -n "$BINLOG_FORMAT" ]
         then
-            echo "# Setting binlog format to '$BINLOG_FORMAT'"
-            $MYSQL -h $NODE -e "set global binlog_format=$BINLOG_FORMAT"
+            if [ "$MYSQL_VERSION" != "5.0" ]
+            then
+                echo "# Setting binlog format to '$BINLOG_FORMAT'"
+                $MYSQL -h $NODE -e "set global binlog_format=$BINLOG_FORMAT"
+            fi
         fi
-        CURRENT_FORMAT=$($MYSQL -BN -h $NODE -e "select @@binlog_format ")
+        CURRENT_FORMAT=$($MYSQL -BN -h $NODE -e "show variables like 'binlog_format' " | awk '{print $2}' )
+        [ -z "$CURRENT_FORMAT" ] && CURRENT_FORMAT=statement
         echo "# binlog format: $CURRENT_FORMAT"
         $MYSQL -h $NODE -e "drop table if exists test.t$COUNT"
         check_for_table "test" "t$COUNT" 0 $NODE

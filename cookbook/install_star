@@ -47,13 +47,14 @@ then
         --repl-disable-relay-logs=true \
         --rmi-port=$RMI_PORT \
         --thl-port=$THL_PORT \
-        --master=$MASTERS_LIST \
-        --members=$HOSTS_LIST \
+        --masters=$MASTERS_LIST \
         --hub=$HUB \
         --hub-service=$HUB_SERVICE \
         --master-services=$MASTER_SERVICES_LIST \
         --topology=star \
         $MORE_OPTIONS $MORE_TPM_OPTIONS --$START_OPTION"
+
+#        --members=$HOSTS_LIST \
 
     run_command $INSTALL_COMMAND 
 

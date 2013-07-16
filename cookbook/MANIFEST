@@ -19,7 +19,7 @@ collect_logs
 conf
 configure_service
 copy_backup
-deploy_to_sandboxes
+deploy_sandboxes
 edit_conf
 emacsconf
 emacslog
