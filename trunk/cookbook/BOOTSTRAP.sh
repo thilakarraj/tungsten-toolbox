@@ -257,6 +257,7 @@ function write_my_cookbook_cnf
     echo "user=$DATABASE_USER"               >> $MY_COOKBOOK_CNF
     echo "password=$DATABASE_PASSWORD"       >> $MY_COOKBOOK_CNF
     echo "port=$DATABASE_PORT"               >> $MY_COOKBOOK_CNF
+    echo "host=__HOST__"                     >> $MY_COOKBOOK_CNF
     echo ''                                  >> $MY_COOKBOOK_CNF
     echo '[mysql]'                           >> $MY_COOKBOOK_CNF
     echo "prompt='*mysql [\h] {\u} (\d) > '" >> $MY_COOKBOOK_CNF
@@ -288,17 +289,22 @@ function post_installation
 
     for NODE in ${ALL_NODES[*]}
     do  
+        MY_REMOTE_CNF=/tmp/my_template$$.cnf
+        MY_BARE_CNF=$(basename $MY_COOKBOOK_CNF)
+        cp $MY_COOKBOOK_CNF $MY_REMOTE_CNF
+        perl -i -pe "s/__HOST__/$NODE/" $MY_REMOTE_CNF
         DEPLOYED=$(ssh $NODE "if [ -d $TUNGSTEN_BASE ] ; then echo 'yes' ; fi")
         if [ "$DEPLOYED" == "yes" ]
         then
             scp -q $CURRENT_TOPOLOGY $NODE:$TUNGSTEN_BASE/tungsten/  
-            scp -q $MY_COOKBOOK_CNF $NODE:$TUNGSTEN_BASE/tungsten/cookbook/
+            scp -q $MY_REMOTE_CNF $NODE:$TUNGSTEN_BASE/tungsten/cookbook/$MY_BARE_CNF
             scp -q $INSTALL_LOG $NODE:$TUNGSTEN_BASE/tungsten/cookbook/
             scp -q $INSTALL_SUMMARY $NODE:$TUNGSTEN_BASE/tungsten/cookbook/
             scp -q $DB_USE $NODE:$TUNGSTEN_BASE/tungsten/cookbook/
         fi
+        rm $MY_REMOTE_CNF
     done
-
+    cp $TUNGSTEN_BASE/tungsten/cookbook/$MY_BARE_CNF $MY_COOKBOOK_CNF
     cat $INSTALL_SUMMARY
 
 }
