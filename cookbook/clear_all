@@ -58,5 +58,7 @@ do
     fi
 done
 
-[ -f $INSTALL_LOG ] && rm -f $INSTALL_LOG
-[ -f $CURRENT_TOPOLOGY ] && rm -f $CURRENT_TOPOLOGY
+for F in $INSTALL_LOG $CURRENT_TOPOLOGY $cookbook_dir/my.cookbook.cnf $cookbook_dir/db_use $cookbook_dir/current_install.summary
+do
+    [ -f $F ] && rm -f $F
+done

@@ -9,6 +9,20 @@ cookbook_dir=$(dirname $0)
 [ -z "$SANDBOX_DIR" ]   && SANDBOX_DIR=tungsten_deployment
 UPDATE_USER_VALUES=1
 NODES_LIST=
+REMOVE_SANDBOXES=$cookbook_dir/remove_sandboxes
+RESTORE_USER_VALUES=$cookbook_dir/restore_user_values
+
+for F in $REMOVE_SANDBOXES $RESTORE_USER_VALUES 
+do
+    if [ -f  $F ]
+    then
+        echo "Found the file $F. "
+        echo "It means that there is another set of sandboxes installed and a modified USER_VALUES.sh"
+        echo "To continue, please uninstall the sandboxes "
+        echo " and return the file USER_VALUES.sh to its prior contents using $RESTORE_USER_VALUES."
+        exit 1
+    fi
+done
 
 NODES_FILE=COMMON_NODES
 TARBALL=
@@ -166,23 +180,21 @@ fi
 
 # updating USER_VALUES
 
-REMOVE_SANDBOXES=$cookbook_dir/remove_sandboxes
-RESTORE_USER_VALUES=$cookbook_dir/restore_user_values
-
 echo "#!/bin/bash" > $REMOVE_SANDBOXES
-echo "#!/bin/bash" > $RESTORE_USER_VALUES
-
 for HOST in ${NODES[*]} 
 do 
     CMD="ssh $HOST 'if [ -d $HOME/sandboxes/$SANDBOX_DIR ] ; then sbtool -o delete -s $HOME/sandboxes/$SANDBOX_DIR ; fi'"
     echo $CMD >> $REMOVE_SANDBOXES
 done
+echo 'rm -f $0' >> $REMOVE_SANDBOXES
 
+echo "#!/bin/bash" > $RESTORE_USER_VALUES
 echo "cp $cookbook_dir/USER_VALUES.sh $cookbook_dir/USER_VALUES.sh.sandbox" >> $RESTORE_USER_VALUES
 echo "cp $cookbook_dir/USER_VALUES.local.sh $cookbook_dir/USER_VALUES.local.sh.sandbox" >> $RESTORE_USER_VALUES
 echo "cp $cookbook_dir/USER_VALUES.sh.save $cookbook_dir/USER_VALUES.sh" >> $RESTORE_USER_VALUES
 echo "cp $cookbook_dir/USER_VALUES.local.sh.save $cookbook_dir/USER_VALUES.local.sh" >> $RESTORE_USER_VALUES
 echo "echo 'USER_VALUES.sh and USER_VALUES.local.sh were restored to their contents prior to the sandbox installation'" >> $RESTORE_USER_VALUES
+echo 'rm -f $0' >> $RESTORE_USER_VALUES
 
 chmod +x $REMOVE_SANDBOXES
 chmod +x $RESTORE_USER_VALUES
@@ -230,4 +242,7 @@ cat $INCLUDE_FILE
 echo $LINE
 echo "to remove the sandboxes, run "
 echo "$REMOVE_SANDBOXES"
+echo $LINE
+echo "to restore USER_VALUES.sh to its original contents, run" 
+echo "$RESTORE_USER_VALUES"
 
