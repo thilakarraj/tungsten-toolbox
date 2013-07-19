@@ -3,6 +3,7 @@
 # Version 1.0.5 - 2013-04-03
 
 cookbook_dir=$(dirname $0)
+cd "$cookbook_dir/.."
 
 NODES=$1
 if [ -z "$NODES" ]
@@ -283,14 +284,15 @@ function post_installation
     echo "Installation log : $INSTALL_LOG"                                         >> $INSTALL_SUMMARY
 
 
+    MY_BARE_CNF=$(basename $MY_COOKBOOK_CNF)
     echo "#!/bin/bash" > $DB_USE
-    echo "mysql --defaults-file=$MY_COOKBOOK_CNF \$*" >> $DB_USE
+    echo 'cookbook_dir=$(dirname $0)' >> $DB_USE
+    echo "mysql --defaults-file=\$cookbook_dir/$MY_BARE_CNF \$*" >> $DB_USE
     chmod +x $DB_USE
 
     for NODE in ${ALL_NODES[*]}
     do  
         MY_REMOTE_CNF=/tmp/my_template$$.cnf
-        MY_BARE_CNF=$(basename $MY_COOKBOOK_CNF)
         cp $MY_COOKBOOK_CNF $MY_REMOTE_CNF
         perl -i -pe "s/__HOST__/$NODE/" $MY_REMOTE_CNF
         DEPLOYED=$(ssh $NODE "if [ -d $TUNGSTEN_BASE ] ; then echo 'yes' ; fi")
