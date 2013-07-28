@@ -90,11 +90,21 @@ do
             ;;
         -P)
             export MYSQL_PORT=$2
+            if [ ! -d ~/opt/mysql/$MYSQL_VERSION ]
+            then
+                echo "Directory $MYSQL_VERSION not found in ~/opt/mysql"
+                exit 1
+            fi
             shift
             shift
             ;;
         -t)
             export TARBALL=$2
+            if [ ! -f $TARBALL ]
+            then
+                echo " file $TARBALL not found"
+                exit 1
+            fi
             shift
             shift
             ;;
@@ -110,6 +120,12 @@ do
     esac
 done
 
+
+if [ -n "$1" ]
+then
+    echo "unexpected argument '$1'"
+    show_help
+fi
 
 if [ -z "$NODES_LIST" ]
 then
@@ -162,6 +178,11 @@ do
    fi
    scp -p $BUILD_SB $HOST:$BUILD_SB
    ssh $HOST $BUILD_SB $SERVER_ID_COUNTER
+   if [ "$?" != "0" ]
+   then
+       echo "Error installing sandbox in node $HOST"
+       exit 1
+   fi
 done
 
 . $cookbook_dir/USER_VALUES.sh

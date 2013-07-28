@@ -11,16 +11,20 @@ else
     export NODE2=
     export NODE3=
     export NODE4=
+    export NODE5=
+    export NODE6=
+    export NODE7=
+    export NODE8=
 fi
 
-export ALL_NODES=($NODE1 $NODE2 $NODE3 $NODE4)
+export ALL_NODES=($NODE1 $NODE2 $NODE3 $NODE4 $NODE5 $NODE6 $NODE7 $NODE8)
 # indicate which servers will be masters, and which ones will have a slave service
 # in case of all-masters topologies, these two arrays will be the same as $ALL_NODES
 # These values are used for automated testing
 
 # for all-masters and star replication
-export MASTERS=($NODE1 $NODE2 $NODE3 $NODE4)
-export SLAVES=($NODE1 $NODE2 $NODE3 $NODE4)
+export MASTERS=($NODE1 $NODE2 $NODE3 $NODE4 $NODE5 $NODE6 $NODE7 $NODE8)
+export SLAVES=($NODE1 $NODE2 $NODE3 $NODE4 $NODE5 $NODE6 $NODE7 $NODE8)
 export HUB=$NODE3
 
 # MMSERVICES are the names used for services when installing multiple masters
