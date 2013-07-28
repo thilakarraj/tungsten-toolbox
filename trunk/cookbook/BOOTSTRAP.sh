@@ -100,7 +100,9 @@ export MASTER_SERVICES_LIST
 
 CURRENT_HOST=$(hostname)
 INSTALLER_IN_CLUSTER=0
-CURRENT_HOST_IP=$(hostname --ip)
+# CURRENT_HOST_IP=$(hostname --ip)
+CURRENT_HOST_IPs=$(/sbin/ifconfig |perl -lne 'if ( /inet/) {print $1 if /\s*(\d+\.\d+\.\d+\.\d+)/}')
+
 
 function check_if_installer_is_in_cluster
 {
@@ -111,18 +113,24 @@ function check_if_installer_is_in_cluster
             INSTALLER_IN_CLUSTER=1
             return
         else
-            # Check if the IP for the hostname is associated with
-            # one of the hosts defined for this cluster
-            for LINE in $(grep $CURRENT_HOST_IP /etc/hosts | grep -v '^#')
+            for CURRENT_HOST_IP in $CURRENT_HOST_IPs
             do
-                for ITEM in $LINE
-                do
-                    if [ "$ITEM" == "$HOST" ]
-                    then
-                        INSTALLER_IN_CLUSTER=1
-                        return
-                    fi
-                done 
+                if [ "$CURRENT_HOST_IP" != '127.0.0.1' ]
+                then
+		    # Check if the IP for the hostname is associated with
+		    # one of the hosts defined for this cluster
+		    for LINE in $(grep $CURRENT_HOST_IP /etc/hosts | grep -v '^#')
+		    do
+			for ITEM in $LINE
+			do
+			    if [ "$ITEM" == "$HOST" ]
+			    then
+				INSTALLER_IN_CLUSTER=1
+				return
+			    fi
+			done 
+		    done
+                fi
             done
         fi
     done

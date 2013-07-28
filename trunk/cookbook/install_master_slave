@@ -80,6 +80,7 @@ else
             echo "# Using tpm"
         fi
         INSTALL_COMMAND="./tools/tpm install $TUNGSTEN_SERVICE \
+        --reset \
         --master=$MASTER \
         --log=timestamp \
         --replication-user=$DATABASE_USER \
