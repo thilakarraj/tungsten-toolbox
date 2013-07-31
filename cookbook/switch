@@ -86,10 +86,19 @@ $TREPCTL -host $NEW_MASTER setrole -role master
 echo trepctl -host $NEW_MASTER online
 $TREPCTL -host $NEW_MASTER online
 
+IS_SECURE=$($TREPCTL -host $NEW_MASTER status | grep masterListenUri | awk '{print $3}' | grep 'thls://' )
+
+if [ -n "$IS_SECURE" ]
+then
+    THL='thls'
+else
+    THL='thl'
+fi
+
 for SLAVE in ${NEW_SLAVES[*]} 
 do
-	echo trepctl -host $SLAVE setrole -role slave -uri thl://$NEW_MASTER:2112
-	$TREPCTL -host $SLAVE setrole -role slave -uri thl://$NEW_MASTER:2112
+	echo trepctl -host $SLAVE setrole -role slave -uri $THL://$NEW_MASTER:2112
+	$TREPCTL -host $SLAVE setrole -role slave -uri $THL://$NEW_MASTER:2112
 	echo trepctl -host $SLAVE online
 	$TREPCTL -host $SLAVE online
 done
