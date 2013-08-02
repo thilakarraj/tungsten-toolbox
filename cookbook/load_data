@@ -80,6 +80,7 @@ do
         fi
     fi
     db=$(echo $HOST | tr '\.' '_' )
+    db=$(echo $db | tr '-' '_' )
     if [ "$OPERATION" == "start" ]
     then
         if [ -d $JOB_INFO_PATH/$db ]
