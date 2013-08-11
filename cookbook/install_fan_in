@@ -1,6 +1,6 @@
 #!/bin/bash
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
-# Version 1.0.5 - 2013-04-03
+# Version 1.0.6 - 2013-08-11
 
 cookbook_dir=$(dirname $0)
 cd "$cookbook_dir/../"
@@ -30,6 +30,7 @@ COMMAND_SEQUENCE=1
 # install fan in
 if [ -n "$USE_TPM" ]
 then
+    check_security
     MEMBERS=${MASTERS[*]}
     SERVICE_INDEX=0
     INSTALL_COMMAND="./tools/tpm install fan_in \
@@ -50,7 +51,7 @@ then
         --slaves=$FAN_IN_SLAVE \
         --master-services=$MASTER_SERVICES_LIST \
         --topology=fan-in \
-        $MORE_OPTIONS $MORE_TPM_OPTIONS --$START_OPTION"
+        $MORE_OPTIONS $MORE_TPM_OPTIONS $SECURITY_OPTIONS --$START_OPTION"
 
     run_command $INSTALL_COMMAND 
 else

@@ -24,6 +24,7 @@ NODES_FAN_IN.sh                        Nodes definition for a fan-in topology
 #########################
 ## pre-installation tools
 #########################
+create-security-keys                   Creates keys needed for security installation
 pre_req_checker/tungsten_prereq        Checks and installs pre-requisites
 deploy_sandboxes                       Create database sandboxes in all servers for further installation
 validate_cluster                       Validates the cluster with all the installation pre-checks
@@ -107,6 +108,9 @@ VERBOSE=1                              Gives more information during installatio
 VERBOSE=2                              Enables debug mode during validation
 DRYRUN=1                               Used by all installation scripts. Shows installation commands
 MORE_OPTIONS="..."                     Used by all installation scripts. Adds more options to the installer command
+USE_TPM=1                              Enables installation with tpm
+MORE_TPM_OPTIONS="..."                 Used by all installation scripts. Adds more options to the installer command when using tpm
+WITH_SECURITY=1                        Enables installation with security. Only with tpm installation
 ## USED DURING TEST
 BINLOG_FORMAT={STATEMENT|MIXED|ROW}    Changes the default binlog format in each master before running the test
 ## USED DURING CLEAN-UP

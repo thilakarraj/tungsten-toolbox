@@ -19,6 +19,7 @@ collect_logs
 conf
 configure_service
 copy_backup
+create-security-keys
 deploy_sandboxes
 edit_conf
 emacsconf

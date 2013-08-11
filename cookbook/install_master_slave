@@ -1,6 +1,6 @@
 #!/bin/bash
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
-# Version 1.0.5 - 2013-04-03
+# Version 1.0.6 - 2013-08-11
 
 cookbook_dir=$(dirname $0)
 cd "$cookbook_dir/../"
@@ -74,6 +74,7 @@ then
 else
     if [ -n "$USE_TPM" ]
     then
+        check_security
         rm -f deploy.cfg*
         if [ -n "$VERBOSE" ]
         then
@@ -96,7 +97,7 @@ else
         --rmi-port=$RMI_PORT \
         --thl-port=$THL_PORT \
         --topology=master-slave \
-        $MORE_OPTIONS $MORE_TPM_OPTIONS --$START_OPTION"     
+        $MORE_OPTIONS $MORE_TPM_OPTIONS $SECURITY_OPTIONS --$START_OPTION"     
     else
         INSTALL_COMMAND="./tools/tungsten-installer \
             --master-slave \

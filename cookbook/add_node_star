@@ -4,6 +4,8 @@
 
 cookbook_dir=$(dirname $0)
 
+echo "WARNING: This command is deprecated - Future versions of Tungsten Cookbook will only support tpm-based installations"
+
 if [ ! -f $cookbook_dir/BOOTSTRAP.sh ]
 then
     echo "$cookbook_dir/BOOTSTRAP.sh not found"

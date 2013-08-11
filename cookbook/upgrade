@@ -3,6 +3,9 @@
 # Version 1.0.5 - 2013-04-03
 
 cookbook_dir=$(dirname $0)
+
+echo "WARNING: This command is deprecated - Future versions of Tungsten Cookbook will only support tpm-based installations"
+
 cd "$cookbook_dir/../"
 
 if [ -f CURRENT_TOPOLOGY ]

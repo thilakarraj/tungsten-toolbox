@@ -1,6 +1,6 @@
 #!/bin/bash
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
-# Version 1.0.5 - 2013-04-03
+# Version 1.0.6 - 2013-08-11
 cookbook_dir=$(dirname $0)
 
 if [ ! -f $cookbook_dir/../CURRENT_TOPOLOGY ]
@@ -56,6 +56,7 @@ fi
 
 for NODE in ${ALL_NODES[*]}
 do
+    $TREPCTL -host $NODE services -full | grep -w masterConnectUri > $TMPDIR/services$$.secure.$NODE &
     $TREPCTL -host $NODE services | $SIMPLE_SERVICES > $TMPDIR/services$$.$NODE &
 done
 
@@ -63,7 +64,14 @@ wait
 
 for NODE in ${ALL_NODES[*]}
 do
-    echo "# node $NODE"
+    IS_SECURE=$(grep 'thls://' $TMPDIR/services$$.secure.$NODE)
+    SECURITY_FLAG=''
+    if [ -n "$IS_SECURE" ]
+    then
+        SECURITY_FLAG="(ssl)"
+    fi
+    echo "# node $NODE $SECURITY_FLAG"
     cat $TMPDIR/services$$.$NODE
     rm $TMPDIR/services$$.$NODE
+    rm $TMPDIR/services$$.secure.$NODE
 done
