@@ -86,7 +86,7 @@ while (my $line = <STDIN>)
 
 my $service_template = 
       "%-${name_len}s  [%s]\t"                      # name role
-    . "seqno: %10s  - latency: %7.3f - %s\n\n";     # seqno latency state    
+    . "seqno: %10s  - latency: %7.3f - %s\n";     # seqno latency state    
 
 $count =0;
 for my $serv (@services)

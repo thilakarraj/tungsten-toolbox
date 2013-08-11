@@ -1,6 +1,6 @@
 #!/bin/bash
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
-# Version 1.0.5 - 2013-04-03
+# Version 1.0.6 - 2013-08-11
 
 cookbook_dir=$(dirname $0)
 
@@ -104,6 +104,21 @@ function ok_greater
     TESTS=$(($TESTS+1))
 }
 
+function check_security_status
+{
+    for NODE in ${ALL_NODES[*]}
+    do
+        IS_SECURE=$( $TREPCTL -host $NODE services -full | grep -w masterConnectUri | grep 'thls://')
+        if [ -n "IS_SECURE" ]
+        then
+            SECURITY_FLAG="SECURED USING SSL"
+        else
+            SECURITY_FLAG="UNENCRYPTED"
+        fi
+        echo "# security status for node $NODE: $SECURITY_FLAG"
+    done
+}
+
 function check_if_replicators_are_running
 {
     msg=$1
@@ -124,6 +139,7 @@ function check_if_replicators_are_running
     done
 }
 
+check_security_status
 check_if_replicators_are_running 'Before tests'
 
 DATA_POSTFIX=''
@@ -323,6 +339,7 @@ do
 done  # iter
 
 check_if_replicators_are_running 'After tests'
+check_security_status
 #
 PASSED_PERCENTAGE=$(ruby -e 'print eval(ARGV[0])' "$PASSED.0/$TESTS.0*100" )
 FAILED_PERCENTAGE=$(ruby -e 'print eval(ARGV[0])' "$FAILED.0/$TESTS.0*100" )

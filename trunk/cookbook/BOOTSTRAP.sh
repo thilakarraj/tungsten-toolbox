@@ -1,6 +1,6 @@
 #!/bin/bash
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
-# Version 1.0.5 - 2013-04-03
+# Version 1.0.6 - 2013-08-11
 
 cookbook_dir=$(dirname $0)
 cd "$cookbook_dir/.."
@@ -182,6 +182,54 @@ function check_installed
         echo "Run cookbook/clear_cluster to remove this installation"
         exit 1
     fi 
+}
+
+keystore=$cookbook_dir/keystore.jks
+truststore=$cookbook_dir/truststore.ts
+certificate=$cookbook_dir/client.cer
+password_store=$cookbook_dir/passwords.store
+jmxremote=$cookbook_dir/jmxremote.access
+security_options=$cookbook_dir/security.options
+
+security_files=( $keystore $truststore $certificate $password_store $jmxremote $security_options )
+
+function check_security_files
+{
+    all_files_exist=1
+    for SF in ${security_files[*]}
+    do
+        if [ ! -f $SF ]
+        then
+            echo "Missing file $SF"
+            all_files_exist=0
+        fi
+    done
+    if [ "$all_files_exist" == "0" ]
+    then
+        exit 1
+    fi
+}
+
+
+function check_security
+{
+    if [ -n "$WITH_SECURITY" ]
+    then
+       if [ -f $security_options ]
+       then
+            export SECURITY_OPTIONS=$(cat $security_options)
+        else
+            if [ -x "$cookbook_dir/create-security-keys" ]
+            then
+                $cookbook_dir/create-security-keys cookbookpass
+                check_security_files
+                export SECURITY_OPTIONS=$(cat $security_options)
+            else
+                echo "$cookbook_dir/create-security-keys not found"
+                exit 1
+            fi 
+       fi 
+    fi
 }
 
 function check_current_topology

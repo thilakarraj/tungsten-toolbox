@@ -1,6 +1,6 @@
 #!/bin/bash
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
-# Version 1.0.5 - 2013-04-03
+# Version 1.0.6 - 2013-08-11
 cookbook_dir=$(dirname $0)
 cd "$cookbook_dir/../"
 
@@ -33,6 +33,7 @@ fi
 COMMAND_SEQUENCE=1
 if [ -n "$USE_TPM" ]
 then
+    check_security
     INSTALL_COMMAND="./tools/tpm install star \
         --reset \
         --log=timestamp \
@@ -52,7 +53,7 @@ then
         --hub-service=$HUB_SERVICE \
         --master-services=$MASTER_SERVICES_LIST \
         --topology=star \
-        $MORE_OPTIONS $MORE_TPM_OPTIONS --$START_OPTION"
+        $MORE_OPTIONS $MORE_TPM_OPTIONS $SECURITY_OPTIONS --$START_OPTION"
 
 #        --members=$HOSTS_LIST \
 
