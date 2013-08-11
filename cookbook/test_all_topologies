@@ -128,10 +128,16 @@ function test_one_topology
     rm /tmp/test_log$$
 }
 
+INSTALLERS='tungsten_installer tpm'
+
+if [ -n "$WITH_SECURITY" ]
+then
+    INSTALLERS=tpm
+fi
 
 for TOPOLOGY in master_slave fan_in all_masters star 
 do
-    for METHOD in tungsten_installer tpm
+    for METHOD in $INSTALLERS
     do
         install_topology $TOPOLOGY $METHOD
 
