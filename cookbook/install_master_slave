@@ -23,6 +23,7 @@ date >> $INSTALL_LOG
 
 if [ -n "$DRYRUN" ]
 then
+    echo "WARNING: DRYRUN is deprecated - Future versions of Tungsten Cookbook will only support tpm-based installations"
     [ -z "$VERBOSE" ] && VERBOSE=1
 fi 
 
@@ -31,6 +32,7 @@ COMMAND_SEQUENCE=1
 
 if [ -n "$VALIDATE_ONLY"  ]
 then
+    export USE_TPM=1
     MORE_OPTIONS="$MORE_OPTIONS --validate-only -a"
     if [ -n "$VERBOSE" ]
     then
