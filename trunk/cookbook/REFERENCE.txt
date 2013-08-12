@@ -36,16 +36,16 @@ install_master_slave                   Installs a master-slave topology
 install_all_masters                    Installs an all-masters topology
 install_fan_in                         Installs a fan-in topology
 install_star                           Installs a star topology
-install_master_slave_direct            Installs a master-slave topology with 'direct mode'
+install_master_slave_direct            Installs a master-slave topology with 'direct mode' (DEPRECATED: pending installation with tpm)
 install_standard_replication           Installs standard MySQL replication
-upgrade                                Provides the commands needed to upgrade from the previous version
+upgrade                                Provides the commands needed to upgrade from the previous version (DEPRECATED: pending installation with tpm)
 
 #########################
 ## Administrative tools
 #########################
 take-over                              Takes over a master-slave cluster from MySQL replication
-add_node_master_slave                  Add a node to a master-slave topology
-add_node_star                          Add a node to a star topology
+add_node_master_slave                  Add a node to a master-slave topology (DEPRECATED: pending installation with tpm)
+add_node_star                          Add a node to a star topology (DEPRECATED: pending installation with tpm)
 switch                                 Switches role between the master and one given slave
 collect_logs                           Gets all the logs from all servers
 load_data                              Starts concurrent transaction load in all masters

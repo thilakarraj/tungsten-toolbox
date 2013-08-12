@@ -26,7 +26,7 @@ for FILE in $keystore $truststore $certificate $password_store
 do
     if [ -f $FILE ]
     then
-        echo "File $FILE already exists - please kove it or delete it before continuing"
+        echo "File $FILE already exists - please move it or delete it before continuing"
         CONFLICT=1
     fi
 done
@@ -113,6 +113,12 @@ SECURITY_OPTIONS="
     --java-passwordstore-path=$password_store "
 
 echo $SECURITY_OPTIONS > $cookbook_dir/security.options
+LINE="# ---------------------------------------------------------------------"
+echo $LINE
+echo "# Options for tpm"
+echo $SECURITY_OPTIONS | perl -pe 's/--/\\\n\t--/g'
+echo $LINE
+
 
 echo "$AUTH_USER        readwrite \\
               create javax.management.monitor.*,javax.management.timer.* \\
