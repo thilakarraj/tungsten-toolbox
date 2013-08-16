@@ -109,7 +109,7 @@ function check_security_status
     for NODE in ${ALL_NODES[*]}
     do
         IS_SECURE=$( $TREPCTL -host $NODE services -full | grep -w masterConnectUri | grep 'thls://')
-        if [ -n "IS_SECURE" ]
+        if [ -n "$IS_SECURE" ]
         then
             SECURITY_FLAG="SECURED USING SSL"
         else
