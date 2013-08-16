@@ -4,6 +4,7 @@
 
 cookbook_dir=$(dirname $0)
 cd "$cookbook_dir/.."
+STAGING_DIRECTORY=$PWD
 
 NODES=$1
 if [ -z "$NODES" ]
@@ -165,9 +166,32 @@ export TREPCTL="$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/trepctl -port $R
 export THL=$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/thl
 export INSTALL_LOG=$cookbook_dir/current_install.log
 export INSTALL_SUMMARY=$cookbook_dir/current_install.summary
+export STAGING_INFO=$HOME/tungsten_replicator_staging.info
+
+if [ -n "$WRITE_STAGING_INFO" ]
+then
+    if [ -d $WRITE_STAGING_INFO ]
+    then
+        for NODE in ${ALL_NODES[*]}
+        do
+            DIR_EXISTS=$(ssh $NODE "if [ -d $WRITE_STAGING_INFO ] ; then echo yes ; fi")
+            if [ "$DIR_EXISTS" != "yes" ]
+            then
+                echo "###  Directory '$WRITE_STAGING_INFO' does not exist in node $NODE"
+                CONFLICT=1
+            fi
+        done
+        if [ -n "$CONFLICT" ]
+        then
+            exit 1
+        fi
+        STAGING_INFO=$(basename $STAGING_INFO)
+        export STAGING_INFO="$WRITE_STAGING_INFO/$STAGING_INFO"
+    fi 
+fi
 
 CURRENT_TOPOLOGY=$cookbook_dir/../CURRENT_TOPOLOGY
-MY_COOKBOOK_CNF=$cookbook_dir/my.cookbook.cnf
+MY_COOKBOOK_CNF=$STAGING_DIRECTORY/cookbook/my.cookbook.cnf
 MYSQL="mysql --defaults-file=$MY_COOKBOOK_CNF"
 MYSQLDUMP="mysqldump --defaults-file=$MY_COOKBOOK_CNF"
 MYSQLADMIN="mysqladmin --defaults-file=$MY_COOKBOOK_CNF"
@@ -182,6 +206,26 @@ function check_installed
         echo "Run cookbook/clear_cluster to remove this installation"
         exit 1
     fi 
+    if [ -n "$WRITE_STAGING_INFO" ]
+    then
+        if [ -f $STAGING_INFO ]
+        then
+            if [ -n "$I_WANT_TO_UNINSTALL" ]
+            then
+                staging_host=$(perl -ne 'print $1 if /Staging server\s+: (\S+)/' $STAGING_INFO)
+                staging_dir=$(perl -ne 'print $1 if /Staging directory\s+: (\S+)/' $STAGING_INFO)
+                uninstall_exist=$(ssh -o StrictHostKeyChecking=no $staging_host "if [ -x $staging_dir/cookbook/clear_cluster ] ; then echo yes ; fi")
+                if [ -n "$uninstall_exist" ]
+                then
+                    ssh -o StrictHostKeyChecking=no $staging_host "I_WANT_TO_UNINSTALL=1 $staging_dir/cookbook/clear_cluster"
+                fi
+            else
+                echo "Found file $STAGING_INFO"
+                echo "It indicates a previous installation"
+                exit 1
+            fi
+        fi
+    fi
 }
 
 keystore=$cookbook_dir/keystore.jks
@@ -326,18 +370,21 @@ function post_installation
     TOPOLOGY=$(cat $CURRENT_TOPOLOGY)
     DB_USE=$cookbook_dir/db_use
     TUNGSTEN_RELEASE=$(grep RELEASE $cookbook_dir/../.manifest| awk '{print $2}')  
+    DB_USE=$STAGING_DIRECTORY/cookbook/db_use
     echo "Deployment completed "
-    echo "Topology         :'$TOPOLOGY'"                                            > $INSTALL_SUMMARY
-    echo "Tungsten path    : $TUNGSTEN_BASE "                                      >> $INSTALL_SUMMARY
-    echo "Nodes            : (${ALL_NODES[*]})"                                    >> $INSTALL_SUMMARY
-    echo "Master services  : (${MASTERS[*]})"                                      >> $INSTALL_SUMMARY
-    echo "Slave services   : (${SLAVES[*]})"                                       >> $INSTALL_SUMMARY
-    echo "MySQL version    : $($MYSQL -h ${MASTERS[0]} -BN -e 'select @@version')" >> $INSTALL_SUMMARY
-    echo "MySQL port       : $DATABASE_PORT"                                       >> $INSTALL_SUMMARY
-    echo "MySQL shortcut   : $MYSQL"                                               >> $INSTALL_SUMMARY
-    echo "                 : (or $DB_USE)"                                         >> $INSTALL_SUMMARY
-    echo "Tungsten release : $TUNGSTEN_RELEASE"                                    >> $INSTALL_SUMMARY
-    echo "Installation log : $INSTALL_LOG"                                         >> $INSTALL_SUMMARY
+    echo "Topology          :'$TOPOLOGY'"                                            > $INSTALL_SUMMARY
+    echo "Tungsten path     : $TUNGSTEN_BASE "                                      >> $INSTALL_SUMMARY
+    echo "Staging server    : $(hostname)"                                          >> $INSTALL_SUMMARY
+    echo "Staging directory : $PWD"                                                 >> $INSTALL_SUMMARY
+    echo "Nodes             : (${ALL_NODES[*]})"                                    >> $INSTALL_SUMMARY
+    echo "Master services   : (${MASTERS[*]})"                                      >> $INSTALL_SUMMARY
+    echo "Slave services    : (${SLAVES[*]})"                                       >> $INSTALL_SUMMARY
+    echo "MySQL version     : $($MYSQL -h ${MASTERS[0]} -BN -e 'select @@version')" >> $INSTALL_SUMMARY
+    echo "MySQL port        : $DATABASE_PORT"                                       >> $INSTALL_SUMMARY
+    echo "MySQL shortcut    : $MYSQL"                                               >> $INSTALL_SUMMARY
+    echo "                  : (or $DB_USE)"                                         >> $INSTALL_SUMMARY
+    echo "Tungsten release  : $TUNGSTEN_RELEASE"                                    >> $INSTALL_SUMMARY
+    echo "Installation log  : $INSTALL_LOG"                                         >> $INSTALL_SUMMARY
 
 
     MY_BARE_CNF=$(basename $MY_COOKBOOK_CNF)
@@ -358,6 +405,10 @@ function post_installation
             scp -q $MY_REMOTE_CNF $NODE:$TUNGSTEN_BASE/tungsten/cookbook/$MY_BARE_CNF
             scp -q $INSTALL_LOG $NODE:$TUNGSTEN_BASE/tungsten/cookbook/
             scp -q $INSTALL_SUMMARY $NODE:$TUNGSTEN_BASE/tungsten/cookbook/
+            if [ -n "$WRITE_STAGING_INFO" ]
+            then
+                scp -q $INSTALL_SUMMARY $NODE:$STAGING_INFO
+            fi
             scp -q $DB_USE $NODE:$TUNGSTEN_BASE/tungsten/cookbook/
         fi
         rm $MY_REMOTE_CNF

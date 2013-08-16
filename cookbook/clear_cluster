@@ -103,3 +103,11 @@ for F in $INSTALL_LOG $CURRENT_TOPOLOGY $cookbook_dir/my.cookbook.cnf $cookbook_
 do
     [ -f $F ] && rm -f $F
 done
+
+if [ -n "$STAGING_INFO" ]
+then
+    for NODE in ${ALL_NODES[*]} 
+    do 
+        ssh $NODE "if [ -f $STAGING_INFO ] ; then  rm -f $STAGING_INFO ; fi"
+    done
+fi
