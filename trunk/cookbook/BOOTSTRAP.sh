@@ -104,6 +104,34 @@ INSTALLER_IN_CLUSTER=0
 # CURRENT_HOST_IP=$(hostname --ip)
 CURRENT_HOST_IPs=$(/sbin/ifconfig |perl -lne 'if ( /inet/) {print $1 if /\s*(\d+\.\d+\.\d+\.\d+)/}')
 
+function check_for_deprecated_installer
+{
+    if [ -z "$USE_TPM" ]
+    then
+        LINE="## -------------------------------------------------------------------------------------"
+        [ -z "$INSTALLATION_DELAY" ] && INSTALLATION_DELAY=30
+        echo $LINE
+        echo "## Installation with deprecated method will resume in $INSTALLATION_DELAY seconds - Hit CTRL+C now to abort"
+        echo $LINE
+        echo "## WARNING: INSTALLATION WITH tungsten-installer and configure-service IS DEPRECATED"
+        echo "## Future versions of Tungsten Cookbook will only support tpm-based installations"
+        echo "## To install with tpm, please set the variable 'USE_TPM' and start again "
+        echo $LINE
+        for N in $(seq 1 $INSTALLATION_DELAY)
+        do
+            MOD_FIVE=$(($N%5))
+            if [ "$MOD_FIVE" == "0" ]
+            then
+                echo -n "$N"
+            else
+                echo -n '.'
+            fi
+            sleep 1
+        done
+        echo ''
+    fi
+}
+
 
 function check_if_installer_is_in_cluster
 {

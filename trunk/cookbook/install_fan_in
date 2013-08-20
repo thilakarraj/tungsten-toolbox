@@ -14,7 +14,7 @@ fi
 . $cookbook_dir/utilities.sh
 
 check_installed
-
+check_for_deprecated_installer
 # $cookbook_dir/clear_cluster
 
 echo "installing FAN-IN" >$INSTALL_LOG

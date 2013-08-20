@@ -58,6 +58,10 @@ fill_roles
 
 ## MYSQL is defined in BOOTSTRAP.sh
 # 
+if [ ! -f $MY_COOKBOOK_CNF ]
+then
+    write_my_cookbook_cnf
+fi
 
 echo "# $LONG_LINE"
 echo "# Testing cluster with installed topology '$TOPOLOGY'"

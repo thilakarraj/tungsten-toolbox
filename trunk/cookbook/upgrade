@@ -4,7 +4,20 @@
 
 cookbook_dir=$(dirname $0)
 
-echo "WARNING: This command is deprecated - Future versions of Tungsten Cookbook will only support tpm-based installations"
+function warning_deprecated
+{
+    LINE="### ---------------------------------------------------------------------------------"
+    echo $LINE
+    echo "## WARNING: This command is deprecated "
+    echo "## Future versions of Tungsten Cookbook will only support tpm-based installations"
+    echo "## To upgrade with tpm, please set the variable 'USE_TPM' and start again "
+    echo $LINE
+}
+
+if [ -z "$USE_TPM" ]
+then
+    warning_deprecated
+fi
 
 cd "$cookbook_dir/../"
 
@@ -79,18 +92,42 @@ echo "#-------------------------------------------"
 
 echo "# These commands will upgrade your system:"
 
+if [ -n "$USE_TPM" ]
+then
+    HOST_LIST=''
+    for NODE in ${NODES[*]}
+    do
+        # echo "ssh $NODE $TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/replicator stop"
+        if [ -n "$HOST_LIST" ]
+        then
+            HOST_LIST="$HOST_LIST,"
+        fi
+        HOST_LIST="$HOST_LIST$NODE"
+    done
+    echo "if [ -f ./deploy.cfg ] ; then rm ./deploy.cfg ; fi"
+    echo "./tools/tpm fetch --hosts=$HOST_LIST --directory=$TUNGSTEN_BASE"
+    echo "./tools/tpm update"
+    # echo "./tools/tpm start"
+    for NODE in ${NODES[*]}
+    do
+        echo "ssh $NODE 'echo $CURRENT_TOPOLOGY > $TUNGSTEN_BASE/tungsten/CURRENT_TOPOLOGY ' "
+    done
+    echo "echo $CURRENT_TOPOLOGY > ./CURRENT_TOPOLOGY "
 
-for NODE in ${NODES[*]}
-do
-    echo "# Upgrading node $NODE"
-    echo "ssh $NODE $TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/replicator stop"
+else
+    warning_deprecated
+    for NODE in ${NODES[*]}
+    do
+        echo "# Upgrading node $NODE"
+        echo "ssh $NODE $TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/replicator stop"
 
-    echo "./tools/update  --release-directory=$TUNGSTEN_BASE --host=$NODE $MORE_OPTIONS"
-    if [ "$CURRENT_TOPOLOGY" != "master_slave" ]
-    then
-        echo "ssh $NODE $TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/replicator restart"
-    fi
-    echo "ssh $NODE $TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/replicator status"
-    echo "ssh $NODE 'echo $CURRENT_TOPOLOGY > $TUNGSTEN_BASE/tungsten/CURRENT_TOPOLOGY ' "
-done
+        echo "./tools/update  --release-directory=$TUNGSTEN_BASE --host=$NODE $MORE_OPTIONS"
+        if [ "$CURRENT_TOPOLOGY" != "master_slave" ]
+        then
+            echo "ssh $NODE $TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/replicator restart"
+        fi
+        echo "ssh $NODE $TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/replicator status"
+    done
 
+    echo "echo $CURRENT_TOPOLOGY > ./CURRENT_TOPOLOGY"
+fi
