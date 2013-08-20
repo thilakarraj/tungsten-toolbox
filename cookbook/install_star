@@ -98,7 +98,7 @@ do
         $INSTALL_COMMAND
         if [ "$?" != "0"  ]
         then
-            exit
+            exit 1
         fi
     fi
     INDEX=$(($INDEX+1))
@@ -146,7 +146,7 @@ do
             $INSTALL_COMMAND
             if [ "$?" != "0"  ]
             then
-                exit
+                exit 1
             fi
         fi
         # Setting a slave service on the hub
@@ -181,7 +181,7 @@ do
 
             if [ "$?" != "0"  ]
             then
-                exit
+                exit 1
             fi
         fi
     fi

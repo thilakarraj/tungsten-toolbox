@@ -87,7 +87,7 @@ then
 
             if [ "$?" != "0"  ]
             then
-                exit
+                exit 1
             fi
         fi
         INDEX=$(($INDEX+1))
@@ -134,7 +134,7 @@ then
                     $INSTALL_COMMAND
                     if [ "$?" != "0"  ]
                     then
-                        exit
+                        exit 1
                     fi
                 fi
             fi
