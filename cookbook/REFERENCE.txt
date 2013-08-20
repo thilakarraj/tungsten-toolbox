@@ -110,9 +110,10 @@ DRYRUN=1                               Used by all installation scripts. Shows i
 MORE_OPTIONS="..."                     Used by all installation scripts. Adds more options to the installer command
 USE_TPM=1                              Enables installation with tpm
 MORE_TPM_OPTIONS="..."                 Used by all installation scripts. Adds more options to the installer command when using tpm
-WITH_SECURITY=1                        Enables installation with security. Only with tpm installation
+WITH_SECURITY=1                        Enables installation with security. Only with tpm installation.
 ## USED DURING TEST
 BINLOG_FORMAT={STATEMENT|MIXED|ROW}    Changes the default binlog format in each master before running the test
+TEST_UNDER_LOAD=1                      Runs test_cluster after launching load_data
 ## USED DURING CLEAN-UP
 STOP_REPLICATORS                       Stops the replicators
 REMOVE_TUNGSTEN_BASE                   Removes the directory where the software was installed

@@ -32,6 +32,7 @@ function install_topology
         rm -f deploy.cfg*
     else
         unset USE_TPM
+        export INSTALLATION_DELAY=0
     fi
     echo "# $TOPOLOGY (using $METHOD)" 
     echo "# $TOPOLOGY" >> $INSTALL_LOG
