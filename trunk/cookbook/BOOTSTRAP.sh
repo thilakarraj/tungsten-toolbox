@@ -418,7 +418,7 @@ function post_installation
     MY_BARE_CNF=$(basename $MY_COOKBOOK_CNF)
     echo "#!/bin/bash" > $DB_USE
     echo 'cookbook_dir=$(dirname $0)' >> $DB_USE
-    echo "mysql --defaults-file=\$cookbook_dir/$MY_BARE_CNF \$*" >> $DB_USE
+    echo "mysql --defaults-file=\$cookbook_dir/$MY_BARE_CNF \"\$*\"" >> $DB_USE
     chmod +x $DB_USE
 
     for NODE in ${ALL_NODES[*]}

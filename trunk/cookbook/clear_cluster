@@ -28,6 +28,10 @@ echo "Clearing up cluster with installed topology '$TOPOLOGY'"
 # check_current_topology $TOPOLOGY
 
 are_you_sure_you_want_to_clear
+if [ ! -f $MY_COOKBOOK_CNF ]
+then
+    write_my_cookbook_cnf
+fi
 
 if [ -f $cookbook_dir/data_loading ]
 then
