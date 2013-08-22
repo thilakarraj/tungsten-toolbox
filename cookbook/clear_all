@@ -13,8 +13,11 @@ fi
 . $cookbook_dir/BOOTSTRAP.sh NODES_MASTER_SLAVE.sh
 
 are_you_sure_you_want_to_clear
+if [ ! -f $MY_COOKBOOK_CNF ]
+then
+    write_my_cookbook_cnf
+fi
 
-write_my_cookbook_cnf
 # MYSQL="mysql -u $DATABASE_USER -p$DATABASE_PASSWORD -P $DATABASE_PORT"
 for NODE in ${ALL_NODES[*]} 
 do 
