@@ -86,7 +86,7 @@ function test_one_topology
         $cookbook_dir/load_data >> $INSTALL_LOG
     fi
     formats=(statement row mixed)
-    if [ "$MYSQL_VERSION" != "5.0" ]
+    if [ "$MYSQL_VERSION" == "5.0" ]
     then
         formats=(statement)
     fi
