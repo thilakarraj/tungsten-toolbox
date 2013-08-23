@@ -57,11 +57,11 @@ fi
 for NODE in ${ALL_NODES[*]}
 do
     $TREPCTL -host $NODE services -full | grep -w masterConnectUri > $TMPDIR/services$$.secure.$NODE &
-    $TREPCTL -host $NODE services | $SIMPLE_SERVICES > $TMPDIR/services$$.$NODE &
+    $TREPCTL -host $NODE services > $TMPDIR/services$$.$NODE &
 done
 
 wait
-
+exit_code=0
 for NODE in ${ALL_NODES[*]}
 do
     IS_SECURE=$(grep 'thls://' $TMPDIR/services$$.secure.$NODE)
@@ -71,7 +71,19 @@ do
         SECURITY_FLAG="(ssl)"
     fi
     echo "# node $NODE $SECURITY_FLAG"
-    cat $TMPDIR/services$$.$NODE
+
+    SERVICES_RUNNING=$(grep role $TMPDIR/services$$.$NODE)
+    if [ -n "$SERVICES_RUNNING" ]
+    then
+        cat $TMPDIR/services$$.$NODE | $SIMPLE_SERVICES
+    else
+        echo "error running 'trepctl services'"
+        cat $TMPDIR/services$$.$NODE 
+        exit_code=1
+    fi
+
     rm $TMPDIR/services$$.$NODE
     rm $TMPDIR/services$$.secure.$NODE
 done
+
+exit $exit_code
