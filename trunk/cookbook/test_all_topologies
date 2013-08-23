@@ -38,8 +38,11 @@ function install_topology
     echo "# $TOPOLOGY" >> $INSTALL_LOG
     echo "# $TOPOLOGY" >> $TEST_LOG
     UCTOPOLOGY=$(perl -e "print uc '$TOPOLOGY'")
-    $cookbook_dir/install_$TOPOLOGY | tee -a $INSTALL_LOG 
+    $cookbook_dir/install_$TOPOLOGY > $INSTALL_LOG.tmp
     exit_code=$?
+    cat $INSTALL_LOG.tmp
+    cat $INSTALL_LOG.tmp >> $INSTALL_LOG
+
     if [ "$exit_code" != "0" ]
     then
         echo "# ERROR installing $TOPOLOGY (using $METHOD)"
@@ -104,12 +107,13 @@ function test_one_topology
         $cookbook_dir/show_cluster 
         $cookbook_dir/show_cluster >> $INSTALL_LOG
         ##############################################
-        $cookbook_dir/test_cluster | tee -a /tmp/test_log$$
+        $cookbook_dir/test_cluster >> /tmp/test_log$$
         exit_code=$?
+        cat /tmp/test_log$$
         if [ "$exit_code" != "0" ]
         then
             echo "# ERROR testing $TOPOLOGY (using $METHOD)"
-            # cat /tmp/test_log$$
+            $cookbook_dir/collect_logs
             exit $exit_code
         fi
         ##############################################
@@ -144,6 +148,7 @@ do
 
         test_one_topology $TOPOLOGY $METHOD
         
+        $cookbook_dir/collect_logs
         uninstall_topology
     done
 done

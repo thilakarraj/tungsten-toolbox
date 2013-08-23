@@ -213,18 +213,18 @@ function check_for_table
     do
         found_matches=0
         sleep 1
-        for SLAVE in ${SLAVES[*]}
+        for TSLAVE in ${SLAVES[*]}
         do
-            if [ "$SLAVE" == "$from_which_master" ]
+            if [ "$TSLAVE" == "$from_which_master" ]
             then
                 found_matches=$(($found_matches+1))
                 continue
             fi
             if [ "$count_mode" == "table" ]
             then
-                FOUND_COUNT=$($MYSQL -BN -h $SLAVE -e "select count(*) from information_schema.tables where table_schema='$table_schema' and  table_name = '$table_name'")
+                FOUND_COUNT=$($MYSQL -BN -h $TSLAVE -e "select count(*) from information_schema.tables where table_schema='$table_schema' and  table_name = '$table_name'")
             else
-                FOUND_COUNT=$($MYSQL -BN -h $SLAVE -e "select count(*) from $table_schema.$table_name")
+                FOUND_COUNT=$($MYSQL -BN -h $TSLAVE -e "select count(*) from $table_schema.$table_name")
             fi
             if [ "$FOUND_COUNT" == "$expected_count" ]
             then
@@ -232,7 +232,7 @@ function check_for_table
             fi
             if [ -n "$VERBOSE" ]
             then
-                echo "# Checking that table $table_schema.$table_name $expected_text on slave $SLAVE (matches: $found_matches of $wanted_matches) "
+                echo "# Checking that table $table_schema.$table_name $expected_text on slave $TSLAVE (matches: $found_matches of $wanted_matches) "
             fi
         done
         ELAPSED=$(($ELAPSED+1))
@@ -313,10 +313,8 @@ do
         $MYSQL -h $NODE -e "insert into test.v$COUNT values (1, 'inserted by node #$COUNT', '$SAMPLE_BLOB', '$SAMPLE_T', '$SAMPLE_TIME', '$SAMPLE_D', '$SAMPLE_DT', '$SAMPLE_TS', $SAMPLE_F,'$SAMPLE_ENUM', '$SAMPLE_SET')"
         check_for_records "test" "t$COUNT" 1 $NODE
         check_for_records "test" "boundaries$COUNT" 4 $NODE
-        check_if_replicators_are_running 'after inserting'
+        # check_if_replicators_are_running 'after inserting'
 
-        #$MYSQL -h $NODE -e "insert into test.boundaries$COUNT values (1, 'a', 'a', 'a', '00:00:00', '0000-00-00', '0000-00-00 00:00:00', '0000-00-00 00:00:00', 0.0,'', '')"
-        #$MYSQL -h $NODE -e "insert into test.boundaries$COUNT values (2, 'a', 'a', 'a', '23:59:59', '9999-12-31', '9999-12-31 23:59:59', '9999-12-31 23:59:59', 0.0,'', '')"
         # echo "############"
         # $MYSQL -h $NODE -e "select * from test.v$COUNT"
         # echo "############"
@@ -339,6 +337,7 @@ do
         fi
     done
 
+    check_if_replicators_are_running 'after inserting'
     # set -x
     for SLAVE in ${SLAVES[*]} 
     do
