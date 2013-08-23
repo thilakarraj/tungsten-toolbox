@@ -30,7 +30,7 @@ fi
 REPLICATOR_LOGS_DIR=$TUNGSTEN_BASE/tungsten/tungsten-replicator/log
 REPLICATOR_CONF_DIR=$TUNGSTEN_BASE/tungsten/tungsten-replicator/conf
 REPLICATOR_CONFIG="$TUNGSTEN_BASE/conf*/tungsten.cfg"
-LOGS_DIR="TR_LOGS_$(date "+%Y-%m-%d_%H_%M_%S")"
+LOGS_DIR="TR_LOGS_${TOPOLOGY}_$(date "+%Y-%m-%d_%H_%M_%S")"
 for NODE in ${ALL_NODES[*]}
 do
     mkdir -p $LOGS_DIR/$NODE/log
