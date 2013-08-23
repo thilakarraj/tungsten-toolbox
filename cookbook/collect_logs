@@ -29,7 +29,9 @@ fi
 
 REPLICATOR_LOGS_DIR=$TUNGSTEN_BASE/tungsten/tungsten-replicator/log
 REPLICATOR_CONF_DIR=$TUNGSTEN_BASE/tungsten/tungsten-replicator/conf
-REPLICATOR_CONFIG="$TUNGSTEN_BASE/conf*/tungsten.cfg"
+REPLICATOR_CONFIG1="$TUNGSTEN_BASE/configs/tungsten.cfg"
+REPLICATOR_CONFIG2="$TUNGSTEN_BASE/conf/tungsten.cfg"
+REPLICATOR_CONFIG_TPM="$TUNGSTEN_BASE/tungsten.cfg"
 LOGS_DIR="TR_LOGS_${TOPOLOGY}_$(date "+%Y-%m-%d_%H_%M_%S")"
 for NODE in ${ALL_NODES[*]}
 do
@@ -40,7 +42,14 @@ do
     scp $NODE:$TUNGSTEN_BASE/tungsten/cookbook/{USER_VALUES,COMMON_NODES}.sh $LOGS_DIR/$NODE/conf
     scp $NODE:$TUNGSTEN_BASE/tungsten/cookbook/NODES_{ALL_MASTERS,MASTER_SLAVE,FAN_IN,STAR}.sh $LOGS_DIR/$NODE/conf
     scp $NODE:$TUNGSTEN_BASE/tungsten/cookbook/current_install.{log,summary} $LOGS_DIR/$NODE/conf
-    scp $NODE:"$REPLICATOR_CONFIG" $LOGS_DIR/$NODE/conf
+    for CNF in $REPLICATOR_CONFIG1 $REPLICATOR_CONFIG2 $REPLICATOR_CONFIG_TPM
+    do
+        FILE_EXISTS=$(ssh $NODE "if [ -f $CNF ] ; then echo yes; fi")
+        if [ "$FILE_EXISTS" == "yes" ]
+        then
+            scp $NODE:"$CNF" $LOGS_DIR/$NODE/conf
+        fi
+    done
     for SERVICE in $($TREPCTL -host $NODE services | grep serviceName| awk '{print $3}') 
     do
         $TREPCTL -host $NODE -service $SERVICE status > $LOGS_DIR/$NODE/trepctl_status_$SERVICE.txt
@@ -51,5 +60,11 @@ done
 LOGS_ARCHIVE="$LOGS_DIR.tar.gz"
 tar -c $LOGS_DIR | gzip -c9 > $LOGS_ARCHIVE
 echo "$PWD/$LOGS_ARCHIVE saved"
-
+if [ -n "$STORE_LOGS_DIR" ]
+then
+    if [ -d $STORE_LOGS_DIR ]
+    then
+        cp -v $LOGS_ARCHIVE $STORE_LOG_DIR
+    fi
+fi
 
