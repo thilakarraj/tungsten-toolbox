@@ -64,7 +64,7 @@ if [ -n "$STORE_LOGS_DIR" ]
 then
     if [ -d $STORE_LOGS_DIR ]
     then
-        cp -v $LOGS_ARCHIVE $STORE_LOG_DIR
+        cp -v $LOGS_ARCHIVE $STORE_LOGS_DIR
     fi
 fi
 
