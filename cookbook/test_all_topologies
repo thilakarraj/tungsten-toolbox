@@ -21,6 +21,9 @@ echo "# `date`" > $TEST_LOG
 export VERBOSE=1
 exit_code=0
 NODES=''
+row_counter=0
+mixed_counter=0
+statement_counter=0
 
 function install_topology
 {
@@ -72,6 +75,27 @@ function uninstall_topology
     fi
 }
 
+set_mode_counters
+{
+    mode=$1
+    counter=$2
+    case $mode in 
+        row)
+            $row_counter=$(($row_counter+$counter))
+            ;;
+        mixed)
+            $mixed_counter=$(($mixed_counter+$counter))
+            ;;
+        statement)
+            $statement_counter=$(($statement_counter+$counter))
+            ;;
+        *)
+            echo "unknown mode '$mode'"
+            exit 1
+            ;;
+    esac
+}
+
 function test_one_topology
 {
     TOPOLOGY=$1
@@ -110,6 +134,8 @@ function test_one_topology
         $cookbook_dir/test_cluster >> /tmp/test_log$$
         exit_code=$?
         cat /tmp/test_log$$
+        WAS_MODE_USED=$(grep "# binlog format: $MODE" /tmp/test_log$$ | wc -l)
+        set_mode_counters $MODE $WAS_MODE_USED 
         if [ "$exit_code" != "0" ]
         then
             echo "# ERROR testing $TOPOLOGY (using $METHOD)"
@@ -125,7 +151,8 @@ function test_one_topology
     then
         SAVE_TEST_OPTIONS=$LOAD_TEST_OPTIONS
         export LOAD_TEST_OPTIONS="$LOAD_TEST_OPTIONS --remove=all"
-        $cookbook_dir/load_data stop >> $INSTALL_LOG
+        export CHECK_CONTENTS=1
+        $cookbook_dir/load_data stop
         export LOAD_TEST_OPTIONS=$SAVE_TEST_OPTIONS
     fi
 
@@ -159,6 +186,19 @@ if [ -z "$OK" ] ; then OK='0' ; fi
 if [ -z "$NOTOK" ] ; then NOTOK='0' ; fi
 TESTS=$(($OK+$NOTOK))
 echo ""
+
+if [ "$MYSQL_VERSION" != "5.0" ]
+then
+    if [ "$row_counter" == "0" ] 
+    then
+        echo "not ok - No RBR tests were running"
+        TESTS=$(($TESTS+1))
+        NOTOK=$(($NOTOK+1))
+        OK=$(($OK+1))
+    else
+        echo "ok - RBR tests were running"
+    fi
+fi
 
 PASSED_PERCENTAGE=$(ruby -e 'printf "%6.2f", eval(ARGV[0])' "$OK.0/$TESTS.0*100" )
 FAILED_PERCENTAGE=$(ruby -e 'printf "%6.2f", eval(ARGV[0])' "$NOTOK.0/$TESTS.0*100" )
