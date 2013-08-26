@@ -172,14 +172,16 @@ fi
 
 ITERATIONS=1
 DATA_POSTFIXES=('')
+DATA_MIN_POSTFIXES=('')
+DATA_MAX_POSTFIXES=('')
 DDL_POSTFIXES=('')
 
 if [ "$MYSQL_VERSION" == "5.6" ]
 then
-    DATA_POSTFIXES=('.0' '.01'  '.012' '.0123' '.01234' '.012345')
-    DATA_MIN_POSTFIXES=('.0' '.00'  '.000' '.0000' '.00000' '.000000')
+    DATA_POSTFIXES=(    '.1' '.01'  '.012' '.0123' '.01234' '.012345')
+    DATA_MIN_POSTFIXES=('.1' '.01'  '.001' '.0001' '.00001' '.000001')
     DATA_MAX_POSTFIXES=('.9' '.99'  '.999' '.9999' '.99999' '.999999')
-    DDL_POSTFIXES=( '(1)' '(2)' '(3)' '(4)' '(5)' '(6)' )
+    DDL_POSTFIXES=(     '(1)' '(2)' '(3)'  '(4)'   '(5)'    '(6)' )
     ITERATIONS=6
 fi
 
