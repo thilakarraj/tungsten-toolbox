@@ -75,19 +75,20 @@ function uninstall_topology
     fi
 }
 
-set_mode_counters
+function set_mode_counters
 {
     mode=$1
     counter=$2
+    mode=$(echo $mode | tr '[A-Z]' '[a-z]')
     case $mode in 
         row)
-            $row_counter=$(($row_counter+$counter))
+            row_counter=$(($row_counter+$counter))
             ;;
         mixed)
-            $mixed_counter=$(($mixed_counter+$counter))
+            mixed_counter=$(($mixed_counter+$counter))
             ;;
         statement)
-            $statement_counter=$(($statement_counter+$counter))
+            statement_counter=$(($statement_counter+$counter))
             ;;
         *)
             echo "unknown mode '$mode'"
@@ -134,12 +135,12 @@ function test_one_topology
         $cookbook_dir/test_cluster >> /tmp/test_log$$
         exit_code=$?
         cat /tmp/test_log$$
-        WAS_MODE_USED=$(grep "# binlog format: $MODE" /tmp/test_log$$ | wc -l)
+        WAS_MODE_USED=$(grep -i "# binlog format: $MODE" /tmp/test_log$$ | wc -l)
         set_mode_counters $MODE $WAS_MODE_USED 
         if [ "$exit_code" != "0" ]
         then
             echo "# ERROR testing $TOPOLOGY (using $METHOD)"
-            $cookbook_dir/collect_logs
+            $cookbook_dir/collect_logs > /dev/null
             exit $exit_code
         fi
         ##############################################
@@ -175,7 +176,7 @@ do
 
         test_one_topology $TOPOLOGY $METHOD
         
-        $cookbook_dir/collect_logs
+        $cookbook_dir/collect_logs > /dev/null
         uninstall_topology
     done
 done
@@ -187,6 +188,13 @@ if [ -z "$NOTOK" ] ; then NOTOK='0' ; fi
 TESTS=$(($OK+$NOTOK))
 echo ""
 
+
+echo "#"
+echo "# Tests by replication mode:"
+echo "# Statement: $statement_counter"
+echo "# Mixed: $mixed_counter"
+echo "# Row: $row_counter"
+echo "#"
 if [ "$MYSQL_VERSION" != "5.0" ]
 then
     if [ "$row_counter" == "0" ] 
