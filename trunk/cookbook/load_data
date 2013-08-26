@@ -68,6 +68,7 @@ fill_roles
 
 JOB_INFO_PATH=$TUNGSTEN_BASE/tungsten/load
 
+CHECKSUM_DBS=()
 
 for HOST in  ${MASTERS[*]}
 do
@@ -95,6 +96,11 @@ do
     EVALUATOR="$TUNGSTEN_BASE/tungsten/bristlecone/bin/concurrent_evaluator.pl"
     DB_OPTIONS="--host=$HOST --port=$DATABASE_PORT --mysql-defaults-file=$MY_COOKBOOK_CNF --user=$DATABASE_USER --password=$DATABASE_PASSWORD"
     EV_OPTIONS="--continuent-root=$TUNGSTEN_BASE -d $db -s $JOB_INFO_PATH/$db $LOAD_TEST_OPTIONS"
+    if [ -n "$CHECK_CONTENTS" ]
+    then
+        CHECKSUM_DBS[$COUNTER]=$db
+        COUNTER=$(($COUNTER+1))
+    fi
     V=''
     [ -n "$VERBOSE" ] && [ "$OPERATION" == "stop" ] && V='--verbose'
     CMD="$EVALUATOR $BRISTLECONE_OPTIONS $DB_OPTIONS $EV_OPTIONS $V $OPERATION"
@@ -114,11 +120,38 @@ do
     fi
 done
 
+function check_contents
+{
+    echo ""
+    for DB in ${CHECKSUM_DBS[*]}
+    do
+        for HOST in ${ALL_NODES[*]}
+        do
+            echo -n "# COUNT host $HOST - $DB - "
+            $MYSQL -h $HOST -BN -e "select count(*) from $DB.tbl3"
+        done
+    done
+
+    for DB in ${CHECKSUM_DBS[*]}
+    do
+        for HOST in ${ALL_NODES[*]}
+        do
+            echo -n "# CRC host $HOST - "
+            $MYSQL -h $HOST -BN -e "checksum table $DB.tbl3"
+        done
+    done
+}
+
 case "$OPERATION" in
     start) 
         touch $cookbook_dir/data_loading
         ;;
     stop)
+        if [ -n "$CHECK_CONTENTS" ]
+        then
+            sleep 1
+            check_contents
+        fi
         rm -f $cookbook_dir/data_loading
         ;;
 esac
