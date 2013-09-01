@@ -1,6 +1,6 @@
 #!/bin/bash
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
-# Version 1.0.7 - 2013-08-28
+# Version 1.0.8 - 2013-09-01
 
 cookbook_dir=$(dirname $0)
 
@@ -251,6 +251,8 @@ echo "export BINLOG_DIRECTORY=$HOME/sandboxes/$SANDBOX_DIR/data" >> $INCLUDE_FIL
 echo "export MY_CNF=$HOME/sandboxes/$SANDBOX_DIR/my.sandbox.cnf" >> $INCLUDE_FILE
 echo "export MYSQL_BOOT_SCRIPT=$HOME/sandboxes/$SANDBOX_DIR/msb" >> $INCLUDE_FILE
 echo "export DATABASE_PORT=$MYSQL_PORT" >> $INCLUDE_FILE
+echo "export MORE_TPM_OPTIONS='$MORE_TPM_OPTIONS --preferred-path=$HOME/opt/mysql/$MYSQL_VERSION/bin'" >> $INCLUDE_FILE
+echo "export PATH=$HOME/opt/mysql/$MYSQL_VERSION/bin:$PATH" >> $INCLUDE_FILE
 echo "# $LINE" >> $INCLUDE_FILE
 
 echo "# Updated $INCLUDE_FILE with the values for the sandboxes"
