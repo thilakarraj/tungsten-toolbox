@@ -202,7 +202,7 @@ then
     then
         for NODE in ${ALL_NODES[*]}
         do
-            DIR_EXISTS=$(ssh $NODE "if [ -d $WRITE_STAGING_INFO ] ; then echo yes ; fi")
+            DIR_EXISTS=$(ssh -o StrictHostKeyChecking=no $NODE "if [ -d $WRITE_STAGING_INFO ] ; then echo yes ; fi")
             if [ "$DIR_EXISTS" != "yes" ]
             then
                 echo "###  Directory '$WRITE_STAGING_INFO' does not exist in node $NODE"
@@ -462,7 +462,7 @@ function post_installation
         MY_REMOTE_CNF=/tmp/my_template$$.cnf
         cp $MY_COOKBOOK_CNF $MY_REMOTE_CNF
         perl -i -pe "s/__HOST__/$NODE/" $MY_REMOTE_CNF
-        DEPLOYED=$(ssh $NODE "if [ -d $TUNGSTEN_BASE ] ; then echo 'yes' ; fi")
+        DEPLOYED=$(ssh -o StrictHostKeyChecking=no $NODE "if [ -d $TUNGSTEN_BASE ] ; then echo 'yes' ; fi")
         if [ "$DEPLOYED" == "yes" ]
         then
             scp -q $CURRENT_TOPOLOGY $NODE:$TUNGSTEN_BASE/tungsten/  
