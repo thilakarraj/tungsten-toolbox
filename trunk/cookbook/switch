@@ -17,6 +17,12 @@ function find_roles {
     do 
         echo -n "$NODE "
         role=$($TREPCTL -host $NODE services |grep role | awk '{print $3}')
+        state=$($TREPCTL -host $NODE services |grep state | awk '{print $3}')
+        if [ "$state" == "OFFLINE:ERROR" ]
+        then
+            echo "#node $NODE is not in a usable state"
+            exit 1
+        fi
         if [ "$role" == "master" ]
         then
             export MASTER=$NODE
