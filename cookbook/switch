@@ -1,6 +1,6 @@
 #!/bin/bash
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
-# Version 1.0.5 - 2013-04-03
+# Version 1.0.6 - 2013-11-11
 cookbook_dir=$(dirname $0)
 if [ ! -f $cookbook_dir/BOOTSTRAP.sh ]
 then
@@ -57,14 +57,22 @@ echo "# Will promote $NEW_MASTER to be the new master server"
 
 NEW_SLAVES=()
 SLAVE_COUNT=0
+FOUND_NEW_MASTER=
 for NODE in ${ALL_NODES[*]} 
 do 
-    if [ "$NODE" != "$NEW_MASTER" ]
+    if [ "$NODE" == "$NEW_MASTER" ]
     then
+        FOUND_NEW_MASTER=1
+    else
         NEW_SLAVES[$SLAVE_COUNT]=$NODE
         SLAVE_COUNT=$(($SLAVE_COUNT+1))
     fi
 done
+if [ -z "$FOUND_NEW_MASTER" ]
+then
+    echo "$NEW_MASTER is not one of the nodes in the cluster"
+    exit 1
+fi
 
 master_position=`$TREPCTL -host $MASTER flush|cut -d':' -f2`
 
