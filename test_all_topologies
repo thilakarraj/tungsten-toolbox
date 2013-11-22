@@ -1,6 +1,6 @@
 #!/bin/bash
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
-# Version 1.0.7 - 2013-08-28
+# Version 1.0.5 - 2013-04-03
 cookbook_dir=$(dirname $0)
 
 if [ -f $cookbook_dir/../CURRENT_TOPOLOGY ]
@@ -103,7 +103,6 @@ function test_one_topology
     METHOD=$2
     . $NODES
     MYSQL_VERSION=$($MYSQL -h ${MASTERS[0]} -BN -e 'select version()'| perl -lne 'print $1 if /(\d+\.\d+)/')
-    export DEPLOYMENT_BANNER="MySQL $MYSQL_VERSION"
     if [ -z "$MYSQL_VERSION" ]
     then
         echo "error detecting MySQL version"
@@ -130,12 +129,6 @@ function test_one_topology
         fi
         echo "# testing with binlog_format=$MODE" >> /tmp/test_log$$ 
         echo "# testing with binlog_format=$MODE" 
-        if [ -n "$WITH_SECURITY" ]
-        then
-            export LOG_PREFIX="${METHOD}_${MODE}_SECURE"
-        else
-            export LOG_PREFIX="${METHOD}_$MODE"
-        fi
         $cookbook_dir/show_cluster 
         $cookbook_dir/show_cluster >> $INSTALL_LOG
         ##############################################
@@ -179,7 +172,6 @@ for TOPOLOGY in master_slave fan_in all_masters star
 do
     for METHOD in $INSTALLERS
     do
-        export LOG_PREFIX=$METHOD
         install_topology $TOPOLOGY $METHOD
 
         test_one_topology $TOPOLOGY $METHOD

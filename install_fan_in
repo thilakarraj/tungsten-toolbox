@@ -80,7 +80,7 @@ else
         -a --datasource-boot-script=$MYSQL_BOOT_SCRIPT \
         --rmi-port=$RMI_PORT \
         --thl-port=$THL_PORT \
-        $MORE_OPTIONS --$START_OPTION"     
+        $MORE_OPTINS --$START_OPTION"     
 
         echo "## $COMMAND_SEQUENCE (host: $NODE)" >> $INSTALL_LOG
         echo $INSTALL_COMMAND | perl -pe 's/--/\\\n\t--/g' >> $INSTALL_LOG

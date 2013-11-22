@@ -1,6 +1,6 @@
 #!/bin/bash
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
-# Version 1.0.7 - 2013-08-28
+# Version 1.0.6 - 2013-08-11
 cookbook_dir=$(dirname $0)
 
 if [ ! -f $cookbook_dir/../CURRENT_TOPOLOGY ]
@@ -37,12 +37,8 @@ then
     export TMPDIR=$PWD
 fi
 
-if [ -n "$DEPLOYMENT_BANNER" ]
-then
-    DEPLOYMENT_BANNER="<$DEPLOYMENT_BANNER>"
-fi
 echo $LONG_LINE
-echo "Topology: '$TOPOLOGY' $DEPLOYMENT_BANNER"
+echo "Topology: '$TOPOLOGY'"
 echo $LONG_LINE
 if [ "$TOPOLOGY" == 'MASTER_SLAVE_DIRECT' ]
 then

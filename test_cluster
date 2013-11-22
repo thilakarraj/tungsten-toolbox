@@ -86,10 +86,8 @@ function ok_equal
         FAILED=$(($FAILED+1))
         msg="$msg (expected: <$expected>)"
     fi
+    echo " - $msg"
     TESTS=$(($TESTS+1))
-    TEST_N=$(printf "%05d" $TESTS)
-    TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
-    echo " - ($TEST_N) [$TIMESTAMP] $msg"
 }
 
 
@@ -125,51 +123,6 @@ function check_security_status
     done
 }
 
-function check_binary_apps
-{
-    msg=$1
-    TREPCTL_EXEC="$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/trepctl"
-    DDLSCAN="$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/ddlscan"
-    DATASCAN="$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/datascan"
-    TPASSWD="$TUNGSTEN_BASE/tungsten/cluster-home/bin/tpasswd"
-    APP_NAMES=(replicator trepctl thl ddlscan datascan tpasswd)
-    APP_PATHS=($REPLICATOR $TREPCTL_EXEC $THL $DDLSCAN $DATASCAN $TPASSWD)
-    APP_ARGS=(help help help -help -help -h )
-    echo "# Testing for executables - $msg"
-    for NODE in ${ALL_NODES[*]}
-    do
-        COUNT=0
-        for APP in ${APP_PATHS[*]}
-        do
-            APP_EXISTS=$(ssh -o StrictHostKeyChecking=no $NODE "if [ -x $APP ] ; then echo OK ;fi" )
-            ok_equal "$APP_EXISTS" OK "$NODE: ${APP_NAMES[$COUNT]} executable exists"
-            if [ "$FAILED" != "0" ]
-            then
-                echo "not all executables found - bailing out"
-                exit 1
-            fi
-            APP_RUNS=$(ssh -o StrictHostKeyChecking=no $NODE $APP ${APP_ARGS[$COUNT]} |grep ${APP_NAMES[$COUNT]} )
-            [ -n "$APP_RUNS" ] && APP_RUNS=RUNS
-            ok_equal "$APP_RUNS" RUNS "$NODE: ${APP_NAMES[$COUNT]} can run"
-            if [ "$FAILED" != "0" ]
-            then
-                echo "not all executables can run - bailing out"
-                exit 1
-            fi
-
-            APP_RUNS_WELL=$(ssh -o StrictHostKeyChecking=no $NODE $APP ${APP_ARGS[$COUNT]} |grep "Exception" | head -n 1 2>&1 )
-            [ -z "$APP_WELL" ] && APP_RUNS_WELL=RUNS
-            ok_equal "$APP_RUNS_WELL" RUNS "$NODE: ${APP_NAMES[$COUNT]} can run without throwing an exception"
-            if [ "$FAILED" != "0" ]
-            then
-                echo "not all executables can run without throwing exceptions - bailing out"
-                exit 1
-            fi
-            COUNT=$(($COUNT+1))
-        done
-    done
-}
-
 function check_if_replicators_are_running
 {
     msg=$1
@@ -202,7 +155,6 @@ function check_if_replicators_are_running
 }
 
 check_security_status
-check_binary_apps "Before all tests"
 check_if_replicators_are_running 'Before tests'
 
 DATA_POSTFIX=''

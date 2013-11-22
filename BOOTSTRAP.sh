@@ -1,6 +1,6 @@
 #!/bin/bash
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
-# Version 1.0.7 - 2013-08-28
+# Version 1.0.6 - 2013-08-11
 
 cookbook_dir=$(dirname $0)
 cd "$cookbook_dir/.."
@@ -202,7 +202,7 @@ then
     then
         for NODE in ${ALL_NODES[*]}
         do
-            DIR_EXISTS=$(ssh -o StrictHostKeyChecking=no $NODE "if [ -d $WRITE_STAGING_INFO ] ; then echo yes ; fi")
+            DIR_EXISTS=$(ssh $NODE "if [ -d $WRITE_STAGING_INFO ] ; then echo yes ; fi")
             if [ "$DIR_EXISTS" != "yes" ]
             then
                 echo "###  Directory '$WRITE_STAGING_INFO' does not exist in node $NODE"
@@ -223,30 +223,6 @@ MY_COOKBOOK_CNF=$STAGING_DIRECTORY/cookbook/my.cookbook.cnf
 MYSQL="mysql --defaults-file=$MY_COOKBOOK_CNF"
 MYSQLDUMP="mysqldump --defaults-file=$MY_COOKBOOK_CNF"
 MYSQLADMIN="mysqladmin --defaults-file=$MY_COOKBOOK_CNF"
-[ -z "$DEPLOYMENT_BANNER" ] && DEPLOYMENT_BANNER=''
-
-if [ -n "$DEPLOYMENT_BANNER" ]
-then
-    if [ -z "$(echo $DEPLOYMENT_BANNER | grep 'tpm\|t-i')" ]
-    then
-        if [ -n "$USE_TPM" ]
-        then
-            DEPLOYMENT_BANNER="$DEPLOYMENT_BANNER - tpm"
-        else
-            DEPLOYMENT_BANNER="$DEPLOYMENT_BANNER - t-i"
-        fi
-    fi
-    if [ -z "$(echo $DEPLOYMENT_BANNER | grep 'ssl\|unencrypted')" ]
-    then
-        if [ -n "$WITH_SECURITY" ]
-        then
-            DEPLOYMENT_BANNER="$DEPLOYMENT_BANNER - ssl"
-        else
-            DEPLOYMENT_BANNER="$DEPLOYMENT_BANNER - unencrypted"
-        fi
-    fi
-    export DEPLOYMENT_BANNER
-fi
 
 function check_installed
 {
@@ -423,32 +399,20 @@ function post_installation
     DB_USE=$cookbook_dir/db_use
     TUNGSTEN_RELEASE=$(grep RELEASE $cookbook_dir/../.manifest| awk '{print $2}')  
     DB_USE=$STAGING_DIRECTORY/cookbook/db_use
-    INSTALLATION_TOOL='tungsten-installer'
-    SECURITY_STATUS="no (unencrypted)"
-    if [ -n "$USE_TPM" ]
-    then
-        INSTALLATION_TOOL=tpm
-    fi
-    if [ -n "$WITH_SECURITY" ]
-    then
-        SECURITY_STATUS="yes (encrypted with ssl)"
-    fi
     echo "Deployment completed "
-    echo "Topology           :'$TOPOLOGY'"                                            > $INSTALL_SUMMARY
-    echo "Tungsten path      : $TUNGSTEN_BASE "                                      >> $INSTALL_SUMMARY
-    echo "Staging server     : $(hostname)"                                          >> $INSTALL_SUMMARY
-    echo "Staging directory  : $PWD"                                                 >> $INSTALL_SUMMARY
-    echo "Installation tool  : $INSTALLATION_TOOL"                                   >> $INSTALL_SUMMARY
-    echo "Security enabled   : $SECURITY_STATUS"                                     >> $INSTALL_SUMMARY
-    echo "Nodes              : (${ALL_NODES[*]})"                                    >> $INSTALL_SUMMARY
-    echo "Master services    : (${MASTERS[*]})"                                      >> $INSTALL_SUMMARY
-    echo "Slave services     : (${SLAVES[*]})"                                       >> $INSTALL_SUMMARY
-    echo "MySQL version      : $($MYSQL -h ${MASTERS[0]} -BN -e 'select @@version')" >> $INSTALL_SUMMARY
-    echo "MySQL port         : $DATABASE_PORT"                                       >> $INSTALL_SUMMARY
-    echo "MySQL shortcut     : $MYSQL"                                               >> $INSTALL_SUMMARY
-    echo "                   : (or $DB_USE)"                                         >> $INSTALL_SUMMARY
-    echo "Tungsten release   : $TUNGSTEN_RELEASE"                                    >> $INSTALL_SUMMARY
-    echo "Installation log   : $INSTALL_LOG"                                         >> $INSTALL_SUMMARY
+    echo "Topology          :'$TOPOLOGY'"                                            > $INSTALL_SUMMARY
+    echo "Tungsten path     : $TUNGSTEN_BASE "                                      >> $INSTALL_SUMMARY
+    echo "Staging server    : $(hostname)"                                          >> $INSTALL_SUMMARY
+    echo "Staging directory : $PWD"                                                 >> $INSTALL_SUMMARY
+    echo "Nodes             : (${ALL_NODES[*]})"                                    >> $INSTALL_SUMMARY
+    echo "Master services   : (${MASTERS[*]})"                                      >> $INSTALL_SUMMARY
+    echo "Slave services    : (${SLAVES[*]})"                                       >> $INSTALL_SUMMARY
+    echo "MySQL version     : $($MYSQL -h ${MASTERS[0]} -BN -e 'select @@version')" >> $INSTALL_SUMMARY
+    echo "MySQL port        : $DATABASE_PORT"                                       >> $INSTALL_SUMMARY
+    echo "MySQL shortcut    : $MYSQL"                                               >> $INSTALL_SUMMARY
+    echo "                  : (or $DB_USE)"                                         >> $INSTALL_SUMMARY
+    echo "Tungsten release  : $TUNGSTEN_RELEASE"                                    >> $INSTALL_SUMMARY
+    echo "Installation log  : $INSTALL_LOG"                                         >> $INSTALL_SUMMARY
 
 
     MY_BARE_CNF=$(basename $MY_COOKBOOK_CNF)
@@ -462,7 +426,7 @@ function post_installation
         MY_REMOTE_CNF=/tmp/my_template$$.cnf
         cp $MY_COOKBOOK_CNF $MY_REMOTE_CNF
         perl -i -pe "s/__HOST__/$NODE/" $MY_REMOTE_CNF
-        DEPLOYED=$(ssh -o StrictHostKeyChecking=no $NODE "if [ -d $TUNGSTEN_BASE ] ; then echo 'yes' ; fi")
+        DEPLOYED=$(ssh $NODE "if [ -d $TUNGSTEN_BASE ] ; then echo 'yes' ; fi")
         if [ "$DEPLOYED" == "yes" ]
         then
             scp -q $CURRENT_TOPOLOGY $NODE:$TUNGSTEN_BASE/tungsten/  
