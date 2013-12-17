@@ -1,6 +1,6 @@
 #!/bin/bash
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
-# Version 1.0.7 - 2013-08-28
+# Version 1.0.8 - 2013-09-03
 cookbook_dir=$(dirname $0)
 
 if [ -f $cookbook_dir/../CURRENT_TOPOLOGY ]
@@ -32,9 +32,11 @@ function install_topology
     if [ "$METHOD" == "tpm" ]
     then
         export USE_TPM=1
+        unset USE_OLD_INSTALLER
         rm -f deploy.cfg*
     else
         unset USE_TPM
+        export USE_OLD_INSTALLER=1
         export INSTALLATION_DELAY=0
     fi
     echo "# $TOPOLOGY (using $METHOD)" 
@@ -168,14 +170,16 @@ function test_one_topology
     rm /tmp/test_log$$
 }
 
-INSTALLERS='tungsten_installer tpm'
+[ -z "$INSTALLERS" ] && INSTALLERS='tungsten_installer tpm'
 
 if [ -n "$WITH_SECURITY" ]
 then
     INSTALLERS=tpm
 fi
 
-for TOPOLOGY in master_slave fan_in all_masters star 
+[ -z "$TOPOLOGIES" ] && TOPOLOGIES='master_slave fan_in all_masters star'
+
+for TOPOLOGY in $TOPOLOGIES
 do
     for METHOD in $INSTALLERS
     do

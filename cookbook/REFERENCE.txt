@@ -104,16 +104,20 @@ tungsten_service {node|all} [service]  Shows the contents of trep_commit_seqno f
 ## ENVIRONMENT VARIABLES
 #########################
 ## USED DURING INSTALLATION
-VERBOSE=1                              Gives more information during installation
+VERBOSE=1                              Gives more information during installation (default)
 VERBOSE=2                              Enables debug mode during validation
-DRYRUN=1                               Used by all installation scripts. Shows installation commands
+QUIET or NOVERBOSE                     Turns off VERBOSE
+DRYRUN=1                               Used by all installation scripts. Shows installation commands (deprecated)
 MORE_OPTIONS="..."                     Used by all installation scripts. Adds more options to the installer command
-USE_TPM=1                              Enables installation with tpm
+USE_TPM=1                              Enables installation with tpm (default)
+OLD_INSTALLER=1                        Disables installation with tpm (deprecated)
 MORE_TPM_OPTIONS="..."                 Used by all installation scripts. Adds more options to the installer command when using tpm
 WITH_SECURITY=1                        Enables installation with security. Only with tpm installation.
 ## USED DURING TEST
 BINLOG_FORMAT={STATEMENT|MIXED|ROW}    Changes the default binlog format in each master before running the test
 TEST_UNDER_LOAD=1                      Runs test_cluster after launching load_data
+INSTALLERS                             Use given installers for testing (default: "tungsten_installer tpm")
+TOPOLOGIES                             Tests given topologies (default: "master_slave fan_in all_masters star")
 ## USED DURING CLEAN-UP
 STOP_REPLICATORS                       Stops the replicators
 REMOVE_TUNGSTEN_BASE                   Removes the directory where the software was installed

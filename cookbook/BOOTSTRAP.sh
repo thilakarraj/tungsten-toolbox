@@ -1,6 +1,6 @@
 #!/bin/bash
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
-# Version 1.0.7 - 2013-08-28
+# Version 1.0.8 - 2013-09-03
 
 cookbook_dir=$(dirname $0)
 cd "$cookbook_dir/.."
@@ -104,6 +104,25 @@ INSTALLER_IN_CLUSTER=0
 # CURRENT_HOST_IP=$(hostname --ip)
 CURRENT_HOST_IPs=$(/sbin/ifconfig |perl -lne 'if ( /inet/) {print $1 if /\s*(\d+\.\d+\.\d+\.\d+)/}')
 
+export VERBOSE=1
+if [ -n "$NOVERBOSE" -o -n "$QUIET" ]
+then
+    unset VERBOSE
+fi
+
+if [ -n "$USE_OLD_INSTALLER" -a  -n "$USE_TPM" ]
+then
+    echo "Both USE_OLD_INSTALLER and USE_TPM are set. They are mutually exclusive. "
+    echo "Please remove one of them. "
+    exit 1
+fi
+
+export USE_TPM=1
+if [ -n "$USE_OLD_INSTALLER" ]
+then
+    unset USE_TPM
+fi
+
 function check_for_deprecated_installer
 {
     if [ -z "$USE_TPM" ]
@@ -114,8 +133,8 @@ function check_for_deprecated_installer
         echo "## Installation with deprecated method will resume in $INSTALLATION_DELAY seconds - Hit CTRL+C now to abort"
         echo $LINE
         echo "## WARNING: INSTALLATION WITH tungsten-installer and configure-service IS DEPRECATED"
-        echo "## Future versions of Tungsten Cookbook will only support tpm-based installations"
-        echo "## To install with tpm, please set the variable 'USE_TPM' and start again "
+        echo "## Tungsten Cookbook only supports tpm-based installations"
+        echo "## To install with tpm, please reset the variable 'USE_OLD_INSTALLER' and start again "
         echo $LINE
         for N in $(seq 1 $INSTALLATION_DELAY)
         do
@@ -202,7 +221,7 @@ then
     then
         for NODE in ${ALL_NODES[*]}
         do
-            DIR_EXISTS=$(ssh -o StrictHostKeyChecking=no $NODE "if [ -d $WRITE_STAGING_INFO ] ; then echo yes ; fi")
+            DIR_EXISTS=$(ssh $NODE "if [ -d $WRITE_STAGING_INFO ] ; then echo yes ; fi")
             if [ "$DIR_EXISTS" != "yes" ]
             then
                 echo "###  Directory '$WRITE_STAGING_INFO' does not exist in node $NODE"
@@ -462,7 +481,7 @@ function post_installation
         MY_REMOTE_CNF=/tmp/my_template$$.cnf
         cp $MY_COOKBOOK_CNF $MY_REMOTE_CNF
         perl -i -pe "s/__HOST__/$NODE/" $MY_REMOTE_CNF
-        DEPLOYED=$(ssh -o StrictHostKeyChecking=no $NODE "if [ -d $TUNGSTEN_BASE ] ; then echo 'yes' ; fi")
+        DEPLOYED=$(ssh $NODE "if [ -d $TUNGSTEN_BASE ] ; then echo 'yes' ; fi")
         if [ "$DEPLOYED" == "yes" ]
         then
             scp -q $CURRENT_TOPOLOGY $NODE:$TUNGSTEN_BASE/tungsten/  
