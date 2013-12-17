@@ -32,34 +32,23 @@ GETTING STARTED:
    VERBOSE=2 $cookbook_dir/validate_cluster
 6) Run the command corresponding to the topology you want to install. The command must run from the directory above the cookbook, i.e the directory from where you can access ./tools/tungsten-replicator.
 For example:
-   VERBOSE=1 $cookbook_dir/install_master_slave
-   VERBOSE=1 $cookbook_dir/install_all_masters
-   VERBOSE=1 $cookbook_dir/install_fan_in
-   VERBOSE=1 $cookbook_dir/install_star
+   $cookbook_dir/install_master_slave
+   $cookbook_dir/install_all_masters
+   $cookbook_dir/install_fan_in
+   $cookbook_dir/install_star
 
 
-TAKING ADVANTAGE OF THE NEW TPM INSTALLATION
+TAKING ADVANTAGE OF THE NEW TPM INSTALLATION (default with Tungsten Replicator 2.2.0)
 Tungsten Replicator, as of 2.1.1-90, ships with the ability of installing using the tpm (Tungsten Package Manager). The main advantages of tpm compared to tungsten-installer are:
 * generally faster
 * simpler syntax for multi-master (1 command instead of many)
 * parallel execution (results in multi-master deployments 10 times quicker)
 * more flexibility when updating the cluster.
 
-To install using tpm, simply enable the variable USE_TPM
+To install using tpm, simply enable the variable USE_TPM (not needed with Tungsten Replicator 2.2.0)
 
 export USE_TPM=1
 ./cookbook/install_all_masters
-
-DRY RUN, OR MEETING SPECIAL INSTALLATION NEEDS
-If you don't have SSH access between nodes, the installation scripts in the cookbook will not work.
-Also, if you need to modify options for a single node, the cookbook scripts offer minimal help, or none at all.
-However, in this cases you can ask the cookbook to show you the installation commands, without actually executing them.
-
-Run:
-DRYRUN=1 $cookbook_dir/install_$TOPOLOGY.sh
-and you will get all the commands in the screen, with the proper sequence and a comment saying in which mode they should run.
-
-With this installation mode, you should manually download and expand the tarball in each node, and run the required commands manually.
 
 AFTER INSTALLATION
 
