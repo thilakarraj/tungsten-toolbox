@@ -1,11 +1,12 @@
 #!/bin/bash
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
-# Version 1.0.8 - 2013-09-03
+# Version 1.0.9 - 2013-12-18
 
 cookbook_dir=$(dirname $0)
 cd "$cookbook_dir/.."
 STAGING_DIRECTORY=$PWD
 
+DASHLINE="## -------------------------------------------------------------------------------------"
 NODES=$1
 if [ -z "$NODES" ]
 then
@@ -123,19 +124,39 @@ then
     unset USE_TPM
 fi
 
+function check_if_nodes_are_reachable
+{
+    for NODE in ${ALL_NODES[*]}
+    do
+        NODE_ANSWER=/tmp/node_answer$$
+        [ -f $NODE_ANSWER ] && rm -f $NODE_ANSWER
+        ping -c 1 $NODE > $NODE_ANSWER 2>&1
+        if [ $? != "0" ]
+        then
+            echo $DASHLINE
+            echo "# node $NODE is unreachable"
+            echo "# check the entries in $cookbook_dir/COMMON_NODES.sh"
+            echo $DASHLINE
+            cat $NODE_ANSWER
+            rm -f $NODE_ANSWER
+            exit 1
+        fi 
+        [ -f $NODE_ANSWER ] && rm -f $NODE_ANSWER
+    done
+}
+
 function check_for_deprecated_installer
 {
     if [ -z "$USE_TPM" ]
     then
-        LINE="## -------------------------------------------------------------------------------------"
         [ -z "$INSTALLATION_DELAY" ] && INSTALLATION_DELAY=30
-        echo $LINE
+        echo $DASHLINE
         echo "## Installation with deprecated method will resume in $INSTALLATION_DELAY seconds - Hit CTRL+C now to abort"
-        echo $LINE
+        echo $DASHLINE
         echo "## WARNING: INSTALLATION WITH tungsten-installer and configure-service IS DEPRECATED"
         echo "## Tungsten Cookbook only supports tpm-based installations"
         echo "## To install with tpm, please reset the variable 'USE_OLD_INSTALLER' and start again "
-        echo $LINE
+        echo $DASHLINE
         for N in $(seq 1 $INSTALLATION_DELAY)
         do
             MOD_FIVE=$(($N%5))
