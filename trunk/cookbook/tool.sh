@@ -33,7 +33,7 @@ fi
 . $cookbook_dir/BOOTSTRAP.sh $NODES
 . $cookbook_dir/utilities.sh
 
-SUPPORTED_TOOLS="help readme paths configure_service backups copy_backup query_node query_all_nodes tungsten_service insert_retrieve trepctl thl replicator heartbeat services log vilog vimlog emacslog conf vimconf emacsconf"
+SUPPORTED_TOOLS="help readme paths configure_service backups copy_backup query_node query_all_nodes tungsten_service insert_retrieve trepctl multi_trepctl tungsten_set_position tungsten_provision_slave tungsten_read_master_events thl replicator heartbeat services log vilog vimlog emacslog conf vimconf emacsconf"
 CONF_DIR="$TUNGSTEN_BASE/tungsten/tungsten-replicator/conf/"
 
 if [ -z "$1" ]
@@ -116,6 +116,7 @@ function show_paths
     do
         printf "%15s : %s\n" $BIN "$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/$BIN"
     done
+    printf "%15s : %s\n" 'scripts' "$TUNGSTEN_BASE/tungsten/tungsten-replicator/scripts"
     printf "%15s : %s\n" 'log' "$TUNGSTEN_BASE/tungsten/tungsten-replicator/log/trepsvc.log"
     printf "%15s : %s\n" 'service-cfg' "$TUNGSTEN_BASE/tungsten/tools/configure-service"
     printf "%15s : %s\n" 'conf' $CONF_DIR
@@ -240,6 +241,7 @@ case "$ARG"
         show_paths $1
        ;;
     configure_service)
+        echo "WARNING: This command is deprecated - Future versions of Tungsten Cookbook will only support tpm-based installations"
         $TUNGSTEN_BASE/tungsten/tools/configure-service $@
         ;;
     tungsten_service)
@@ -262,6 +264,18 @@ case "$ARG"
     copy_backup)
         copy_backup_files $1 $2 $3
        ;;
+    tungsten_read_master_events)
+        $TUNGSTEN_READ_MASTER_EVENTS $@
+        ;;
+    tungsten_provision_slave)
+        $TUNGSTEN_PROVISION_SLAVE $@
+        ;;
+    tungsten_set_position)
+        $TUNGSTEN_SET_POSITION $@
+        ;;
+    multi_trepctl)
+        $MULTI_TREPCTL $@
+        ;;
     trepctl)
         $TREPCTL $@
         ;;

@@ -72,9 +72,14 @@ trepctl                                Shortcut to the 'trepctl' command
 thl                                    Shortcut to the 'thl' command
 tool.sh                                Internal shortcut engine (not to use directly)
 
+tungsten_provision_slave               Shortcut to the 'tungsten_provision_slave' script
+tungsten_set_position                  Shortcut to the 'tungsten_set_position' script 
+tungsten_read_master_events            Shortcut to the 'tungsten_read_master_events' script 
+multi_trepctl                          Shortcut to the 'multi_trepctl' script 
+
 query_node  node query                 runs a query in a given node
 query_all_nodes query                  runs a query in all nodes
-configure_service                      Shortcut to $TUNGSTEN_BASE/configure_service
+configure_service                      Shortcut to $TUNGSTEN_BASE/configure_service (DEPRECATED)
 conf                                   Shows the configuration files using 'less'
 show_conf                              Same as 'conf.sh'
 edit_conf                              Edits the configuration files using 'vim'
