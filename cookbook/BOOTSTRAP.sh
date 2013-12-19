@@ -105,7 +105,7 @@ INSTALLER_IN_CLUSTER=0
 # CURRENT_HOST_IP=$(hostname --ip)
 CURRENT_HOST_IPs=$(/sbin/ifconfig |perl -lne 'if ( /inet/) {print $1 if /\s*(\d+\.\d+\.\d+\.\d+)/}')
 
-export VERBOSE=1
+[ -z "$VERBOSE" ] && export VERBOSE=1
 if [ -n "$NOVERBOSE" -o -n "$QUIET" ]
 then
     unset VERBOSE
@@ -231,6 +231,10 @@ fi
 
 export REPLICATOR=$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/replicator
 export TREPCTL="$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/trepctl -port $RMI_PORT"
+export MULTI_TREPCTL="$TUNGSTEN_BASE/tungsten/tungsten-replicator/scripts/multi_trepctl"
+export TUNGSTEN_SET_POSITION="$TUNGSTEN_BASE/tungsten/tungsten-replicator/scripts/tungsten_set_position"
+export TUNGSTEN_PROVISION_SLAVE="$TUNGSTEN_BASE/tungsten/tungsten-replicator/scripts/tungsten_provision_slave"
+export TUNGSTEN_READ_MASTER_EVENTS="$TUNGSTEN_BASE/tungsten/tungsten-replicator/scripts/tungsten_read_master_events"
 export THL=$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/thl
 export INSTALL_LOG=$cookbook_dir/current_install.log
 export INSTALL_SUMMARY=$cookbook_dir/current_install.summary

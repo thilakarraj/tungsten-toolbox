@@ -67,6 +67,7 @@ for F in * $(ls -d */*)
 do
     SKIP=$(echo $F | perl -lne 'print 1 if /(~|\.bak)$/') 
     if [ "$F" == "TODO" ] ; then SKIP=1; fi
+    if [ "$F" == "changes" ] ; then SKIP=1; fi
     if [ -d $F ] ; then SKIP=1; fi
     if [ -z "$SKIP" ]
     then
