@@ -1,6 +1,6 @@
 #!/bin/bash
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
-# Version 1.0.6 - 2013-08-11
+# Version 1.0.10 - 2013-12-23
 
 cookbook_dir=$(dirname $0)
 
@@ -84,7 +84,7 @@ function ok_equal
     else
         echo -n "not ok"
         FAILED=$(($FAILED+1))
-        msg="$msg (expected: <$expected>)"
+        msg="$msg (found: <$fact> - expected: <$expected>)"
     fi
     TESTS=$(($TESTS+1))
     TEST_N=$(printf "%05d" $TESTS)
@@ -174,13 +174,38 @@ function check_if_replicators_are_running
 {
     msg=$1
     echo "# Testing for running replicators - $msg"
+    EXPECTED_PROPERTIES_STATUS=38
+    EXPECTED_PROPERTIES_SERVICE=7
+    EXPECTED_PROPERTIES_SERVICE_FULL=39
+
     all_running=yes
     for RNODE in ${ALL_NODES[*]}
     do
+        NUMSERVICES=$($TREPCTL -host $RNODE services | grep -w serviceName | awk '{print $3}'|wc -l)
+        EXPECTED_PROPERTIES_SERVICES=$(($EXPECTED_PROPERTIES_SERVICE*$NUMSERVICES))
+        EXPECTED_PROPERTIES_SERVICES_FULL=$(($EXPECTED_PROPERTIES_SERVICE_FULL*$NUMSERVICES))
+        RTMPSERVICES=services$$.txt
+        RTMPSERVICES_FULL=servicesfull$$.txt
+
+        $TREPCTL -host $RNODE services > $RTMPSERVICES
+        $TREPCTL -host $RNODE services -full > $RTMPSERVICES_FULL
+        HOW_MANY_PROPERTIES_SERVICES=$(grep -v '^\(Processing\|NAME\|Finished\|----\)' $RTMPSERVICES |awk '{print $1}' | wc -l)
+
+        ok_equal $HOW_MANY_PROPERTIES_SERVICES $EXPECTED_PROPERTIES_SERVICES \
+            "Services of node $RNODE produces $EXPECTED_PROPERTIES_SERVICES properties ($EXPECTED_PROPERTIES_SERVICE x $NUMSERVICES services)"
+        HOW_MANY_PROPERTIES_SERVICES_FULL=$(grep -v '^\(Processing\|NAME\|Finished\|----\)' $RTMPSERVICES_FULL |awk '{print $1}' | wc -l)
+        ok_equal $HOW_MANY_PROPERTIES_SERVICES_FULL $EXPECTED_PROPERTIES_SERVICES_FULL \
+            "[Full] services of node $RNODE produces $EXPECTED_PROPERTIES_SERVICES_FULL properties ($EXPECTED_PROPERTIES_SERVICE_FULL x $NUMSERVICES services)"
+
+        rm -f $RTMPSERVICES
+        rm -f $RTMPSERVICES_FULL
         for RSERVICE in $($TREPCTL -host $RNODE services | grep -w serviceName | awk '{print $3}')
         do
             RTMPSTATUS=status$$.txt
             $TREPCTL -host $RNODE -service $RSERVICE status > $RTMPSTATUS
+
+            HOW_MANY_PROPERTIES_STATUS=$(grep -v '^\(Processing\|NAME\|Finished\|----\)' $RTMPSTATUS |awk '{print $1}' | wc -l)
+            ok_equal $HOW_MANY_PROPERTIES_STATUS $EXPECTED_PROPERTIES_STATUS "Status of node $RNODE service $RSERVICE produces $EXPECTED_PROPERTIES_STATUS properties"
             RSTATE=$(grep -w state $RTMPSTATUS | awk '{print $3}')
             SEQNO=$( grep appliedLastSeqno $RTMPSTATUS | awk '{print $3}')
             RROLE=$( grep -w role $RTMPSTATUS | awk '{print $3}')
