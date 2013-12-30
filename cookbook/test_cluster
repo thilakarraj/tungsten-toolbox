@@ -134,9 +134,9 @@ function check_executables
     DATASCAN="$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/datascan"
     TPASSWD="$TUNGSTEN_BASE/tungsten/cluster-home/bin/tpasswd"
     TPM="$TUNGSTEN_BASE/tungsten/tools/tpm"
-    #T_READ_MASTER_LOGS="$TUNGSTEN_BASE/tungsten/tungsten-replicator/scripts/tungsten_read_master_events"
-    #T_PROVISION_SLAVE="$TUNGSTEN_BASE/tungsten/tungsten-replicator/scripts/tungsten_provision_slave"
-    #T_SET_POSITION="$TUNGSTEN_BASE/tungsten/tungsten-replicator/scripts/tungsten_set_position"
+    T_READ_MASTER_LOGS="$TUNGSTEN_BASE/tungsten/tungsten-replicator/scripts/tungsten_read_master_events"
+    T_PROVISION_SLAVE="$TUNGSTEN_BASE/tungsten/tungsten-replicator/scripts/tungsten_provision_slave"
+    T_SET_POSITION="$TUNGSTEN_BASE/tungsten/tungsten-replicator/scripts/tungsten_set_position"
     APP_NAMES=(replicator trepctl thl ddlscan datascan tpasswd tpm tungsten_read_master_events tungsten_provision_slave tungsten_set_position)
     APP_PATHS=($REPLICATOR $TREPCTL_EXEC $THL $DDLSCAN $DATASCAN $TPASSWD $TPM $T_READ_MASTER_LOGS $T_PROVISION_SLAVE $T_SET_POSITION)
     APP_ARGS=(help help help -help -help -h --help --help --help --help)
