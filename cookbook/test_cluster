@@ -1,6 +1,6 @@
 #!/bin/bash
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
-# Version 1.0.10 - 2013-12-23
+# Version 1.0.11 - 2013-12-30
 
 cookbook_dir=$(dirname $0)
 
@@ -125,16 +125,21 @@ function check_security_status
     done
 }
 
-function check_binary_apps
+function check_executables
 {
     msg=$1
+    REPLICATOR="$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/replicator"
     TREPCTL_EXEC="$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/trepctl"
     DDLSCAN="$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/ddlscan"
     DATASCAN="$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/datascan"
     TPASSWD="$TUNGSTEN_BASE/tungsten/cluster-home/bin/tpasswd"
-    APP_NAMES=(replicator trepctl thl ddlscan datascan tpasswd)
-    APP_PATHS=($REPLICATOR $TREPCTL_EXEC $THL $DDLSCAN $DATASCAN $TPASSWD)
-    APP_ARGS=(help help help -help -help -h )
+    TPM="$TUNGSTEN_BASE/tungsten/tools/tpm"
+    #T_READ_MASTER_LOGS="$TUNGSTEN_BASE/tungsten/tungsten-replicator/scripts/tungsten_read_master_events"
+    #T_PROVISION_SLAVE="$TUNGSTEN_BASE/tungsten/tungsten-replicator/scripts/tungsten_provision_slave"
+    #T_SET_POSITION="$TUNGSTEN_BASE/tungsten/tungsten-replicator/scripts/tungsten_set_position"
+    APP_NAMES=(replicator trepctl thl ddlscan datascan tpasswd tpm tungsten_read_master_events tungsten_provision_slave tungsten_set_position)
+    APP_PATHS=($REPLICATOR $TREPCTL_EXEC $THL $DDLSCAN $DATASCAN $TPASSWD $TPM $T_READ_MASTER_LOGS $T_PROVISION_SLAVE $T_SET_POSITION)
+    APP_ARGS=(help help help -help -help -h --help --help --help --help)
     echo "# Testing for executables - $msg"
     for NODE in ${ALL_NODES[*]}
     do
@@ -227,7 +232,7 @@ function check_if_replicators_are_running
 }
 
 check_security_status
-check_binary_apps "Before all tests"
+check_executables "Before all tests"
 check_if_replicators_are_running 'Before tests'
 
 DATA_POSTFIX=''
