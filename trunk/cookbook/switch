@@ -10,6 +10,12 @@ fi
 . $cookbook_dir/BOOTSTRAP.sh NODES_MASTER_SLAVE.sh
 check_current_topology "master_slave"
 
+if [ -f $cookbook_dir/data_loading ]
+then
+    echo "There is a loading process running. Please disable it ($cookbook_dir/load_data stop)"
+    exit 1
+fi
+
 function find_roles {
     SLAVE_COUNT=0
     SLAVES=()

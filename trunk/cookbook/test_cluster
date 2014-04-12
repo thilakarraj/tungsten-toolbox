@@ -71,45 +71,6 @@ TESTS=0
 PASSED=0
 FAILED=0
 
-function ok_equal
-{
-    fact=$1
-    expected=$2
-    msg=$3
-    # echo "++ <$1> <$2> <$3>"
-    if [ "$fact" == "$expected" ]
-    then
-        echo -n "ok"
-        PASSED=$(($PASSED+1))
-    else
-        echo -n "not ok"
-        FAILED=$(($FAILED+1))
-        msg="$msg (found: <$fact> - expected: <$expected>)"
-    fi
-    TESTS=$(($TESTS+1))
-    TEST_N=$(printf "%05d" $TESTS)
-    TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
-    echo " - ($TEST_N) [$TIMESTAMP] $msg"
-}
-
-
-function ok_greater
-{
-    fact=$1
-    expected=$2
-    msg=$3
-    if [ $fact -ge $expected ]
-    then
-        echo -n "ok"
-        PASSED=$(($PASSED+1))
-    else
-        echo -n "not ok"
-        FAILED=$(($FAILED+1))
-    fi
-    echo " - $msg"
-    TESTS=$(($TESTS+1))
-}
-
 function check_security_status
 {
     for NODE in ${ALL_NODES[*]}
@@ -391,6 +352,13 @@ do
         check_for_table "test" "t$COUNT" 0 $NODE
         check_for_table "test" "boundaries$COUNT" 0 $NODE
         $MYSQL -h $NODE -e "drop table if exists test.v$COUNT"
+        $MYSQL -h $NODE -e "drop table if exists test.test_sql_mode$COUNT"
+        $MYSQL -h $NODE -e "create table test.test_sql_mode$COUNT(i int)"
+        
+        # This is a test for ISSUE#821
+        # Replication will fail if this issue has a regression
+        $MYSQL -h $NODE -e "set sql_mode=STRICT_ALL_TABLES;set binlog_format=row;insert into test.test_sql_mode$COUNT values (1)"
+        # 
         $MYSQL -h $NODE -e "create table test.t$COUNT(id int not null primary key, c char(20), b blob, t text, ti time$DDL_POSTFIX, d date, dt datetime$DDL_POSTFIX, ts timestamp$DDL_POSTFIX, f double(20,15), e enum ('one', 'two', 'three'), s set ('yellow','red', 'white','blue')) engine=innodb"
         $MYSQL -h $NODE -e "create table test.tu$COUNT(id int not null primary key, c char(20), t tinyint, ut tinyint unsigned, s smallint, us smallint unsigned, m mediumint, um mediumint unsigned, i int, ui int unsigned, b bigint, ub bigint unsigned ) engine=innodb"
         $MYSQL -h $NODE -e "create or replace view test.v$COUNT as select * from test.t$COUNT"
@@ -398,10 +366,10 @@ do
 
         check_for_table "test" "t$COUNT" 1 $NODE
         check_for_table "test" "boundaries$COUNT" 1 $NODE
-        $MYSQL -h $NODE -e "insert into test.boundaries$COUNT values (1, 'inserted by node #$COUNT', null, null, null, null)"
-        $MYSQL -h $NODE -e "insert into test.boundaries$COUNT values (2, 'inserted by node #$COUNT', '0', '0', '0', '0')"
-        $MYSQL -h $NODE -e "insert into test.boundaries$COUNT values (3, 'inserted by node #$COUNT', '$MIN_TIME', '$MIN_D', '$MIN_DT', '$MIN_TS')"
-        $MYSQL -h $NODE -e "insert into test.boundaries$COUNT values (4, 'inserted by node #$COUNT', '$MAX_TIME', '$MAX_D', '$MAX_DT', '$MAX_TS')"
+        $MYSQL -h $NODE -e "set sql_mode=''; insert into test.boundaries$COUNT values (1, 'inserted by node #$COUNT', null, null, null, null)"
+        $MYSQL -h $NODE -e "set sql_mode=''; insert into test.boundaries$COUNT values (2, 'inserted by node #$COUNT', '0', '0', '0', '0')"
+        $MYSQL -h $NODE -e "set sql_mode=''; insert into test.boundaries$COUNT values (3, 'inserted by node #$COUNT', '$MIN_TIME', '$MIN_D', '$MIN_DT', '$MIN_TS')"
+        $MYSQL -h $NODE -e "set sql_mode=''; insert into test.boundaries$COUNT values (4, 'inserted by node #$COUNT', '$MAX_TIME', '$MAX_D', '$MAX_DT', '$MAX_TS')"
         $MYSQL -h $NODE -e "insert into test.v$COUNT values (1, 'inserted by node #$COUNT', '$SAMPLE_BLOB', '$SAMPLE_T', '$SAMPLE_TIME', '$SAMPLE_D', '$SAMPLE_DT', '$SAMPLE_TS', $SAMPLE_F,'$SAMPLE_ENUM', '$SAMPLE_SET')"
         $MYSQL -h $NODE -e "insert into test.tu$COUNT values (1, 'inserted by node #$COUNT', $SAMPLE_TINYINT, $SAMPLE_U_TINYINT, $SAMPLE_SMALLINT, $SAMPLE_U_SMALLINT, $SAMPLE_MEDIUMINT, $SAMPLE_U_MEDIUMINT, $SAMPLE_INT,$SAMPLE_U_INT, $SAMPLE_BIGINT, $SAMPLE_U_BIGINT)"
         check_for_records "test" "t$COUNT" 1 $NODE
@@ -497,6 +465,21 @@ done  # iter
 
 check_if_replicators_are_running 'After tests'
 check_security_status
+
+if [ -f $cookbook_dir/data_loading ]
+then
+    if [ -n "$CHECK_CONTENTS" ]
+    then
+        $cookbook_dir/load_data stop
+        exit_code=$?
+        if [ "$exit_code" != "0" ]
+        then
+            FAILED=$(($FAILED+$exit_code))
+            TESTS=$(($TESTS+$exit_code))
+        fi
+    fi
+fi
+
 #
 PASSED_PERCENTAGE=$(ruby -e 'print eval(ARGV[0])' "$PASSED.0/$TESTS.0*100" )
 FAILED_PERCENTAGE=$(ruby -e 'print eval(ARGV[0])' "$FAILED.0/$TESTS.0*100" )

@@ -5,4 +5,4 @@ cookbook_dir=$(dirname $0)
 cd $cookbook_dir
 cookbook_dir=$PWD
 cd "$cookbook_dir/../"
-$cookbook_dir/tool.sh multi_trepctl $@
+$cookbook_dir/tool.sh multi_trepctl --paths=self --fields host,service,role,state,seqno,latency $@

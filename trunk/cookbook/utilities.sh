@@ -168,4 +168,42 @@ function run_command
     fi
 }
 
+function ok_equal
+{
+    fact=$1
+    expected=$2
+    msg=$3
+    # echo "++ <$1> <$2> <$3>"
+    if [ "$fact" == "$expected" ]
+    then
+        echo -n "ok"
+        PASSED=$(($PASSED+1))
+    else
+        echo -n "not ok"
+        FAILED=$(($FAILED+1))
+        msg="$msg (found: <$fact> - expected: <$expected>)"
+    fi
+    TESTS=$(($TESTS+1))
+    TEST_N=$(printf "%05d" $TESTS)
+    TIMESTAMP=$(date "+%Y-%m-%d %H:%M:%S")
+    echo " - ($TEST_N) [$TIMESTAMP] $msg"
+}
+
+
+function ok_greater
+{
+    fact=$1
+    expected=$2
+    msg=$3
+    if [ $fact -ge $expected ]
+    then
+        echo -n "ok"
+        PASSED=$(($PASSED+1))
+    else
+        echo -n "not ok"
+        FAILED=$(($FAILED+1))
+    fi
+    echo " - $msg"
+    TESTS=$(($TESTS+1))
+}
 
