@@ -1,6 +1,6 @@
 #!/bin/bash
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
-# Version 1.0.5 - 2013-04-03
+# Version 1.0.12 - 2014-04-12
 cookbook_dir=$(dirname $0)
 
 function gethelp
@@ -142,14 +142,18 @@ function check_contents
         FIRST_COUNT=''
         for HOST in ${ALL_NODES[*]}
         do
-            echo -n "# COUNT host $HOST - db: $DB - "
-            COUNT=$($MYSQL -h $HOST -BN -e "select count(*) from $DB.tbl3")
-            echo $COUNT
-            if [ -n "$FIRST_COUNT" ]
+            DB_EXISTS=$($MYSQL -h $HOST -BN -e "show schemas like '$DB'")
+            if [ "$DB_EXISTS" == "$DB" ]
             then
-                ok_equal $COUNT $FIRST_COUNT "Count in $HOST matches"
-            else
-                FIRST_COUNT=$COUNT
+                echo -n "# COUNT host $HOST - db: $DB - "
+                COUNT=$($MYSQL -h $HOST -BN -e "select count(*) from $DB.tbl3")
+                echo $COUNT
+                if [ -n "$FIRST_COUNT" ]
+                then
+                    ok_equal $COUNT $FIRST_COUNT "Count in host $HOST (db $DB) matches"
+                else
+                    FIRST_COUNT=$COUNT
+                fi
             fi
         done
     done
@@ -159,14 +163,18 @@ function check_contents
         FIRST_CRC=''
         for HOST in ${ALL_NODES[*]}
         do
-            echo -n "# CRC host $HOST - "
-            CRC=$($MYSQL -h $HOST -BN -e "checksum table $DB.tbl3" | awk '{print $2}')
-            echo $CRC
-            if [ -n "$FIRST_CRC" ]
+            DB_EXISTS=$($MYSQL -h $HOST -BN -e "show schemas like '$DB'")
+            if [ "$DB_EXISTS" == "$DB" ]
             then
-                ok_equal $CRC $FIRST_CRC "CRC in $HOST matches"
-            else
-                FIRST_CRC=$CRC
+                echo -n "# CRC host $HOST - db $DB - "
+                CRC=$($MYSQL -h $HOST -BN -e "checksum table $DB.tbl3" | awk '{print $2}')
+                echo $CRC
+                if [ -n "$FIRST_CRC" ]
+                then
+                    ok_equal $CRC $FIRST_CRC "CRC in host $HOST (db $DB) matches"
+                else
+                    FIRST_CRC=$CRC
+                fi
             fi
         done
     done
