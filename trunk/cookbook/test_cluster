@@ -352,13 +352,7 @@ do
         check_for_table "test" "t$COUNT" 0 $NODE
         check_for_table "test" "boundaries$COUNT" 0 $NODE
         $MYSQL -h $NODE -e "drop table if exists test.v$COUNT"
-        $MYSQL -h $NODE -e "drop table if exists test.test_sql_mode$COUNT"
-        $MYSQL -h $NODE -e "create table test.test_sql_mode$COUNT(i int)"
         
-        # This is a test for ISSUE#821
-        # Replication will fail if this issue has a regression
-        $MYSQL -h $NODE -e "set sql_mode=STRICT_ALL_TABLES;set binlog_format=row;insert into test.test_sql_mode$COUNT values (1)"
-        # 
         $MYSQL -h $NODE -e "create table test.t$COUNT(id int not null primary key, c char(20), b blob, t text, ti time$DDL_POSTFIX, d date, dt datetime$DDL_POSTFIX, ts timestamp$DDL_POSTFIX, f double(20,15), e enum ('one', 'two', 'three'), s set ('yellow','red', 'white','blue')) engine=innodb"
         $MYSQL -h $NODE -e "create table test.tu$COUNT(id int not null primary key, c char(20), t tinyint, ut tinyint unsigned, s smallint, us smallint unsigned, m mediumint, um mediumint unsigned, i int, ui int unsigned, b bigint, ub bigint unsigned ) engine=innodb"
         $MYSQL -h $NODE -e "create or replace view test.v$COUNT as select * from test.t$COUNT"
