@@ -29,6 +29,12 @@ fi
 
 case $OPERATION in
     start)
+        if [ -f $cookbook_dir/data_loading ]
+        then
+            echo "A load is already running (found $cookbook_dir/data_loading)"
+            echo "Stop current load before starting a new one"
+            exit 1
+        fi
         ;;
     stop)
         ;;
