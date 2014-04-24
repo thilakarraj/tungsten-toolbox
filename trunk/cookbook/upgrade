@@ -4,6 +4,13 @@
 
 cookbook_dir=$(dirname $0)
 
+export USE_TPM=1
+if [ -n "$USE_OLD_INSTALLER" ]
+then
+    unset USE_TPM
+fi
+
+
 function warning_deprecated
 {
     LINE="### ---------------------------------------------------------------------------------"
@@ -105,8 +112,8 @@ then
         HOST_LIST="$HOST_LIST$NODE"
     done
     echo "if [ -f ./deploy.cfg ] ; then rm ./deploy.cfg ; fi"
-    echo "./tools/tpm fetch --hosts=$HOST_LIST --directory=$TUNGSTEN_BASE"
-    echo "./tools/tpm update"
+    echo "./tools/tpm fetch --hosts=$HOST_LIST --release-directory=$TUNGSTEN_BASE"
+    echo "./tools/tpm update "
     # echo "./tools/tpm start"
     for NODE in ${NODES[*]}
     do
