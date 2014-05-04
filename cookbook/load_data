@@ -1,6 +1,6 @@
 #!/bin/bash
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
-# Version 1.0.12 - 2014-04-12
+# Version 1.0.13 - 2014-04-12
 cookbook_dir=$(dirname $0)
 
 function gethelp
@@ -145,13 +145,10 @@ do
     fi
 done
 
-function check_contents
+function catch_up_replication
 {
-    echo ""
-    [ -z "$TESTS" ]  && TESTS=0
-    [ -z "$PASSED" ] && PASSED=0
-    [ -z "$FAILED" ] && FAILED=0
-    TIMEOUT=120
+    TIMEOUT=$1
+    [ -z "$TIMEOUT" ] && TIMEOUT=120
     # Before attempting a checksum, we need to make sure that replication has happened till the latest seqno in all services
     for update in $($cookbook_dir/multi_trepctl --role master --fields host,service,seqno --output list --hide-headers | tr ';' ' ')
     do
@@ -177,12 +174,6 @@ function check_contents
             fi
         done
     done
-    for HOST in ${ALL_NODES[*]}
-    do
-        SERVICES=
-        $cookbook_dir/multi_trepctl --hosts $HOST --role master 
-
-    done
     for DB in ${CHECKSUM_DBS[*]}
     do
         FIRST_COUNT=''
@@ -203,7 +194,27 @@ function check_contents
             fi
         done
     done
+}
 
+function check_contents
+{
+    echo ""
+    [ -z "$TESTS" ]  && TESTS=0
+    [ -z "$PASSED" ] && PASSED=0
+    [ -z "$FAILED" ] && FAILED=0
+    TIMEOUT=120
+    installer=$(cat $cookbook_dir/current_install.summary|grep "Installation tool" | awk '{print $4}' )
+    if [ "$installer" == "tungsten-installer" ]
+    then
+        echo "# No multi_trepctl available with tungsten-installer. Sleeping 120 seconds"
+        timer $TIMEOUT 10
+    elif [ "$installer" == "tpm" ]
+    then
+        catch_up_replication $TIMEOUT
+    else
+        echo "Unable to find current installer"
+        exit 1
+    fi
     for DB in ${CHECKSUM_DBS[*]}
     do
         FIRST_CRC=''
