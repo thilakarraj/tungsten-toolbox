@@ -5,8 +5,13 @@ cookbook_dir=$(dirname $0)
 
 function gethelp
 {
-    echo "syntax: $0 {start|stop|print}"
+    echo "syntax: $0 [start|stop|print|help] (default: start)"
     echo "Starts (or stops) a Bristlecone load in every master deployed in the current topology"
+    echo ""
+    echo "Environment variables that can be used:"
+    echo "CHECK_CONTENTS=1  will activate database checksum (used after 'stop')"
+    echo "LOAD_TEST_OPTIONS=some_options will pass some_options to concurrent_evaluator.pl (for example LOAD_TEST_OPTIONS=--instances=5)"
+    echo ""
     echo "For more info about this load, see "
     echo  "./bristlecone/bin/concurrent_evaluator.pl --help"
     exit
@@ -37,6 +42,9 @@ case $OPERATION in
         fi
         ;;
     stop)
+        ;;
+    help)
+        gethelp
         ;;
     print)
         ;;
@@ -143,6 +151,38 @@ function check_contents
     [ -z "$TESTS" ]  && TESTS=0
     [ -z "$PASSED" ] && PASSED=0
     [ -z "$FAILED" ] && FAILED=0
+    TIMEOUT=120
+    # Before attempting a checksum, we need to make sure that replication has happened till the latest seqno in all services
+    for update in $($cookbook_dir/multi_trepctl --role master --fields host,service,seqno --output list --hide-headers | tr ';' ' ')
+    do
+        # echo "<$update>"
+        master=$(echo $update | tr ',' ' ' | awk '{print $1}')
+        service=$(echo $update | tr ',' ' ' | awk '{print $2}')
+        seqno=$(echo $update | tr ',' ' ' | awk '{print $3}')
+        if [ -n "$VERBOSE" ]
+        then
+            echo "# master $master - service: $service - seqno : $seqno"
+        fi
+        for HOST in ${ALL_NODES[*]}
+        do
+            if [ "$HOST" != "$master" ]
+            then
+                $cookbook_dir/trepctl -host $HOST -service $service wait -applied $seqno -limit $TIMEOUT
+                slave_seqno=$($cookbook_dir/trepctl -host $HOST -service $service status | grep appliedLastSeqno | awk '{print $3}')
+                ok_equal $seqno $slave_seqno "Slave $HOST has applied seqno $seqno within $TIMEOUT seconds"
+                if [ -n "$VERBOSE" ]
+                then
+                    echo "# host: $HOST - service: $service -  seqno: $slave_seqno"
+                fi  
+            fi
+        done
+    done
+    for HOST in ${ALL_NODES[*]}
+    do
+        SERVICES=
+        $cookbook_dir/multi_trepctl --hosts $HOST --role master 
+
+    done
     for DB in ${CHECKSUM_DBS[*]}
     do
         FIRST_COUNT=''
