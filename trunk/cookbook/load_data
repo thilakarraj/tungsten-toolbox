@@ -150,12 +150,20 @@ function catch_up_replication
     TIMEOUT=$1
     [ -z "$TIMEOUT" ] && TIMEOUT=120
     # Before attempting a checksum, we need to make sure that replication has happened till the latest seqno in all services
+    if [ -n "$HUB" -a -n "$HUB_SERVICE" ]
+    then
+        $cookbook_dir/trepctl -host $HUB -service $HUB_SERVICE heartbeat
+    fi
     for update in $($cookbook_dir/multi_trepctl --role master --fields host,service,seqno --output list --hide-headers | tr ';' ' ')
     do
         # echo "<$update>"
         master=$(echo $update | tr ',' ' ' | awk '{print $1}')
         service=$(echo $update | tr ',' ' ' | awk '{print $2}')
         seqno=$(echo $update | tr ',' ' ' | awk '{print $3}')
+        
+        # When using asymmetric topologies, such as star, some events from the spokes are not reported to all the other spokes.
+        #seqno=$(($seqno-1))
+
         if [ -n "$VERBOSE" ]
         then
             echo "# master $master - service: $service - seqno : $seqno"
@@ -164,32 +172,16 @@ function catch_up_replication
         do
             if [ "$HOST" != "$master" ]
             then
-                $cookbook_dir/trepctl -host $HOST -service $service wait -applied $seqno -limit $TIMEOUT
-                slave_seqno=$($cookbook_dir/trepctl -host $HOST -service $service status | grep appliedLastSeqno | awk '{print $3}')
-                ok_equal $seqno $slave_seqno "Slave $HOST has applied seqno $seqno within $TIMEOUT seconds"
-                if [ -n "$VERBOSE" ]
+                has_service=$($cookbook_dir/trepctl -host $HOST services |grep serviceName |grep $service )
+                if [ -n "$has_service" ]
                 then
-                    echo "# host: $HOST - service: $service -  seqno: $slave_seqno"
-                fi  
-            fi
-        done
-    done
-    for DB in ${CHECKSUM_DBS[*]}
-    do
-        FIRST_COUNT=''
-        for HOST in ${ALL_NODES[*]}
-        do
-            DB_EXISTS=$($MYSQL -h $HOST -BN -e "show schemas like '$DB'")
-            if [ "$DB_EXISTS" == "$DB" ]
-            then
-                echo -n "# COUNT host $HOST - db: $DB - "
-                COUNT=$($MYSQL -h $HOST -BN -e "select count(*) from $DB.tbl3")
-                echo $COUNT
-                if [ -n "$FIRST_COUNT" ]
-                then
-                    ok_equal $COUNT $FIRST_COUNT "Count in host $HOST (db $DB) matches"
-                else
-                    FIRST_COUNT=$COUNT
+                    $cookbook_dir/trepctl -host $HOST -service $service wait -applied $seqno -limit $TIMEOUT
+                    slave_seqno=$($cookbook_dir/trepctl -host $HOST -service $service status | grep appliedLastSeqno | awk '{print $3}')
+                    ok_equal $seqno $slave_seqno "Slave $HOST has applied seqno $seqno within $TIMEOUT seconds"
+                    if [ -n "$VERBOSE" ]
+                    then
+                        echo "# host: $HOST - service: $service -  seqno: $slave_seqno"
+                    fi  
                 fi
             fi
         done
@@ -215,6 +207,28 @@ function check_contents
         echo "Unable to find current installer"
         exit 1
     fi
+
+    for DB in ${CHECKSUM_DBS[*]}
+    do
+        FIRST_COUNT=''
+        for HOST in ${ALL_NODES[*]}
+        do
+            DB_EXISTS=$($MYSQL -h $HOST -BN -e "show schemas like '$DB'")
+            if [ "$DB_EXISTS" == "$DB" ]
+            then
+                echo -n "# COUNT host $HOST - db: $DB - "
+                COUNT=$($MYSQL -h $HOST -BN -e "select count(*) from $DB.tbl3")
+                echo $COUNT
+                if [ -n "$FIRST_COUNT" ]
+                then
+                    ok_equal $COUNT $FIRST_COUNT "Count in host $HOST (db $DB) matches"
+                else
+                    FIRST_COUNT=$COUNT
+                fi
+            fi
+        done
+    done
+
     for DB in ${CHECKSUM_DBS[*]}
     do
         FIRST_CRC=''
