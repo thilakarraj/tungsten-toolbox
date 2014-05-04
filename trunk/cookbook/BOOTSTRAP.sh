@@ -145,6 +145,26 @@ function check_if_nodes_are_reachable
     done
 }
 
+function timer
+{
+    timeout=$1
+    step=$2
+    [ -z "$step" ] && step=5
+        for N in $(seq 1 $timeout)
+        do
+            MOD_STEP=$(($N%$step))
+            if [ "$MOD_STEP" == "0" ]
+            then
+                echo -n "$N"
+            else
+                echo -n '.'
+            fi
+            sleep 1
+        done
+        echo ''
+}
+
+
 function check_for_deprecated_installer
 {
     if [ -z "$USE_TPM" ]
@@ -157,18 +177,19 @@ function check_for_deprecated_installer
         echo "## Tungsten Cookbook only supports tpm-based installations"
         echo "## To install with tpm, please reset the variable 'USE_OLD_INSTALLER' and start again "
         echo $DASHLINE
-        for N in $(seq 1 $INSTALLATION_DELAY)
-        do
-            MOD_FIVE=$(($N%5))
-            if [ "$MOD_FIVE" == "0" ]
-            then
-                echo -n "$N"
-            else
-                echo -n '.'
-            fi
-            sleep 1
-        done
-        echo ''
+        timer $INSTALLATION_DELAY 5
+        #for N in $(seq 1 $INSTALLATION_DELAY)
+        #do
+        #    MOD_STEP=$(($N%5))
+        #    if [ "$MOD_STEP" == "0" ]
+        #    then
+        #        echo -n "$N"
+        #    else
+        #        echo -n '.'
+        #    fi
+        #    sleep 1
+        #done
+        #echo ''
     fi
 }
 
