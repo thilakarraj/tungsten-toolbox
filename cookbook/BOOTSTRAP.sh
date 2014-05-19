@@ -111,18 +111,7 @@ then
     unset VERBOSE
 fi
 
-if [ -n "$USE_OLD_INSTALLER" -a  -n "$USE_TPM" ]
-then
-    echo "Both USE_OLD_INSTALLER and USE_TPM are set. They are mutually exclusive. "
-    echo "Please remove one of them. "
-    exit 1
-fi
-
 export USE_TPM=1
-if [ -n "$USE_OLD_INSTALLER" ]
-then
-    unset USE_TPM
-fi
 
 function check_if_nodes_are_reachable
 {
@@ -164,34 +153,6 @@ function timer
         echo ''
 }
 
-
-function check_for_deprecated_installer
-{
-    if [ -z "$USE_TPM" ]
-    then
-        [ -z "$INSTALLATION_DELAY" ] && INSTALLATION_DELAY=30
-        echo $DASHLINE
-        echo "## Installation with deprecated method will resume in $INSTALLATION_DELAY seconds - Hit CTRL+C now to abort"
-        echo $DASHLINE
-        echo "## WARNING: INSTALLATION WITH tungsten-installer and configure-service IS DEPRECATED"
-        echo "## Tungsten Cookbook only supports tpm-based installations"
-        echo "## To install with tpm, please reset the variable 'USE_OLD_INSTALLER' and start again "
-        echo $DASHLINE
-        timer $INSTALLATION_DELAY 5
-        #for N in $(seq 1 $INSTALLATION_DELAY)
-        #do
-        #    MOD_STEP=$(($N%5))
-        #    if [ "$MOD_STEP" == "0" ]
-        #    then
-        #        echo -n "$N"
-        #    else
-        #        echo -n '.'
-        #    fi
-        #    sleep 1
-        #done
-        #echo ''
-    fi
-}
 
 
 function check_if_installer_is_in_cluster
@@ -488,12 +449,8 @@ function post_installation
     DB_USE=$cookbook_dir/db_use
     TUNGSTEN_RELEASE=$(grep RELEASE $cookbook_dir/../.manifest| awk '{print $2}')  
     DB_USE=$STAGING_DIRECTORY/cookbook/db_use
-    INSTALLATION_TOOL='tungsten-installer'
+    INSTALLATION_TOOL='tpm'
     SECURITY_STATUS="no (unencrypted)"
-    if [ -n "$USE_TPM" ]
-    then
-        INSTALLATION_TOOL=tpm
-    fi
     if [ -n "$WITH_SECURITY" ]
     then
         SECURITY_STATUS="yes (encrypted with ssl)"

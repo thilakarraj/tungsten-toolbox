@@ -5,7 +5,8 @@
 cookbook_dir=$(dirname $0)
 cd "$cookbook_dir/../"
 
-echo "WARNING: This command is deprecated - Future versions of Tungsten Cookbook will only support tpm-based installations"
+echo "WARNING: This command is disabled - Pending new implementation with tpm"
+exit 1
 
 if [ ! -f $cookbook_dir/BOOTSTRAP.sh ]
 then
