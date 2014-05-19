@@ -195,18 +195,7 @@ function check_contents
     [ -z "$PASSED" ] && PASSED=0
     [ -z "$FAILED" ] && FAILED=0
     TIMEOUT=120
-    installer=$(cat $cookbook_dir/current_install.summary|grep "Installation tool" | awk '{print $4}' )
-    if [ "$installer" == "tungsten-installer" ]
-    then
-        echo "# No multi_trepctl available with tungsten-installer. Sleeping 120 seconds"
-        timer $TIMEOUT 10
-    elif [ "$installer" == "tpm" ]
-    then
-        catch_up_replication $TIMEOUT
-    else
-        echo "Unable to find current installer"
-        exit 1
-    fi
+    catch_up_replication $TIMEOUT
 
     for DB in ${CHECKSUM_DBS[*]}
     do

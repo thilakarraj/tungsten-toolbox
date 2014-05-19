@@ -13,7 +13,7 @@ readme                                 Shows the quick start guide
 #########################
 COMMON_NODES.sh                        List of nodes in the cluster
 USER_VALUES.sh                         Cluster configuration (user defined values)
-USER_VALUES.local.sh                   Cluster configuration (iadditional user defined values)
+USER_VALUES.local.sh                   Cluster configuration (additional user defined values)
 BOOTSTRAP.sh                           System definition builder (For internal use)
 utilities.sh                           Cluster shared routines
 NODES_MASTER_SLAVE.sh                  Nodes definition for a master-slave topology
@@ -38,14 +38,11 @@ install_fan_in                         Installs a fan-in topology
 install_star                           Installs a star topology
 install_master_slave_direct            Installs a master-slave topology with 'direct mode' (DEPRECATED: pending installation with tpm)
 install_standard_replication           Installs standard MySQL replication
-upgrade                                Provides the commands needed to upgrade from the previous version (DEPRECATED: pending installation with tpm)
+upgrade                                Provides the commands needed to upgrade from the previous version
 
 #########################
 ## Administrative tools
 #########################
-take-over                              Takes over a master-slave cluster from MySQL replication
-add_node_master_slave                  Add a node to a master-slave topology (DEPRECATED: pending installation with tpm)
-add_node_star                          Add a node to a star topology (DEPRECATED: pending installation with tpm)
 switch                                 Switches role between the master and one given slave
 collect_logs                           Gets all the logs from all servers
 load_data                              Starts concurrent transaction load in all masters
@@ -115,13 +112,12 @@ QUIET or NOVERBOSE                     Turns off VERBOSE
 DRYRUN=1                               Used by all installation scripts. Shows installation commands (deprecated)
 MORE_OPTIONS="..."                     Used by all installation scripts. Adds more options to the installer command
 USE_TPM=1                              Enables installation with tpm (default)
-OLD_INSTALLER=1                        Disables installation with tpm (deprecated)
 MORE_TPM_OPTIONS="..."                 Used by all installation scripts. Adds more options to the installer command when using tpm
 WITH_SECURITY=1                        Enables installation with security. Only with tpm installation.
 ## USED DURING TEST
 BINLOG_FORMAT={STATEMENT|MIXED|ROW}    Changes the default binlog format in each master before running the test
 TEST_UNDER_LOAD=1                      Runs test_cluster after launching load_data
-INSTALLERS                             Use given installers for testing (default: "tungsten_installer tpm")
+INSTALLERS                             Use given installers for testing (default: "tpm")
 TOPOLOGIES                             Tests given topologies (default: "master_slave fan_in all_masters star")
 ## USED DURING CLEAN-UP
 STOP_REPLICATORS                       Stops the replicators

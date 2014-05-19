@@ -37,18 +37,7 @@ For example:
    $cookbook_dir/install_fan_in
    $cookbook_dir/install_star
 
-
-TAKING ADVANTAGE OF THE NEW TPM INSTALLATION (default with Tungsten Replicator 2.2.0)
-Tungsten Replicator, as of 2.1.1-90, ships with the ability of installing using the tpm (Tungsten Package Manager). The main advantages of tpm compared to tungsten-installer are:
-* generally faster
-* simpler syntax for multi-master (1 command instead of many)
-* parallel execution (results in multi-master deployments 10 times quicker)
-* more flexibility when updating the cluster.
-
-To install using tpm, simply enable the variable USE_TPM (not needed with Tungsten Replicator 2.2.0)
-
-export USE_TPM=1
-./cookbook/install_all_masters
+NOTE. As of version 2.2.2, tungsten installer is not supported anymore by the Cookbook scripts, and will be removed completely in Tungsten 3.0
 
 AFTER INSTALLATION
 

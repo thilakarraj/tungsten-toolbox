@@ -9,8 +9,6 @@ README.txt
 REFERENCE.txt
 USER_VALUES.local.sh
 USER_VALUES.sh
-add_node_master_slave
-add_node_star
 backups
 check_cookbook
 clear_all
@@ -48,7 +46,6 @@ show_conf
 show_log
 simple_services
 switch
-take-over
 test_all_topologies
 test_cluster
 thl
