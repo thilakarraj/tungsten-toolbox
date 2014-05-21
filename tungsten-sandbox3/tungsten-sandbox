@@ -1,0 +1,258 @@
+#!/usr/bin/perl
+#
+# The Tungsten Sandbox
+# (C) 2011-2014 Giuseppe Maxia, Continuent, Inc
+# Released under the New BSD License
+#
+
+use strict;
+use warnings;
+use File::Basename;
+use English '-no_match_vars';
+use Data::Dumper;
+
+{
+package Sandbox;
+# SBVERSION
+our $VERSION = '3.0.02';
+use English '-no_match_vars';
+use File::Basename;
+
+my $modulepath= dirname($PROGRAM_NAME);
+eval qq(
+use lib '$modulepath';
+use CLI_Utils;
+use base qw(CLI_Utils);
+);
+
+sub modulepath
+{
+    return $modulepath;
+}
+
+sub get_version
+{
+    return $VERSION;
+}
+sub get_credits
+{
+    return   "Tungsten Sandbox Manager\n"
+           . "version $VERSION\n"
+           . "(C) Continuent, Inc, 2012,2013,2014\n";
+}
+
+sub get_layout
+{
+    return   "[options]";
+}
+
+}  # end package Sandbox
+
+package main;
+
+use Data::Dumper;
+
+my $cli = Sandbox->new(
+    {
+        program_name => 'tungsten-sandbox',
+        main_option  => undef,
+    }
+);
+
+$cli->add_option(
+    nodes => {
+        parse       => 'n|nodes=i',
+        value       => 2,
+        must_have   => 1,
+        so          => 10,
+        help        => ['Defines how many nodes will be in the sandbox'],
+    }
+);
+
+$cli->add_option(
+    mysql_version => {
+        parse       => 'm|mysql-version=s',
+        value       => undef,
+        must_have   => 1,
+        so          => 20,
+        help        => ['which MySQL version will be used for the sandbox'],
+    }
+);
+
+$cli->add_option(
+    tungsten_base => {
+        parse       => 't|tungsten-base=s',
+        value       => "$ENV{HOME}/tsb3",
+        must_have   => 0,
+        so          => 30,
+        help        => ['Where to install the sandbox'],
+    }
+);
+
+$cli->add_option(
+    staging_dir => {
+        parse       => 'i|staging-dir=s',
+        value       => undef,
+        must_have   => 0,
+        so          => 40,
+        help        => ['Where the Tungsten tarball was expanded'],
+    }
+);
+
+$cli->add_option(
+    group_dir => {
+        parse       => 'd|group-dir=s',
+        value       => 'tsb',
+        must_have   => 0,
+        so          => 50,
+        help        => ['Sandbox group directory name'],
+    }
+);
+
+$cli->add_option(
+    topology => {
+        parse       => 'topology=s',
+        value       => 'master_slave',
+        must_have   => 1,
+        allowed     => [qw(master_slave all_masters fanin star direct)],
+        so          => 60,
+        help        => ['Which topology to deploy'],
+    }
+);
+
+$cli->add_option(
+    service => {
+        parse       => 'service=s',
+        value       => 'tsandbox',
+        must_have   => 1,
+        so          => 70,
+        help        => ['How the service is named (in master/slave)'],
+    }
+);
+
+$cli->add_option(
+    mysql_port => {
+        parse       => 'p|base-port=i',
+        value       => 6000,
+        must_have   => 1,
+        so          => 80,
+        help        => ['Base port for MySQL servers'],
+    }
+);
+
+$cli->add_option(
+    rmi_port => {
+        parse       => 'r|rmi-port=i',
+        value       => 10100,
+        must_have   => 1,
+        so          => 90,
+        help        => ['Base port for RMI services'],
+    }
+);
+
+$cli->add_option(
+    thl_port => {
+        parse       => 'l|thl-port=i',
+        value       => 12100,
+        must_have   => 1,
+        so          => 100,
+        help        => ['Base port for THL services'],
+    }
+);
+
+$cli->getoptions();
+$cli->{options}{tungsten_sandbox_version} = $Sandbox::VERSION;
+$cli->get_help() if $cli->{options}{help};
+# print Dumper $cli->{options}; exit;
+make_dynamic_options($cli->{options});
+
+my $executable_path=dirname($PROGRAM_NAME);
+my $curdir= $ENV{PWD};
+chdir $executable_path;
+$executable_path=qx(pwd);
+chomp $executable_path;
+chdir $curdir;
+
+my $args =$cli->{options}->{nodes};
+my $topology = $cli->{options}{topology};
+
+if ($topology eq 'master_slave' or $topology eq 'direct')
+{
+    $args= "$cli->{options}{service} $cli->{options}{nodes}";
+}
+# print "<$excutable_path/sb_$topology $args>\n";
+if ($cli->{options}{staging_dir})
+{
+    chdir $cli->{options}{staging_dir};
+}
+
+$ENV{RUNNING_SANDBOX_WRAPPER}=1;
+
+exec "$executable_path/sb_$topology $args";
+
+sub make_dynamic_options
+{
+    my ($options) = @_;
+    my %options_to_vars =(
+        tungsten_sandbox_version => 'TUNGSTEN_SANDBOX_VERSION',
+        nodes                    => 'HOW_MANY_NODES',
+        mysql_version            => 'MYSQL_VERSION',
+        tungsten_base            => 'TUNGSTEN_SB',
+        group_dir                => 'MYSQL_SB_BASE',
+        mysql_port               => 'MYSQL_BASE_PORT',
+        rmi_port                 => 'RMI_BASE_PORT',
+        thl_port                 => 'THL_BASE_PORT',
+    );
+    my $dynamic_vars_file =  Sandbox::modulepath() . '/sb_dynamic_vars.sh';
+    # print "$dynamic_vars_file\n";
+    open my $DYNVARS, '>', $dynamic_vars_file
+        or die "can't write to $dynamic_vars_file ($!)\n";
+
+    for my $opt (keys %options_to_vars)
+    {
+        if (defined $options->{$opt} )
+        {
+            print $DYNVARS "export $options_to_vars{$opt}=$options->{$opt}\n" ;
+        }
+    }
+    close $DYNVARS;
+}
+
+__END__
+    Tungsten Tools,  version 2.0.13
+    Tungsten Sandbox - Cluster builder
+     (C) 2011,2012 Giuseppe Maxia, Continuent, Inc
+    -n --nodes = number                 How many nodes to install
+    -m --mysql-version = name           which MySQL version to use
+    -t --tungsten-base = name           Where to install the sandbox
+    -i --installation-directory = name  Where the Tungsten tarball has been expanded
+    -d --group-dir = name               sandbox group directory name
+*   --skip-sandbox-creation             Skips sandbox creation (using an existing one)
+    --topology = name                   Which topology to deploy
+*   --hub = number                      Which node is a hub
+*   --fan-in = number                   Which node is the fan-in slave
+*   --tree = name                       Define hierarchical replication.
+                                        You must indicate which node does not replicate directly from the master
+                                        The format is --tree=X:Y, where X is the intermediate node,
+                                        and Y is the ultimate one. (e.g. --tree=2:4 means that node 4 replicates from
+                                        the master through node 2)
+*   --mysql-slaves = number             How many nodes in the cluster will be MySQL native slaves
+*   -x --tsb-prefix = name              Tungsten Sandbox prefix
+                                        (each directory inside ~/tsb2/ containing a complete tungsten
+                                        sandbox will be named using this prefix and the node number)
+    -s --service = name                 How the service is named
+*   --service-names = name              How the services in multiple master topologies are named
+    -p --base-port = number             Base port for MySQL Sandbox nodes
+    -l --thl-port = number              Port for the THL service
+    -r --rmi-port = number              Port for the RMI service
+    -v --version                        Show Tungsten sandbox version and exit
+    --show-options                      Show Tungsten sandbox collected options and exit
+*   --ignore-manifest                   Ignore build values in .manifest when determining if the Tungsten package
+                                        can be used with this sandbox
+    --verbose                           Show more information during installation and help
+    -man --manual                       display the program manual
+    -o --install-options = name         Options to be passed to the underlying installer, with the format
+                                        {TR|MSB}:ROLE:options
+                                        Where TR is Tungsten Replicator, MSB is MySQL Sandbox, and ROLE can be
+                                        one of BEFORE AFTER MASTER, SLAVE, DIRECT, NODE, HUB, ENDPOINT, GLOBAL
+

@@ -1,0 +1,48 @@
+#!/bin/bash
+sandboxdir=$(dirname $0)
+. $sandboxdir/sb_vars.sh
+. $sandboxdir/sb_common.sh
+
+pre_installation
+
+SERVICE=$1
+[ -z "$SERVICE" ] && SERVICE=directsandbox
+
+export HOW_MANY_NODES=$2
+[ -z "$HOW_MANY_NODES" ] && export HOW_MANY_NODES=2
+
+if [ $HOW_MANY_NODES -lt 2 ]
+then
+    echo "At least 2 nodes are required"
+    exit 1
+fi
+
+$sandboxdir/sb_make_sandboxes
+
+MYSQL_MASTER_PORT=$(($MYSQL_BASE_PORT+1))
+
+for NODE in $(seq 2 $HOW_MANY_NODES)
+do
+    DELTA=$(($NODE*10))
+    configure_defaults $NODE
+    configure_direct_slave $SERVICE $(($THL_BASE_PORT+$DELTA)) --direct-datasource-port=$MYSQL_MASTER_PORT
+    tpm_install
+
+#    ./tools/tpm configure $SERVICE \
+#        --reset \
+#        --topology=direct \
+#        --install-directory=$TUNGSTEN_SB_NODE2 \
+#        --master=$LOCALHOST \
+#        --direct-datasource-host=$LOCALHOST \
+#        --direct-datasource-port=6001 \
+#        --datasource-mysql-conf=$HOME/sandboxes/tsb/node2/my.sandbox.cnf \
+#        --replication-host=$LOCALHOST \
+#        --replication-port=6002 \
+#        $USERNAME_AND_PASSWORD \
+#        $VALIDATION_CHECKS 
+# ./tools/tpm install
+done
+
+post_installation direct
+$sandboxdir/sb_show_cluster
+
