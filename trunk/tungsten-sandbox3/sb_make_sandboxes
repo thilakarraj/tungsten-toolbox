@@ -20,6 +20,7 @@ NODE_OPTIONS="$NODE_OPTIONS -c max-connections=150"
 NODE_OPTIONS="$NODE_OPTIONS -c max_allowed_packet=52M"
 NODE_OPTIONS="$NODE_OPTIONS -c innodb_buffer_pool_size=64M"
 NODE_OPTIONS="$NODE_OPTIONS -c innodb-log-file-size=50M"
+NODE_OPTIONS="$NODE_OPTIONS -c default_storage_engine=innodb"
 NODE_OPTIONS="$NODE_OPTIONS -c innodb-flush-method=O_DIRECT"
 NODE_OPTIONS="$NODE_OPTIONS --remote_access=%"
 
