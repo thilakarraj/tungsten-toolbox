@@ -1,0 +1,77 @@
+#!/bin/bash
+
+sandboxdir=$(dirname $0)
+. $sandboxdir/sb_vars.sh
+. $sandboxdir/sb_common.sh
+
+# This will remove sandboxes created with a previous setup
+if [ -x $TUNGSTEN_SB/sb_erase_sandbox ]
+then
+    $TUNGSTEN_SB/sb_erase_sandbox
+fi
+
+# This will remove sandboxes created with the current setup
+$sandboxdir/sb_reset
+
+total_pass=0
+total_fail=0
+total_tests=0
+echo $DOTS_LINE > all_operations.log
+echo "# START : $(date) " >> all_operations.log
+echo $DOTS_LINE >> all_operations.log
+
+for topology in master_slave fanin all_masters star direct
+do
+    echo $DOTS_LINE
+    echo "# Testing topology $topology"
+    echo $DOTS_LINE
+    echo $DOTS_LINE >> all_operations.log
+    echo "# Testing topology $topology" >> all_operations.log
+    echo $DOTS_LINE >> all_operations.log
+    $sandboxdir/sb_$topology > installation.log 2>&1
+    exit_code=$?
+    if [ "$exit_code" != "0" ]
+    then
+        cat installation.log
+        exit $exit_code
+    fi
+    rm -f testing.log
+    $TUNGSTEN_SB/sb_test_sandbox | tee testing.log
+    pass=$(grep '^ok' testing.log | wc -l)
+    fail=$(grep '^not ok' testing.log | wc -l)
+    tests=$(($pass+$fail))
+    total_pass=$(($total_pass+$pass))
+    total_fail=$(($total_fail+$fail))
+    total_tests=$(($total_tests+$tests))
+    exit_code=$?
+    if [ "$exit_code" != "0" ]
+    then
+        exit $exit_code
+    fi
+    echo "# Cleaning up ..."
+    $TUNGSTEN_SB/sb_erase_sandbox > uninstall.log 2>&1
+    exit_code=$?
+    if [ "$exit_code" != "0" ]
+    then
+        cat uninstall.log
+        exit $exit_code
+    fi
+    cat testing.log installation.log uninstall.log >> all_operations.log
+    rm -f testing.log installation.log uninstall.log
+done
+
+echo $DOTS_LINE
+echo "# Grand total"
+echo "# total tests: $total_tests"
+echo "# passed     : $total_pass"
+echo "# failed     : $total_fail"
+echo $DOTS_LINE
+echo $DOTS_LINE >> all_operations.log
+echo "# Grand total" >> all_operations.log
+echo "# total tests: $total_tests" >> all_operations.log
+echo "# passed     : $total_pass" >> all_operations.log
+echo "# failed     : $total_fail" >> all_operations.log
+echo $DOTS_LINE >> all_operations.log
+echo "# END   : $(date) " >> all_operations.log
+echo $DOTS_LINE >> all_operations.log
+

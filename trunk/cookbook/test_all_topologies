@@ -29,16 +29,9 @@ function install_topology
 {
     TOPOLOGY=$1
     METHOD=$2
-    if [ "$METHOD" == "tpm" ]
-    then
-        export USE_TPM=1
-        unset USE_OLD_INSTALLER
-        rm -f deploy.cfg*
-    else
-        unset USE_TPM
-        export USE_OLD_INSTALLER=1
-        export INSTALLATION_DELAY=0
-    fi
+    export USE_TPM=1
+    unset USE_OLD_INSTALLER
+    rm -f deploy.cfg*
     echo "# $TOPOLOGY (using $METHOD)" 
     echo "# $TOPOLOGY" >> $INSTALL_LOG
     echo "# $TOPOLOGY" >> $TEST_LOG

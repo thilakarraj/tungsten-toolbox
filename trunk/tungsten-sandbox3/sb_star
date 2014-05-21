@@ -1,0 +1,66 @@
+#!/bin/bash
+
+sandboxdir=$(dirname $0)
+. $sandboxdir/sb_vars.sh
+. $sandboxdir/sb_common.sh
+
+pre_installation
+
+if [ -n "$1" ]
+then
+    export HOW_MANY_NODES=$1
+else
+    export HOW_MANY_NODES=4
+fi
+
+if [ $HOW_MANY_NODES -lt 3 ]
+then
+    echo "At least 3 nodes are required for a star topology"
+    exit 1
+fi
+
+$sandboxdir/sb_make_sandboxes
+
+SERVICE_INDEX=0
+
+HUB=${MM_SERVICES[2]}
+THL_PORT_HUB=$(($THL_BASE_PORT+30))
+
+export MORE_DEFAULT_OPTIONS="$MORE_DEFAULT_OPTIONS --property=replicator.service.comments=true"
+
+for NODE in $(seq 1 $HOW_MANY_NODES)
+do
+    DELTA=$(($NODE*10))
+    THL_PORT=$(($THL_BASE_PORT+$DELTA))
+    configure_defaults $NODE
+    MASTER_SERVICE=${MM_SERVICES[$SERVICE_INDEX]}
+    if [ "$MASTER_SERVICE" != "$HUB" ]
+    then
+        configure_master $MASTER_SERVICE $THL_PORT
+        configure_spoke_slave $HUB $THL_PORT_HUB $MASTER_SERVICE
+        tpm_install
+    fi
+    SERVICE_INDEX=$(($SERVICE_INDEX+1))
+done
+
+# Install hub master 
+configure_defaults 3
+configure_master $HUB $THL_PORT_HUB
+SLAVE_SERVICE_INDEX=0
+for SLAVENODE in $(seq 1 $HOW_MANY_NODES)
+do
+    SLAVEDELTA=$(($SLAVENODE*10))
+    SLAVE_THL_PORT=$(($THL_BASE_PORT+$SLAVEDELTA))
+    SLAVE_SERVICE=${MM_SERVICES[$SLAVE_SERVICE_INDEX]}
+    if [ "$SLAVE_SERVICE" != "$HUB" ]
+    then
+        configure_hub_slave $SLAVE_SERVICE $SLAVE_THL_PORT
+    fi
+    SLAVE_SERVICE_INDEX=$(($SLAVE_SERVICE_INDEX+1))
+done
+
+tpm_install
+
+post_installation star
+$sandboxdir/sb_show_cluster
+

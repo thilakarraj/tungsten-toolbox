@@ -1,0 +1,36 @@
+#!/bin/bash
+sandboxdir=$(dirname $0)
+. $sandboxdir/sb_vars.sh
+
+if [ ! -d $HOME/opt/mysql/$MYSQL_VERSION ]
+then
+    echo "MySQL version $MYSQL_VERSION not found in $HOME/opt/mysql"
+    exit 1
+fi
+
+if [ -d $HOME/sandboxes/$SB_DIRECTORY ]
+then
+    sbtool -o delete -s $HOME/sandboxes/$SB_DIRECTORY
+fi
+echo "# Building $HOW_MANY_NODES sandboxes with MySQL $MYSQL_VERSION"
+NODE_OPTIONS="-c innodb-thread-concurrency=0"
+NODE_OPTIONS="$NODE_OPTIONS -c sync_binlog=1"
+NODE_OPTIONS="$NODE_OPTIONS -c innodb-log-buffer-size=50M"
+NODE_OPTIONS="$NODE_OPTIONS -c max-connections=150"
+NODE_OPTIONS="$NODE_OPTIONS -c max_allowed_packet=52M"
+NODE_OPTIONS="$NODE_OPTIONS -c innodb_buffer_pool_size=64M"
+NODE_OPTIONS="$NODE_OPTIONS -c innodb-log-file-size=50M"
+NODE_OPTIONS="$NODE_OPTIONS -c innodb-flush-method=O_DIRECT"
+NODE_OPTIONS="$NODE_OPTIONS --remote_access=%"
+
+make_multiple_sandbox  --group_directory=$SB_DIRECTORY --how_many_nodes=$HOW_MANY_NODES --node_options="$NODE_OPTIONS" --sandbox_base_port=$MYSQL_BASE_PORT $MYSQL_VERSION
+for N in $(seq 1 $HOW_MANY_NODES)
+do
+    $HOME/sandboxes/$SB_DIRECTORY/n$N -u root -e 'grant all on *.* to tungsten identified by "secret" with grant option'
+    if [ -n "$BINLOG_FORMAT" ]
+    then
+        echo "# Node $N - Setting binlog_format to $BINLOG_FORMAT"
+        $HOME/sandboxes/$SB_DIRECTORY/n$N -u root -e "set global binlog_format=$BINLOG_FORMAT"
+    fi
+done
+

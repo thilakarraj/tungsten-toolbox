@@ -1,0 +1,187 @@
+#!/bin/bash
+sandboxdir=$(dirname $0)
+. $sandboxdir/sb_vars.sh
+. $sandboxdir/sb_common.sh
+
+
+SAMPLE_BLOB="%!+?/.,[]{}()*^&#@-_=abcdefghi0123456789"
+SAMPLE_T=xyz
+# SAMPLE_F=1.512345678901234
+SAMPLE_F=1.012345678901234
+SAMPLE_TINYINT=127
+SAMPLE_U_TINYINT=255
+SAMPLE_SMALLINT=32767
+SAMPLE_U_SMALLINT=65535
+SAMPLE_MEDIUMINT=8388607
+SAMPLE_U_MEDIUMINT=16777215
+SAMPLE_INT=2147483647
+SAMPLE_U_INT=4294967295
+SAMPLE_BIGINT=9223372036854775807
+SAMPLE_U_BIGINT=18446744073709551615
+SAMPLE_D=1969-09-01
+MIN_D=1000-01-01
+MAX_D=9999-12-31
+SAMPLE_TIME=12:13:56
+MIN_TIME=00:00:00
+MAX_TIME=23:59:59
+SAMPLE_DT="2003-04-26 09:15:57"
+MIN_DT="1000-01-01 00:00:00"
+MAX_DT="9999-12-31 23:59:59"
+SAMPLE_ENUM="two"
+SAMPLE_SET="red,blue"
+SAMPLE_TS="2003-04-26 09:15:58"
+
+pass=0
+fail=0
+total_tests=0
+
+
+TREPCTL=$TUNGSTEN_SB_NODE2/tungsten/tungsten-replicator/bin/trepctl
+
+function make_my_cnf
+{
+    my_cnf=$1
+    port=$2
+    echo '[client]' > $my_cnf
+    echo "user=$MYSQL_USER" >> $my_cnf
+    echo "password=$MYSQL_PASSWORD" >> $my_cnf
+    echo "port=$port" >> $my_cnf
+    echo "host=127.0.0.1" >> $my_cnf
+}
+
+function write_to_master
+{
+    my_cnf=$1
+    rmiport=$2
+    dbport=$3
+    service=$4
+    topology=$5
+    echo "# Topology $topology: writing to master <$service> rmiport:$rmiport dbport:$dbport - table test.t$rmiport "
+    #cat $my_cnf
+    #echo "."
+    mysql --defaults-file=$my_cnf -e "drop table if exists test.t$rmiport"
+    mysql --defaults-file=$my_cnf -e "create table test.t$rmiport(id int not null primary key, c char(30), b blob, t text, ti time, d date, dt datetime, ts timestamp, f double(20,15), e enum ('one', 'two', 'three'), s set ('yellow','red', 'white','blue')) engine=innodb"
+    if [ "$?" != "0" ] ; then exit ; fi
+    mysql --defaults-file=$my_cnf -e "insert into test.t$rmiport values (1, 'inserted by node #$rmiport', '$SAMPLE_BLOB', '$SAMPLE_T', '$SAMPLE_TIME', '$SAMPLE_D', '$SAMPLE_DT', '$SAMPLE_TS', $SAMPLE_F,'$SAMPLE_ENUM', '$SAMPLE_SET')"
+}
+
+function ok_equal
+{
+    msg=$1
+    value=$2
+    expected=$3
+    
+    test_status=''
+    errmsg=''
+    if [ "$value" == "$expected" ]
+    then
+        test_status=ok
+        pass=$(($pass+1))
+    else
+        test_status='not ok'
+        errmsg="(expected: <$expected>)"
+        fail=$(($fail+1))
+    fi
+    echo "$test_status - $msg - found '$value' $errmsg"
+    total_tests=$(($total_tests+1))
+}
+
+function get_result
+{
+    my_cnf=$1
+    rmiport=$2
+    field=$3
+    expected=$4
+    value=$(mysql --defaults-file=$my_cnf -BN -e "select $field from test.t$rmiport ")
+    ok_equal "field:$field" "$value" "$expected"
+}
+
+function read_from_slaves
+{
+    service=$1
+    master_rmiport=$2
+    topology=$3
+    if [ "$topology" == "star" ]
+    then
+        SLAVES_LIST=$(multi_trepctl --role slave --fields service,rmiport --hide-headers --output list)
+        echo "# Reading from all slaves (topology $topology)"
+    else
+        SLAVES_LIST=$(multi_trepctl --role slave,direct --fields service,rmiport --hide-headers --output list --service $service)
+        echo "# Reading from slaves related to service $service"
+    fi
+    for SERVICE_SLAVE in $(echo $SLAVES_LIST | tr ';' ' ')
+    do
+        sleep 1
+        service=$(echo $SERVICE_SLAVE | tr ',' ' '| awk '{print $1}')
+        rmiport=$(echo $SERVICE_SLAVE | tr ',' ' '| awk '{print $2}')
+        db_port=$($TREPCTL -port $rmiport -service $service properties -filter replicator.global.db.port | perl -nle 'print $1 if /"(\d+)"$/')
+        #echo "slave service $service"
+        echo "# slave <$service> rmiport:$rmiport - dbport: $db_port"
+        MY_CNF=/tmp/myslave_$service.cnf
+        make_my_cnf $MY_CNF $db_port
+        #mysql --defaults-file=$MY_CNF -e 'select "slave", @@hostname, @@server_id, @@port'
+        numrecs=$(mysql --defaults-file=$MY_CNF -BN -e "select count(*) from test.t$master_rmiport ")
+        ok_equal record_count $numrecs 1
+        get_result $MY_CNF $master_rmiport c  "inserted by node #$master_rmiport"
+        get_result $MY_CNF $master_rmiport b  "$SAMPLE_BLOB"
+        get_result $MY_CNF $master_rmiport t  "$SAMPLE_T"
+        get_result $MY_CNF $master_rmiport ti "$SAMPLE_TIME"
+        get_result $MY_CNF $master_rmiport d  "$SAMPLE_D"
+        get_result $MY_CNF $master_rmiport dt "$SAMPLE_DT"
+        get_result $MY_CNF $master_rmiport ts "$SAMPLE_TS"
+        get_result $MY_CNF $master_rmiport f  "$SAMPLE_F"
+        get_result $MY_CNF $master_rmiport e  "$SAMPLE_ENUM"
+        get_result $MY_CNF $master_rmiport s  "$SAMPLE_SET"
+        rm -f $MY_CNF
+    done
+}
+
+# MASTER_LIST=$(multi_trepctl --role master --fields service,rmiport --hide-headers --output list)
+MASTER_LIST=$(multi_trepctl --fields service,pipelineSource,rmiport,role --hide-headers --output list)
+TOPOLOGY=$(cat $TUNGSTEN_SB/topology)
+echo '' > /tmp/used_ports
+for SERVICE_MASTER in $(echo $MASTER_LIST | tr ';' ' ')
+do
+    service=$(echo $SERVICE_MASTER | tr ',' ' '| awk '{print $1}')
+    pipeline=$(echo $SERVICE_MASTER | tr ',' ' '| awk '{print $2}')
+    rmiport=$(echo $SERVICE_MASTER | tr ',' ' '| awk '{print $3}')
+    role=$(echo $SERVICE_MASTER | tr ',' ' '| awk '{print $4}')
+    db_port=$(echo $pipeline | perl -nle 'print $1 if m{^jdbc:\w+:[^:]+://[^:]+:(\d+)}')
+    #db_port=$($TREPCTL -port $rmiport -service $service properties -filter replicator.global.db.port | perl -nle 'print $1 if /"(\d+)"$/')
+    #echo "master service $service"
+    #echo "master rmiport $rmiport"
+    #echo "master db port $db_port"
+    if [ -n "$db_port" ]
+    then
+        # echo '#--------------------'
+        # cat /tmp/used_ports
+        # echo '#--------------------'
+        used_port=$(grep -w $db_port /tmp/used_ports)
+        if [ -z "$used_port" ]
+        then
+            echo $db_port >> /tmp/used_ports
+            MY_CNF=/tmp/mymaster_$service.cnf
+            make_my_cnf $MY_CNF $db_port
+            #mysql --defaults-file=$MY_CNF -e 'select "master", @@hostname, @@server_id, @@port'
+            if [ "$role" != "master" ]
+            then
+                rmiport="NO_RMI_PORT"
+            fi
+            write_to_master $MY_CNF $rmiport $db_port $service $TOPOLOGY
+            rm -f $MY_CNF
+            # echo ""
+            read_from_slaves $service $rmiport $TOPOLOGY
+        fi
+    fi
+done
+rm -f /tmp/used_ports 
+
+echo "# total tests: $total_tests"
+echo "# passed     : $pass"
+echo "# failed     : $fail"
+
+if [ "$fail" != "0" ]
+then
+    exit 1
+fi
+

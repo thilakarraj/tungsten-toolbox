@@ -1,0 +1,39 @@
+#!/bin/bash
+sandboxdir=$(dirname $0)
+. $sandboxdir/sb_vars.sh
+. $sandboxdir/sb_common.sh
+
+pre_installation
+
+SERVICE=$1
+[ -z "$SERVICE" ] && SERVICE=tsandbox
+
+export HOW_MANY_NODES=$2
+[ -z "$HOW_MANY_NODES" ] && export HOW_MANY_NODES=3
+
+if [ $HOW_MANY_NODES -lt 2 ]
+then
+    echo "At least 2 nodes are required"
+    exit 1
+fi
+
+$sandboxdir/sb_make_sandboxes
+
+
+# Install master
+configure_defaults 1
+configure_master $SERVICE $THL_PORT_NODE1
+tpm_install
+
+# install slaves
+for NODE in $(seq 2 $HOW_MANY_NODES )
+do
+    DELTA=$(($NODE*10))
+    configure_defaults $NODE
+    configure_slave $SERVICE $(($THL_BASE_PORT+$DELTA)) --master-thl-port=$THL_PORT_NODE1
+    tpm_install
+done
+
+post_installation master_slave
+$sandboxdir/sb_show_cluster
+
