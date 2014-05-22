@@ -32,6 +32,12 @@ To use Tungsten Sandbox, you should have MySQL::Sandbox installed and at least o
 Now you will have a directory 5.5.37 under $HOME/opt/mysql.
 Repeat the operation for MySQL 5.6, Percona Server 5.5 or 5.6, MariaDB 5.5.
 
+You can also achieve the same result using sb_make_sandboxes
+
+1. edit sb_vars.sh, and change MYSQL_VERSION to the version of the tarball
+2. run ./sb_make_sandboxes mysql-5.5.37-osx10.6-x86_64.tar.gz
+3. With that the tarball is expanded in the proper directory, ready for further installation
+
 ### Creating a Tungsten topology
 
 There are 5 pre-defined topologies in this package:

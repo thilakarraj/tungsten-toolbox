@@ -1,6 +1,9 @@
 #!/bin/bash
 sandboxdir=$(dirname $0)
 
+# testing if this file is called from a standalone shell script
+# or if it runs under tungsten-sandbox.
+# As long as RUNNING_SANDBOX_WRAPPER is enabled, the dynamic file is preserved
 if [ -z "$RUNNING_SANDBOX_WRAPPER" -a -f $sandboxdir/sb_dynamic_vars.sh ]
 then
     # running directly. No dynamyc vars should be used
@@ -14,9 +17,10 @@ fi
 
 export DOTS_LINE='# ---------------------------------------------------'
 
+SANDBOX_BINARY=$HOME/opt/mysql
 [ -z "$TUNGSTEN_SANDBOX_VERSION" ] && TUNGSTEN_SANDBOX_VERSION=3.0.02
 LOCALHOST=$(hostname)
-[ -z "$MYSQL_VERSION" ] && MYSQL_VERSION=5.5.31
+[ -z "$MYSQL_VERSION" ] && MYSQL_VERSION=5.5.37
 [ -z "$HOW_MANY_NODES" ] && HOW_MANY_NODES=3
 
 [ -z "$TUNGSTEN_SB" ] && TUNGSTEN_SB=$HOME/tsb3
@@ -73,4 +77,4 @@ USERNAME_AND_PASSWORD="--replication-user=$MYSQL_USER --replication-password=$MY
 
 [ -z "$EDITOR" ] && EDITOR=vim
 
-PATH=$HOME/opt/mysql/$MYSQL_VERSION/bin:$PATH
+PATH=$SANDBOX_BINARY/$MYSQL_VERSION/bin:$PATH
