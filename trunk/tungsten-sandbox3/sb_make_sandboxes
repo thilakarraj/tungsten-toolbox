@@ -2,9 +2,64 @@
 sandboxdir=$(dirname $0)
 . $sandboxdir/sb_vars.sh
 
-if [ ! -d $HOME/opt/mysql/$MYSQL_VERSION ]
+SANDBOX_BINARY=$HOME/opt/mysql
+TARGET=$1
+if [ -n "$TARGET" ] 
 then
-    echo "MySQL version $MYSQL_VERSION not found in $HOME/opt/mysql"
+    if [ -d $SANDBOX_BINARY/$TARGET ]
+    then
+        echo "# $TARGET found in $SANDBOX_BINARY"
+        if [ "$TARGET" != "$MYSQL_VERSION" ]
+        then
+            echo "The MySQL version defined in sb_vars.sh ($MYSQL_VERSION) does not match the version provided here ($TARGET)"
+            echo "If you want to create tungsten sandboxes with dynamic variables, use '$sandboxdir/tungsten-sandbox -m $TARGET' "
+            exit 1
+        fi
+    elif [ -f $TARGET ]
+    then
+        tarball_version=$(perl -le '$T=shift;print "$1" if $T =~ /(?:mysql|mariadb|percona).*(\d+\.\d+\.\d+).*\.tar\.gz/i ' $TARGET )
+        if [ -z "$tarball_version" ]
+        then
+            echo "unable to find a version number in '$TARGET'"
+            exit 1
+        fi
+        if [ "$tarball_version"  != "$MYSQL_VERSION" ]
+        then
+            echo "The MySQL version defined in sb_vars.sh ($MYSQL_VERSION) does not match the version from the tarball ($tarball_version)"
+            exit 1
+        fi
+        if [ ! -d $SANDBOX_BINARY ]
+        then
+            mkdir -p $SANDBOX_BINARY
+        fi
+        if [ -d $SANDBOX_BINARY/$tarball_version ]
+        then
+            echo "There is already a directory $tarball_version in $SANDBOX_BINARY"
+            echo "$TARGET will not be expanded"
+            exit 1
+        fi
+        tar -xzf $TARGET
+        if [ "$?" != "0" ]
+        then
+            echo "error extracting from $TARGET"
+            exit 1
+        fi
+        TARBALL_DIR=$(basename $TARGET .tar.gz)
+        if [ ! -d $TARBALL_DIR ]
+        then
+            echo "error extracting $TARBALL_DIR from $TARGET"
+            exit 1
+        fi
+        mv $TARBALL_DIR $SANDBOX_BINARY/$tarball_version
+    else
+        echo "'$TARGET' is neither a directory in $SANDBOX_BINARY or a tarball file"
+        exit 1
+    fi
+fi    
+
+if [ ! -d $SANDBOX_BINARY/$MYSQL_VERSION ]
+then
+    echo "MySQL version $MYSQL_VERSION not found in $SANDBOX_BINARY"
     exit 1
 fi
 
