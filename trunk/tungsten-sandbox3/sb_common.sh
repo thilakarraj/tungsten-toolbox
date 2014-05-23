@@ -39,8 +39,14 @@ function configure_defaults
         --datasource-boot-script=$MYSQL_SB_PATH/msb \
         --datasource-log-directory=$MYSQL_SB_PATH/data \
         $USERNAME_AND_PASSWORD \
-        $VALIDATION_CHECKS $MORE_DEFAULT_OPTIONS \
+        $VALIDATION_CHECKS $MORE_DEFAULTS_OPTIONS \
         --start=true
+
+    exit_code=$? 
+    if [ "$exit_code" != "0" ] 
+    then 
+        exit $exit_code 
+    fi
 }
 
 function configure_master
@@ -49,8 +55,14 @@ function configure_master
     THL_PORT=$2
     ./tools/tpm configure $SERVICE \
         --master=$LOCALHOST \
-        --replication-host=$LOCALHOST \
+        --replication-host=$LOCALHOST $MORE_MASTER_OPTIONS \
         --thl-port=$THL_PORT
+
+    exit_code=$? 
+    if [ "$exit_code" != "0" ] 
+    then 
+        exit $exit_code 
+    fi
 }
 
 function configure_slave
@@ -62,7 +74,13 @@ function configure_slave
         --replication-host=$LOCALHOST \
         --thl-port=$THL_PORT \
         --master-thl-host=$LOCALHOST \
-        --enable-slave-thl-listener=false $3
+        --enable-slave-thl-listener=false $MORE_SLAVE_OPTIONS $3
+
+    exit_code=$? 
+    if [ "$exit_code" != "0" ] 
+    then 
+        exit $exit_code 
+    fi
 }
 
 function configure_direct_slave
@@ -76,6 +94,12 @@ function configure_direct_slave
         --direct-datasource-host=$LOCALHOST \
         --thl-port=$THL_PORT \
         --enable-slave-thl-listener=false $3
+
+    exit_code=$? 
+    if [ "$exit_code" != "0" ] 
+    then 
+        exit $exit_code 
+    fi
 }
 
 
@@ -97,7 +121,7 @@ function configure_hub_slave
 function tpm_install
 {
     
-    ./tools/tpm install 
+    ./tools/tpm install $MORE_TPM_INSTALL_OPTIONS 
     exit_code=$? 
     if [ "$exit_code" != "0" ] 
     then 
@@ -173,7 +197,12 @@ function post_installation
         echo "$EDITOR $LOG" >> $TPATH/show_log
         echo '#!/bin/bash' > $TPATH/show_conf
         echo "$EDITOR $CONF" >> $TPATH/show_conf
-        for F in replicator thlcmd trepctl show_log show_conf
+        echo '#!/bin/bash' > $TPATH/tpm
+        echo ". $TUNGSTEN_SB/sb_vars.sh" >> $TPATH/tpm
+        echo "if [ ! -d $TPATH/tungsten ] ; then echo './tungsten not found in $TPATH' ; exit 1 ; fi" >> $TPATH/tpm
+        echo "cd $TPATH/tungsten" >> $TPATH/tpm
+        echo './tools/tpm "$@"' >> $TPATH/tpm
+        for F in replicator thlcmd trepctl show_log show_conf tpm
         do
             chmod +x $TPATH/$F
         done

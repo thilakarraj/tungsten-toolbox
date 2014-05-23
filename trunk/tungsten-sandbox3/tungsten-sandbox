@@ -18,7 +18,7 @@ our $VERSION = '3.0.02';
 use English '-no_match_vars';
 use File::Basename;
 
-my $modulepath= dirname($PROGRAM_NAME);
+my $modulepath= get_real_path($PROGRAM_NAME);
 eval qq(
 use lib '$modulepath';
 use CLI_Utils;
@@ -44,6 +44,20 @@ sub get_credits
 sub get_layout
 {
     return   "[options]";
+}
+
+sub get_real_path
+{
+    my ($fname) = @_;
+    my $real_path=dirname($fname);
+    if ( -l $fname)
+    {
+        my $real_name = qx(readlink $fname);
+        chomp $real_name;
+        # print "# program_name: $real_name\n";
+        $real_path=dirname($real_name);
+    }
+    return $real_path;
 }
 
 }  # end package Sandbox
@@ -160,13 +174,66 @@ $cli->add_option(
     }
 );
 
+$cli->add_option(
+    defaults_options => {
+        parse       => 'defaults-options=s',
+        value       => undef,
+        must_have   => 0,
+        so          => 110,
+        help        => ['Options that with be added to "tpm configure defaults" call'],
+    }
+);
+
+
+$cli->add_option(
+    master_options => {
+        parse       => 'master-options=s',
+        value       => undef,
+        must_have   => 0,
+        so          => 120,
+        help        => ['Options that with be added to "tpm configure" call for a master service'],
+    }
+);
+
+$cli->add_option(
+    slave_options => {
+        parse       => 'slave-options=s',
+        value       => undef,
+        must_have   => 0,
+        so          => 130,
+        help        => ['Options that with be added to "tpm configure" call for a slave service'],
+    }
+);
+
+$cli->add_option(
+    install_options => {
+        parse       => 'install-options=s',
+        value       => undef,
+        must_have   => 0,
+        so          => 140,
+        help        => ['Options that with be added to "tpm install" calls for the current topology'],
+    }
+);
+
+
+$cli->add_option(
+    binlog_format => {
+        parse       => 'binlog-format=s',
+        value       => 'mixed',
+        must_have   => 0,
+        allowed     => [qw(statement mixed row)],
+        so          => 150,
+        help        => ['Which binlog format shall we use'],
+    }
+);
+
 $cli->getoptions();
 $cli->{options}{tungsten_sandbox_version} = $Sandbox::VERSION;
 $cli->get_help() if $cli->{options}{help};
 # print Dumper $cli->{options}; exit;
 make_dynamic_options($cli->{options});
 
-my $executable_path=dirname($PROGRAM_NAME);
+my $executable_path=Sandbox::get_real_path($PROGRAM_NAME);
 my $curdir= $ENV{PWD};
 chdir $executable_path;
 $executable_path=qx(pwd);
@@ -202,6 +269,11 @@ sub make_dynamic_options
         mysql_port               => 'MYSQL_BASE_PORT',
         rmi_port                 => 'RMI_BASE_PORT',
         thl_port                 => 'THL_BASE_PORT',
+        defaults_options         => 'MORE_DEFAULTS_OPTIONS',
+        master_options           => 'MORE_MASTER_OPTIONS',
+        slave_options            => 'MORE_SLAVE_OPTIONS',
+        install_options          => 'MORE_TPM_INSTALL_OPTIONS',
+        binlog_format            => 'BINLOG_FORMAT',
     );
     my $dynamic_vars_file =  Sandbox::modulepath() . '/sb_dynamic_vars.sh';
     # print "$dynamic_vars_file\n";
@@ -210,9 +282,14 @@ sub make_dynamic_options
 
     for my $opt (keys %options_to_vars)
     {
+        my $quote=q{};
         if (defined $options->{$opt} )
         {
-            print $DYNVARS "export $options_to_vars{$opt}=$options->{$opt}\n" ;
+            if ($options->{$opt} =~/\s/)
+            {
+                $quote=q{"};
+            }
+            print $DYNVARS qq(export $options_to_vars{$opt}=$quote$options->{$opt}$quote\n) ;
         }
     }
     close $DYNVARS;

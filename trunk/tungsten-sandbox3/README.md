@@ -91,6 +91,11 @@ You can set some environment variables that influence how the installers work:
 
 * MYSQL\_VERSION : changes the MySQL version for the installation. Make sure that $HOME/opt/mysql/$MYSQL\_VERSION exists
 * HOW_MANY_NODES: changes the number of nodes to install. You can also provide this value as an argument to the installing scripts
+* BINLOG_FORMAT: changes the binlog format of the sandboxes being installed
+* MORE_DEFAULTS_OPTIONS: Adds these options to 'tpm configure defaults' call 
+* MORE_MASTER_OPTIONS: Add these options to 'tpm configure' call for every master
+* MORE_SLAVE_OPTIONS: Add these options to 'tpm configure' call for every slave
+* MORE_TPM_INSTALL_OPTIONS: Add these options to 'tpm install' call 
 
 ## Tungsten Sandbox composition
 There are some conventions in these sandboxes, defined to make the scripts as simple as possible:
