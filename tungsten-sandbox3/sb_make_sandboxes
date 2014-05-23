@@ -82,7 +82,8 @@ NODE_OPTIONS="$NODE_OPTIONS --remote_access=%"
 make_multiple_sandbox  --group_directory=$SB_DIRECTORY --how_many_nodes=$HOW_MANY_NODES --node_options="$NODE_OPTIONS" --sandbox_base_port=$MYSQL_BASE_PORT $MYSQL_VERSION
 for N in $(seq 1 $HOW_MANY_NODES)
 do
-    $HOME/sandboxes/$SB_DIRECTORY/n$N -u root -e 'grant all on *.* to tungsten identified by "secret" with grant option'
+    echo "# Node $N - Creating replication user '$MYSQL_USER' "
+    $HOME/sandboxes/$SB_DIRECTORY/n$N -u root -e "grant all on *.* to $MYSQL_USER identified by '$MYSQL_PASSWORD' with grant option"
     if [ -n "$BINLOG_FORMAT" ]
     then
         echo "# Node $N - Setting binlog_format to $BINLOG_FORMAT"
