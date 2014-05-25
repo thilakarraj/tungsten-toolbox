@@ -232,3 +232,23 @@ function post_installation
     cat $INFO_FILE
 }
 
+function ok_equal
+{
+    value=$1
+    expected=$2
+    msg=$3
+    
+    test_status=''
+    errmsg=''
+    if [ "$value" == "$expected" ]
+    then
+        test_status=ok
+        pass=$(($pass+1))
+    else
+        test_status='not ok'
+        errmsg="(found <$value> - expected: <$expected>)"
+        fail=$(($fail+1))
+    fi
+    echo "$test_status - $msg - found '$value' $errmsg"
+    total_tests=$(($total_tests+1))
+}

@@ -65,26 +65,7 @@ function write_to_master
     mysql --defaults-file=$my_cnf -e "insert into test.t$rmiport values (1, 'inserted by node #$rmiport', '$SAMPLE_BLOB', '$SAMPLE_T', '$SAMPLE_TIME', '$SAMPLE_D', '$SAMPLE_DT', '$SAMPLE_TS', $SAMPLE_F,'$SAMPLE_ENUM', '$SAMPLE_SET')"
 }
 
-function ok_equal
-{
-    msg=$1
-    value=$2
-    expected=$3
-    
-    test_status=''
-    errmsg=''
-    if [ "$value" == "$expected" ]
-    then
-        test_status=ok
-        pass=$(($pass+1))
-    else
-        test_status='not ok'
-        errmsg="(expected: <$expected>)"
-        fail=$(($fail+1))
-    fi
-    echo "$test_status - $msg - found '$value' $errmsg"
-    total_tests=$(($total_tests+1))
-}
+
 
 function get_result
 {
@@ -93,7 +74,7 @@ function get_result
     field=$3
     expected=$4
     value=$(mysql --defaults-file=$my_cnf -BN -e "select $field from test.t$rmiport ")
-    ok_equal "field:$field" "$value" "$expected"
+    ok_equal  "$value" "$expected" "field:$field"
 }
 
 function read_from_slaves
@@ -121,7 +102,7 @@ function read_from_slaves
         make_my_cnf $MY_CNF $db_port
         #mysql --defaults-file=$MY_CNF -e 'select "slave", @@hostname, @@server_id, @@port'
         numrecs=$(mysql --defaults-file=$MY_CNF -BN -e "select count(*) from test.t$master_rmiport ")
-        ok_equal record_count $numrecs 1
+        ok_equal $numrecs 1 "record count"
         get_result $MY_CNF $master_rmiport c  "inserted by node #$master_rmiport"
         get_result $MY_CNF $master_rmiport b  "$SAMPLE_BLOB"
         get_result $MY_CNF $master_rmiport t  "$SAMPLE_T"
