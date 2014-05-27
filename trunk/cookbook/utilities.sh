@@ -1,6 +1,6 @@
 #!/bin/bash
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
-# Version 1.0.5 - 2013-04-03
+# Version 1.0.14 - 2014-05-27
 
 cookbook_dir=$(dirname $0)
 
@@ -61,7 +61,7 @@ function clear_node {
 	
 }
 
-diff(){
+mydiff(){
     a1="$1"
     a2="$2"
     awk -va1="$a1" -va2="$a2" '
