@@ -153,6 +153,7 @@ function catch_up_replication
     if [ -n "$HUB" -a -n "$HUB_SERVICE" ]
     then
         $cookbook_dir/trepctl -host $HUB -service $HUB_SERVICE heartbeat
+        sleep 5
     fi
     for update in $($cookbook_dir/multi_trepctl --role master --fields host,service,seqno --output list --hide-headers | tr ';' ' ')
     do
@@ -162,7 +163,10 @@ function catch_up_replication
         seqno=$(echo $update | tr ',' ' ' | awk '{print $3}')
         
         # When using asymmetric topologies, such as star, some events from the spokes are not reported to all the other spokes.
-        #seqno=$(($seqno-1))
+        if [ "$TOPOLOGY" == "STAR" ]
+        then
+            seqno=$(($seqno-1))
+        fi
 
         if [ -n "$VERBOSE" ]
         then
