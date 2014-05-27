@@ -1,6 +1,6 @@
 #!/bin/bash
 # (C) Copyright 2012,2013 Continuent, Inc - Released under the New BSD License
-# Version 1.0.9 - 2013-12-18
+# Version 1.0.14 - 2014-05-27
 
 cookbook_dir=$(dirname $0)
 cd "$cookbook_dir/.."
@@ -220,6 +220,7 @@ export TUNGSTEN_READ_MASTER_EVENTS="$TUNGSTEN_BASE/tungsten/tungsten-replicator/
 export THL=$TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/thl
 export INSTALL_LOG=$cookbook_dir/current_install.log
 export INSTALL_SUMMARY=$cookbook_dir/current_install.summary
+export DEPLOY_VARS=$cookbook_dir/deploy_vars.sh
 export STAGING_INFO=$HOME/tungsten_replicator_staging.info
 
 if [ -n "$WRITE_STAGING_INFO" ]
@@ -471,6 +472,21 @@ function post_installation
     echo "                   : (or $DB_USE)"                                         >> $INSTALL_SUMMARY
     echo "Tungsten release   : $TUNGSTEN_RELEASE"                                    >> $INSTALL_SUMMARY
     echo "Installation log   : $INSTALL_LOG"                                         >> $INSTALL_SUMMARY
+
+    echo "topology=$TOPOLOGY"                                             > $DEPLOY_VARS
+    echo "tungsten_path=$TUNGSTEN_BASE "                                      >> $DEPLOY_VARS
+    echo "staging_server=$(hostname)"                                          >> $DEPLOY_VARS
+    echo "staging_directory=$PWD"                                                 >> $DEPLOY_VARS
+    echo "installation_tool=$INSTALLATION_TOOL"                                   >> $DEPLOY_VARS
+    echo "security_enabled='$SECURITY_STATUS'"                                     >> $DEPLOY_VARS
+    echo "nodes=(${ALL_NODES[*]})"                                    >> $DEPLOY_VARS
+    echo "master_services=(${MASTERS[*]})"                                      >> $DEPLOY_VARS
+    echo "slave_services=(${SLAVES[*]})"                                       >> $DEPLOY_VARS
+    echo "mysql_version=$($MYSQL -h ${MASTERS[0]} -BN -e 'select @@version')" >> $DEPLOY_VARS
+    echo "mysql_port=$DATABASE_PORT"                                       >> $DEPLOY_VARS
+    echo "tungsten_release=$TUNGSTEN_RELEASE"                                    >> $DEPLOY_VARS
+    echo "installation_log=$INSTALL_LOG"                                         >> $DEPLOY_VARS
+
 
 
     MY_BARE_CNF=$(basename $MY_COOKBOOK_CNF)
