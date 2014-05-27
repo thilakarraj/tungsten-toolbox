@@ -37,13 +37,13 @@ do
     fi
     rm -f testing.log
     $TUNGSTEN_SB/sb_test_sandbox | tee testing.log
+    exit_code=$?
     pass=$(grep '^ok' testing.log | wc -l)
     fail=$(grep '^not ok' testing.log | wc -l)
     tests=$(($pass+$fail))
     total_pass=$(($total_pass+$pass))
     total_fail=$(($total_fail+$fail))
     total_tests=$(($total_tests+$tests))
-    exit_code=$?
     if [ "$exit_code" != "0" ]
     then
         exit $exit_code

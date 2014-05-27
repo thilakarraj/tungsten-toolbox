@@ -26,7 +26,7 @@ SERVICE_INDEX=0
 HUB=${MM_SERVICES[2]}
 THL_PORT_HUB=$(($THL_BASE_PORT+30))
 
-export MORE_DEFAULT_OPTIONS="$MORE_DEFAULT_OPTIONS --property=replicator.service.comments=true"
+export MORE_DEFAULTS_OPTIONS="$MORE_DEFAULTS_OPTIONS --property=replicator.service.comments=true"
 
 for NODE in $(seq 1 $HOW_MANY_NODES)
 do
