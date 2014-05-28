@@ -1,6 +1,7 @@
 #!/bin/bash
 sandboxdir=$(dirname $0)
 . $sandboxdir/sb_vars.sh
+. $sandboxdir/sb_common.sh
 
 SANDBOX_BINARY=$HOME/opt/mysql
 TARGET=$1
@@ -79,7 +80,20 @@ NODE_OPTIONS="$NODE_OPTIONS -c default_storage_engine=innodb"
 NODE_OPTIONS="$NODE_OPTIONS -c innodb-flush-method=O_DIRECT"
 NODE_OPTIONS="$NODE_OPTIONS --remote_access=%"
 
-make_multiple_sandbox  --group_directory=$SB_DIRECTORY --how_many_nodes=$HOW_MANY_NODES --node_options="$NODE_OPTIONS" --sandbox_base_port=$MYSQL_BASE_PORT $MYSQL_VERSION
+SB_COMMAND="make_multiple_sandbox --group_directory=$SB_DIRECTORY --how_many_nodes=$HOW_MANY_NODES --node_options='$NODE_OPTIONS' --sandbox_base_port=$MYSQL_BASE_PORT $MYSQL_VERSION"
+
+if [ -n "$DRYRUN" -o -n "$VERBOSE" ]
+then
+    show_command "$SB_COMMAND"
+    [ -n "$DRYRUN" ] && exit 
+fi
+
+make_multiple_sandbox \
+    --group_directory=$SB_DIRECTORY \
+    --how_many_nodes=$HOW_MANY_NODES \
+    --node_options="$NODE_OPTIONS" \
+    --sandbox_base_port=$MYSQL_BASE_PORT $MYSQL_VERSION
+
 for N in $(seq 1 $HOW_MANY_NODES)
 do
     echo "# Node $N - Creating replication user '$MYSQL_USER' "

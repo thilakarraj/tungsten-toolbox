@@ -17,8 +17,9 @@ fi
 
 export DOTS_LINE='# ---------------------------------------------------'
 
+# VERBOSE=1
 SANDBOX_BINARY=$HOME/opt/mysql
-[ -z "$TUNGSTEN_SANDBOX_VERSION" ] && TUNGSTEN_SANDBOX_VERSION=3.0.02
+[ -z "$TUNGSTEN_SANDBOX_VERSION" ] && TUNGSTEN_SANDBOX_VERSION=3.0.03
 LOCALHOST=$(hostname)
 [ -z "$MYSQL_VERSION" ] && MYSQL_VERSION=5.5.37
 [ -z "$HOW_MANY_NODES" ] && HOW_MANY_NODES=3

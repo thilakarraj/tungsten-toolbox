@@ -1,6 +1,8 @@
 sandboxdir=$(dirname $0)
 . $sandboxdir/sb_vars.sh 
 
+STEPNO=0
+
 function make_paths
 {
     PATHS=''
@@ -10,6 +12,19 @@ function make_paths
         PATHS="${PATHS}${D}"
     done
     export PATHS
+}
+
+function check_exit_code
+{
+    exit_code=$?
+    if [ -n "$SBDEBUG" ]
+    then
+        echo "# exit code: <$exit_code>"
+    fi
+    if [ "$exit_code" != "0" ] 
+    then 
+        exit $exit_code 
+    fi
 }
 
 function multi_trepctl
@@ -25,12 +40,51 @@ function multi_trepctl
     fi
 }
 
+function show_command
+{
+    command=$1
+    echo $command | perl -pe 'BEGIN{$HN=qx(hostname); chomp $HN}; s/$ENV{HOME}/\$HOME/g; s/\b$ENV{USER}\b/\$USER/g; s/\b$HN\b/\$(hostname)/g; s/--/\\\n\t--/g'
+}
+
+function run_command
+{
+    command="$1"
+    if [ -n "$DRYRUN" -o -n "$SBDEBUG" -o -n "$VERBOSE" ]
+    then
+        show_command "$command"
+    fi
+    if [ -z "$DRYRUN" ]
+    then
+        $command
+        check_exit_code
+    fi
+}
+
+function print_dry
+{
+    message=$1
+    STEPNO=$(($STEPNO+1))
+    if [ -n "$DRYRUN" ]
+    then
+        echo "# --- step $STEPNO --- "
+    fi
+    if [ -n "$DRYRUN" -o -n "$SBDEBUG" -o -n "$VERBOSE" ]
+    then
+        echo $message
+    fi
+    if [ -n "$DRYRUN" ]
+    then
+        echo "# "
+    fi
+}
+
 function configure_defaults
 {
     NODE=$1   
     DELTA=$(($NODE*10))
+    print_dry "# Configuring node $NODE"
     MYSQL_SB_PATH=$MYSQL_SB_BASE/node$NODE
-    ./tools/tpm configure defaults --reset \
+    TPM_COMMAND="./tools/tpm configure defaults --reset \
         --install-directory=$TUNGSTEN_SB/$SB_PREFIX$NODE \
         --repl-rmi-port=$(($RMI_BASE_PORT+$DELTA)) \
         --user=$USER \
@@ -40,66 +94,56 @@ function configure_defaults
         --datasource-log-directory=$MYSQL_SB_PATH/data \
         $USERNAME_AND_PASSWORD \
         $VALIDATION_CHECKS $MORE_DEFAULTS_OPTIONS \
-        --start=true
-
-    exit_code=$? 
-    if [ "$exit_code" != "0" ] 
-    then 
-        exit $exit_code 
-    fi
+        --start=true"
+    #echo $TPM_COMMAND | perl -pe 's/--/\\\n\t--/g'
+    #exit
+    #$TPM_COMMAND
+    run_command "$TPM_COMMAND"
 }
 
 function configure_master
 {
     SERVICE=$1
     THL_PORT=$2
-    ./tools/tpm configure $SERVICE \
+    print_dry "# Configuring master for service $SERVICE (thl: $THL_PORT)"
+    TPM_COMMAND="./tools/tpm configure $SERVICE \
         --master=$LOCALHOST \
         --replication-host=$LOCALHOST $MORE_MASTER_OPTIONS \
-        --thl-port=$THL_PORT
-
-    exit_code=$? 
-    if [ "$exit_code" != "0" ] 
-    then 
-        exit $exit_code 
-    fi
+        --thl-port=$THL_PORT "
+    run_command "$TPM_COMMAND"
+    # check_exit_code
 }
 
 function configure_slave
 {
     SERVICE=$1
     THL_PORT=$2
-    ./tools/tpm configure $SERVICE \
+    print_dry "# Configuring slave for service $SERVICE (thl: $THL_PORT)"
+    TPM_COMMAND="./tools/tpm configure $SERVICE \
         --slaves=$LOCALHOST \
         --replication-host=$LOCALHOST \
         --thl-port=$THL_PORT \
         --master-thl-host=$LOCALHOST \
-        --enable-slave-thl-listener=false $MORE_SLAVE_OPTIONS $3
+        --enable-slave-thl-listener=false $MORE_SLAVE_OPTIONS $3 "
 
-    exit_code=$? 
-    if [ "$exit_code" != "0" ] 
-    then 
-        exit $exit_code 
-    fi
+    run_command "$TPM_COMMAND"
+    #check_exit_code
 }
 
 function configure_direct_slave
 {
     SERVICE=$1
     THL_PORT=$2
-    ./tools/tpm configure $SERVICE \
+    print_dry "# Configuring direct slave for service $SERVICE (thl: $THL_PORT)"
+    TPM_COMMAND="./tools/tpm configure $SERVICE \
         --topology=direct \
         --master=$LOCALHOST \
         --replication-host=$LOCALHOST \
         --direct-datasource-host=$LOCALHOST \
         --thl-port=$THL_PORT \
-        --enable-slave-thl-listener=false $3
-
-    exit_code=$? 
-    if [ "$exit_code" != "0" ] 
-    then 
-        exit $exit_code 
-    fi
+        --enable-slave-thl-listener=false $3"
+    run_command "$TPM_COMMAND"
+    # check_exit_code
 }
 
 
@@ -121,12 +165,9 @@ function configure_hub_slave
 function tpm_install
 {
     
-    ./tools/tpm install $MORE_TPM_INSTALL_OPTIONS 
-    exit_code=$? 
-    if [ "$exit_code" != "0" ] 
-    then 
-        exit $exit_code 
-    fi
+    TPM_COMMAND="./tools/tpm install $MORE_TPM_INSTALL_OPTIONS "
+    run_command "$TPM_COMMAND"
+    # check_exit_code
 }
 
 function pre_installation
@@ -161,6 +202,10 @@ function pre_installation
 function post_installation
 {
     topology=$1 
+    if [ -n "$DRYRUN" ]
+    then
+        return
+    fi 
     make_paths
     #MULTI_TREPCTL="$TUNGSTEN_SB_NODE2/tungsten/tungsten-replicator/scripts/multi_trepctl --paths=$PATHS"
     #echo '#!/bin/bash' > $TUNGSTEN_SB/multi_trepctl 
@@ -230,6 +275,7 @@ function post_installation
     echo "MySQL Version     : $MYSQL_VERSION" >> $INFO_FILE
     echo "Nodes             : $HOW_MANY_NODES" >> $INFO_FILE
     cat $INFO_FILE
+    $sandboxdir/sb_show_cluster
 }
 
 function ok_equal

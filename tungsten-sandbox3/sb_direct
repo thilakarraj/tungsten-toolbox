@@ -44,5 +44,4 @@ do
 done
 
 post_installation direct
-$sandboxdir/sb_show_cluster
 

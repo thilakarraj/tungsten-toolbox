@@ -35,5 +35,4 @@ do
 done
 
 post_installation master_slave
-$sandboxdir/sb_show_cluster
 

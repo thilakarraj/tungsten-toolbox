@@ -26,7 +26,7 @@ my %default_options = (
     #    },
      verbose => {
             parse   => 'verbose',
-            value   => 0,
+            value   => $VERBOSE,
             so      => 910,
             groups  => ['all', 'cli-admin'],
             help    => ['Show more information during installation and help ' ]
