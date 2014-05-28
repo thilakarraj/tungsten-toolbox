@@ -45,4 +45,3 @@ do
 done
 
 post_installation all_masters
-$sandboxdir/sb_show_cluster

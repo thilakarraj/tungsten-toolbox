@@ -62,5 +62,4 @@ done
 tpm_install
 
 post_installation star
-$sandboxdir/sb_show_cluster
 

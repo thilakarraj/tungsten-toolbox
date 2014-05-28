@@ -14,7 +14,7 @@ use Data::Dumper;
 {
 package Sandbox;
 # SBVERSION
-our $VERSION = '3.0.02';
+our $VERSION = '3.0.03';
 use English '-no_match_vars';
 use File::Basename;
 
@@ -215,6 +215,28 @@ $cli->add_option(
     }
 );
 
+$cli->add_option(
+    heterogenous_master => {
+        parse       => 'hm|heterogenous-master',
+        value       => 0,
+        must_have   => 0,
+        so          => 142,
+        help        => ['Sets every master service with heterogenous options'],
+    }
+);
+
+
+$cli->add_option(
+    heterogenous_slave => {
+        parse       => 'hs|heterogenous-slave',
+        value       => 0,
+        must_have   => 0,
+        so          => 144,
+        help        => ['Sets every slave service with heterogenous options'],
+    }
+);
+
+
 
 $cli->add_option(
     binlog_format => {
@@ -227,10 +249,31 @@ $cli->add_option(
     }
 );
 
+$cli->add_option(
+    dry_run => {
+        parse       => 'dry-run',
+        value       => 0,
+        must_have   => 0,
+        so          => 160,
+        help        => ['Shows the installation commands, without doing anything'],
+    }
+);
+
+$cli->add_option(
+    debug => {
+        parse       => 'debug',
+        value       => $ENV{CLI_DEBUG} || $ENV{SB_DEBUG} || 0,
+        must_have   => 0,
+        so          => 170,
+        help        => ['Shows debug information during the installation'],
+    }
+);
+
 $cli->getoptions();
 $cli->{options}{tungsten_sandbox_version} = $Sandbox::VERSION;
 $cli->get_help() if $cli->{options}{help};
 # print Dumper $cli->{options}; exit;
+
 make_dynamic_options($cli->{options});
 
 my $executable_path=Sandbox::get_real_path($PROGRAM_NAME);
@@ -253,6 +296,19 @@ if ($cli->{options}{staging_dir})
     chdir $cli->{options}{staging_dir};
 }
 
+if ($cli->{options}{verbose})
+{
+    $ENV{VERBOSE}=1;
+}
+if ($cli->{options}{debug})
+{
+    $ENV{SBDEBUG}=1;
+}
+
+if ($cli->{options}{dry_run})
+{
+    $ENV{DRYRUN}=1;
+}
 $ENV{RUNNING_SANDBOX_WRAPPER}=1;
 
 exec "$executable_path/sb_$topology $args";
@@ -275,6 +331,31 @@ sub make_dynamic_options
         install_options          => 'MORE_TPM_INSTALL_OPTIONS',
         binlog_format            => 'BINLOG_FORMAT',
     );
+    if ($options->{heterogenous_master})
+    {
+        $options->{master_options}  = "" unless $options->{master_options};
+        $options->{master_options} .= " --enable-heterogenous-service=true";
+        $options->{binlog_format}   = "row";
+        if ($CLI_Utils::VERBOSE)
+        {
+            print qq(# expanded --heterogenous-master into \n),
+                  qq(# --master-options="$options->{master_options}"\n),
+                  qq(# --binlog-format="$options->{binlog_format}"\n);
+        }
+    }
+
+    if ($options->{heterogenous_slave})
+    {
+        $options->{slave_options} = "" unless $options->{slave_options};
+        $options->{slave_options} .= " --enable-heterogenous-service=true";
+        if ($CLI_Utils::VERBOSE)
+        {
+            print qq(# expanded --heterogenous-slave into \n),
+                  qq(# --slave-options="$options->{slave_options}"\n);
+        }
+    }
+
+
     my $dynamic_vars_file =  Sandbox::modulepath() . '/sb_dynamic_vars.sh';
     # print "$dynamic_vars_file\n";
     open my $DYNVARS, '>', $dynamic_vars_file
@@ -296,40 +377,3 @@ sub make_dynamic_options
 }
 
 __END__
-    Tungsten Tools,  version 2.0.13
-    Tungsten Sandbox - Cluster builder
-     (C) 2011,2012 Giuseppe Maxia, Continuent, Inc
-    -n --nodes = number                 How many nodes to install
-    -m --mysql-version = name           which MySQL version to use
-    -t --tungsten-base = name           Where to install the sandbox
-    -i --installation-directory = name  Where the Tungsten tarball has been expanded
-    -d --group-dir = name               sandbox group directory name
-*   --skip-sandbox-creation             Skips sandbox creation (using an existing one)
-    --topology = name                   Which topology to deploy
-*   --hub = number                      Which node is a hub
-*   --fan-in = number                   Which node is the fan-in slave
-*   --tree = name                       Define hierarchical replication.
-                                        You must indicate which node does not replicate directly from the master
-                                        The format is --tree=X:Y, where X is the intermediate node,
-                                        and Y is the ultimate one. (e.g. --tree=2:4 means that node 4 replicates from
-                                        the master through node 2)
-*   --mysql-slaves = number             How many nodes in the cluster will be MySQL native slaves
-*   -x --tsb-prefix = name              Tungsten Sandbox prefix
-                                        (each directory inside ~/tsb2/ containing a complete tungsten
-                                        sandbox will be named using this prefix and the node number)
-    -s --service = name                 How the service is named
-*   --service-names = name              How the services in multiple master topologies are named
-    -p --base-port = number             Base port for MySQL Sandbox nodes
-    -l --thl-port = number              Port for the THL service
-    -r --rmi-port = number              Port for the RMI service
-    -v --version                        Show Tungsten sandbox version and exit
-    --show-options                      Show Tungsten sandbox collected options and exit
-*   --ignore-manifest                   Ignore build values in .manifest when determining if the Tungsten package
-                                        can be used with this sandbox
-    --verbose                           Show more information during installation and help
-    -man --manual                       display the program manual
-    -o --install-options = name         Options to be passed to the underlying installer, with the format
-                                        {TR|MSB}:ROLE:options
-                                        Where TR is Tungsten Replicator, MSB is MySQL Sandbox, and ROLE can be
-                                        one of BEFORE AFTER MASTER, SLAVE, DIRECT, NODE, HUB, ENDPOINT, GLOBAL
-

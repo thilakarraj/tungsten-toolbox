@@ -49,4 +49,3 @@ done
 tpm_install
 
 post_installation fanin
-$sandboxdir/sb_show_cluster
