@@ -19,10 +19,16 @@ export DOTS_LINE='# ---------------------------------------------------'
 
 # VERBOSE=1
 SANDBOX_BINARY=$HOME/opt/mysql
-[ -z "$TUNGSTEN_SANDBOX_VERSION" ] && TUNGSTEN_SANDBOX_VERSION=3.0.03
+[ -z "$TUNGSTEN_SANDBOX_VERSION" ] && TUNGSTEN_SANDBOX_VERSION=3.0.10
 LOCALHOST=$(hostname)
 [ -z "$MYSQL_VERSION" ] && MYSQL_VERSION=5.5.37
 [ -z "$HOW_MANY_NODES" ] && HOW_MANY_NODES=3
+
+if [ $HOW_MANY_NODES -gt 9 ]
+then
+    echo "This framework can't handle more than 9 nodes"
+    exit 1
+fi
 
 [ -z "$TUNGSTEN_SB" ] && TUNGSTEN_SB=$HOME/tsb3
 SB_PREFIX=db

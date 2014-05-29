@@ -68,7 +68,6 @@ if [ -d $HOME/sandboxes/$SB_DIRECTORY ]
 then
     sbtool -o delete -s $HOME/sandboxes/$SB_DIRECTORY
 fi
-echo "# Building $HOW_MANY_NODES sandboxes with MySQL $MYSQL_VERSION"
 NODE_OPTIONS="-c innodb-thread-concurrency=0"
 NODE_OPTIONS="$NODE_OPTIONS -c sync_binlog=1"
 NODE_OPTIONS="$NODE_OPTIONS -c innodb-log-buffer-size=50M"
@@ -84,6 +83,8 @@ SB_COMMAND="make_multiple_sandbox --group_directory=$SB_DIRECTORY --how_many_nod
 
 if [ -n "$DRYRUN" -o -n "$VERBOSE" ]
 then
+    [ -n "$MAKE_INI" ] && exit
+    echo "# Building $HOW_MANY_NODES sandboxes with MySQL $MYSQL_VERSION"
     show_command "$SB_COMMAND"
     [ -n "$DRYRUN" ] && exit 
 fi

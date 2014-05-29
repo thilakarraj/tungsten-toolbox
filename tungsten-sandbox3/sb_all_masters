@@ -4,7 +4,7 @@ sandboxdir=$(dirname $0)
 . $sandboxdir/sb_vars.sh
 . $sandboxdir/sb_common.sh
 
-pre_installation
+pre_installation all_masters
 
 SERVICE_INDEX=0
 
@@ -21,27 +21,32 @@ fi
 
 $sandboxdir/sb_make_sandboxes
 
-for NODE in $(seq 1 $HOW_MANY_NODES)
-do
-    DELTA=$(($NODE*10))
-    THL_PORT=$(($THL_BASE_PORT+$DELTA))
-    configure_defaults $NODE
-    MASTER_SERVICE=${MM_SERVICES[$SERVICE_INDEX]}
-    configure_master $MASTER_SERVICE $THL_PORT
-    SLAVE_SERVICE_INDEX=0
-    for SLAVENODE in $(seq 1 $HOW_MANY_NODES)
-    do
-        SLAVEDELTA=$(($SLAVENODE*10))
-        SLAVE_THL_PORT=$(($THL_BASE_PORT+$SLAVEDELTA))
-        SLAVE_SERVICE=${MM_SERVICES[$SLAVE_SERVICE_INDEX]}
-        if [ "$SLAVE_SERVICE" != "$MASTER_SERVICE" ]
-        then
-            configure_slave $SLAVE_SERVICE $SLAVE_THL_PORT
-        fi
-        SLAVE_SERVICE_INDEX=$(($SLAVE_SERVICE_INDEX+1))
-    done
-    SERVICE_INDEX=$(($SERVICE_INDEX+1))
-    tpm_install
-done
 
+if [ -n "$USE_INI" ]
+then
+    install_with_ini_files
+else
+    for NODE in $(seq 1 $HOW_MANY_NODES)
+    do
+        DELTA=$(($NODE*10))
+        THL_PORT=$(($THL_BASE_PORT+$DELTA))
+        configure_defaults $NODE
+        MASTER_SERVICE=${MM_SERVICES[$SERVICE_INDEX]}
+        configure_master $MASTER_SERVICE $THL_PORT
+        SLAVE_SERVICE_INDEX=0
+        for SLAVENODE in $(seq 1 $HOW_MANY_NODES)
+        do
+            SLAVEDELTA=$(($SLAVENODE*10))
+            SLAVE_THL_PORT=$(($THL_BASE_PORT+$SLAVEDELTA))
+            SLAVE_SERVICE=${MM_SERVICES[$SLAVE_SERVICE_INDEX]}
+            if [ "$SLAVE_SERVICE" != "$MASTER_SERVICE" ]
+            then
+                configure_slave $SLAVE_SERVICE $SLAVE_THL_PORT
+            fi
+            SLAVE_SERVICE_INDEX=$(($SLAVE_SERVICE_INDEX+1))
+        done
+        SERVICE_INDEX=$(($SERVICE_INDEX+1))
+        tpm_install
+    done
+fi
 post_installation all_masters

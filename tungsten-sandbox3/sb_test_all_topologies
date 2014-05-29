@@ -22,13 +22,18 @@ echo $DOTS_LINE >> all_operations.log
 
 for topology in master_slave fanin all_masters star direct
 do
+    if [ -n "$USE_INI_FILES" ]
+    then
+        USE_INI_FILES=--use-ini-files
+    fi
     echo $DOTS_LINE
     echo "# Testing topology $topology"
     echo $DOTS_LINE
     echo $DOTS_LINE >> all_operations.log
     echo "# Testing topology $topology" >> all_operations.log
     echo $DOTS_LINE >> all_operations.log
-    $sandboxdir/sb_$topology > installation.log 2>&1
+    $sandboxdir/tungsten-sandbox $USE_INI_FILES --nodes=4 --topology=$topology --verbose -m $MYSQL_VERSION > installation.log 2>&1
+    # $sandboxdir/sb_$topology > installation.log 2>&1
     exit_code=$?
     if [ "$exit_code" != "0" ]
     then
