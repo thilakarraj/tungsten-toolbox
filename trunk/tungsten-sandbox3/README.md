@@ -58,23 +58,55 @@ The installation scripts run without any parameters. But you can provide some:
 
 There is also a tungsten-sandbox wrapper, which allows you to customize the installation with some options.
 
-    Tungsten Sandbox Manager
-    version 3.0.02
+    version 3.0.10
     (C) Continuent, Inc, 2012,2013,2014
     Syntax: tungsten-sandbox [options]
-        -n --nodes = number                 Defines how many nodes will be in the sandbox
+        -n --nodes = number                 Defines how many nodes will be in the sandbox (2)
+                                            (Must have)
         -m --mysql-version = name           which MySQL version will be used for the sandbox
-        -t --tungsten-base = name           Where to install the sandbox
+                                            (Must have)
+        -t --tungsten-base = name           Where to install the sandbox (/Users/gmax/tsb3)
         -i --staging-dir = name             Where the Tungsten tarball was expanded
-        -d --group-dir = name               Sandbox group directory name
-        --topology = name                   Which topology to deploy
-        --service = name                    How the service is named (in master/slave)
-        -p --base-port = number             Base port for MySQL servers
-        -r --rmi-port = number              Base port for RMI services
-        -l --thl-port = number              Base port for THL services
+        -d --group-dir = name               Sandbox group directory name (tsb)
+        --topology = name                   Which topology to deploy (master_slave)
+                                            (Must have)
+                                            (Allowed: {all_masters|direct|fanin|master_slave|star})
+        --service = name                    How the service is named (in master/slave) (tsandbox)
+                                            (Must have)
+        -p --base-port = number             Base port for MySQL servers (6000)
+                                            (Must have)
+        -r --rmi-port = number              Base port for RMI services (10100)
+                                            (Must have)
+        -l --thl-port = number              Base port for THL services (12100)
+                                            (Must have)
+        --defaults-options = name           Options that with be added to "tpm configure defaults" call
+        --master-options = name             Options that with be added to "tpm configure" call for a master service
+        --slave-options = name              Options that with be added to "tpm configure" call for a slave service
+        --install-options = name            Options that with be added to "tpm install" calls for the current topology
+        -hm --heterogenous-master           Sets every master service with heterogenous options
+        -hs --heterogenous-slave            Sets every slave service with heterogenous options
+        --binlog-format = name              Which binlog format shall we use (mixed)
+                                            (Allowed: {mixed|row|statement})
+        --use-ini-files                     Uses .INI files instead of staging directory to run the installation
+        --dry-run                           Shows the installation commands, without doing anything
+        --debug                             Shows debug information during the installation
         --verbose                           Show more information during installation and help
+        -man --manual                       Display the program manual
         -v --version                        Show ./tungsten-sandbox version and exit
+        --display-options                   Show all the options without running the program
         -h --help                           Display this help
+
+The tungsten-sandbox wrapper allows easy customization of the sandbox installation, even things that would be cumbersome using the shell scripts directly.
+
+For example:
+
+    tungsten-sandbox -m 5.7.4 --nodes=4 --topology=all_masters --heterogenous-master --verbose 
+
+(will create all slaves with heterogenous options, so that you can attach a non-MySQL slave to them)
+
+    tungsten-sandbox -m 5.6.18 --use-ini-files --topology=fanin --nodes=3 --verbose --slave-options='--svc-parallelization-type=disk --channels=5'
+
+(will create a fanin, using .ini files instead of a staging directory, and enabling parallel replication in all slave services)
 
 
 ### Changing the defaults
@@ -87,7 +119,7 @@ You can change the listening ports for both MySQL and Tungsten by changing MYSQL
 
 ### Environment variables
 
-You can set some environment variables that influence how the installers work:
+You can set some environment variables that influence how the installers work (you can use all of them through tungsten-sandbox):
 
 * MYSQL\_VERSION : changes the MySQL version for the installation. Make sure that $HOME/opt/mysql/$MYSQL\_VERSION exists
 * HOW_MANY_NODES: changes the number of nodes to install. You can also provide this value as an argument to the installing scripts

@@ -14,7 +14,7 @@ use Data::Dumper;
 {
 package Sandbox;
 # SBVERSION
-our $VERSION = '3.0.03';
+our $VERSION = '3.0.10';
 use English '-no_match_vars';
 use File::Basename;
 
@@ -250,11 +250,22 @@ $cli->add_option(
 );
 
 $cli->add_option(
+    use_ini_files => {
+        parse       => 'use-ini-files',
+        value       => 0,
+        must_have   => 0,
+        so          => 160,
+        help        => ['Uses .INI files instead of staging directory to run the installation'],
+    }
+);
+
+
+$cli->add_option(
     dry_run => {
         parse       => 'dry-run',
         value       => 0,
         must_have   => 0,
-        so          => 160,
+        so          => 170,
         help        => ['Shows the installation commands, without doing anything'],
     }
 );
@@ -264,7 +275,7 @@ $cli->add_option(
         parse       => 'debug',
         value       => $ENV{CLI_DEBUG} || $ENV{SB_DEBUG} || 0,
         must_have   => 0,
-        so          => 170,
+        so          => 180,
         help        => ['Shows debug information during the installation'],
     }
 );
@@ -311,6 +322,31 @@ if ($cli->{options}{dry_run})
 }
 $ENV{RUNNING_SANDBOX_WRAPPER}=1;
 
+if ($cli->{options}{use_ini_files})
+{
+    my @existing_ini_files = glob ("$cli->{options}{tungsten_base}/tungsten-node?.ini");
+    if (@existing_ini_files)
+    {
+        die "Found pre-existing .ini files : (@existing_ini_files)\n";
+    }
+    if (exists $ENV{USE_INI})
+    {
+        delete $ENV{USE_INI};
+    }
+    $ENV{MAKE_INI}=1;
+    $ENV{DRYRUN}=1;
+    if ($cli->{options}{debug})
+    {
+        system "$executable_path/sb_$topology $args";
+    }
+    else
+    {
+        system "$executable_path/sb_$topology $args > /dev/null 2>&1";
+    }
+    delete $ENV{MAKE_INI};
+    delete $ENV{DRYRUN};
+    $ENV{USE_INI}=1;
+}
 exec "$executable_path/sb_$topology $args";
 
 sub make_dynamic_options

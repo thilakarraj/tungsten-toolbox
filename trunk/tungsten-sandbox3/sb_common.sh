@@ -2,6 +2,7 @@ sandboxdir=$(dirname $0)
 . $sandboxdir/sb_vars.sh 
 
 STEPNO=0
+INI_NODE=0
 
 function make_paths
 {
@@ -43,7 +44,12 @@ function multi_trepctl
 function show_command
 {
     command=$1
-    echo $command | perl -pe 'BEGIN{$HN=qx(hostname); chomp $HN}; s/$ENV{HOME}/\$HOME/g; s/\b$ENV{USER}\b/\$USER/g; s/\b$HN\b/\$(hostname)/g; s/--/\\\n\t--/g'
+    if [ -n "$MAKE_INI" ]
+    then
+        echo $command | perl -pe 's{(./tools/tpm install)}{}; s/\breset\b//; s{./tools/tpm configure (\w+)}{\n\[$1\]}; s/--/\n/g; ' >> $TUNGSTEN_SB/tungsten-node$INI_NODE.ini
+    else
+        echo $command | perl -pe 'BEGIN{$HN=qx(hostname); chomp $HN}; s/$ENV{HOME}/\$HOME/g; s/=$ENV{USER}\b/=\$USER/g; s/\b$HN\b/\$(hostname)/g; s/--/\\\n\t--/g'
+    fi
 }
 
 function run_command
@@ -81,6 +87,11 @@ function print_dry
 function configure_defaults
 {
     NODE=$1   
+    if [ -n "$MAKE_INI" ]
+    then
+        export INI_NODE=$NODE
+        echo "# NODE $NODE - Topology: $current_topology" > $TUNGSTEN_SB/tungsten-node$INI_NODE.ini
+    fi
     DELTA=$(($NODE*10))
     print_dry "# Configuring node $NODE"
     MYSQL_SB_PATH=$MYSQL_SB_BASE/node$NODE
@@ -170,9 +181,21 @@ function tpm_install
     # check_exit_code
 }
 
+function install_with_ini_files
+{
+    # set -x
+    for F in $TUNGSTEN_SB/tungsten-node?.ini
+    do
+        MORE_TPM_INSTALL_OPTIONS=--ini=$F
+        tpm_install
+    done
+    # set +x
+}
+
+
 function pre_installation
 {
-
+    export current_topology=$1
     if [ ! -x ./tools/tpm ]
     then
         echo "This command requires ./tools/tpm"
