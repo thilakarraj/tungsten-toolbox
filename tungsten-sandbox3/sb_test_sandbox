@@ -117,18 +117,32 @@ function read_from_slaves
     done
 }
 
-# MASTER_LIST=$(multi_trepctl --role master --fields service,rmiport --hide-headers --output list)
-MASTER_LIST=$(multi_trepctl --fields service,pipelineSource,rmiport,role --hide-headers --output list)
 TOPOLOGY=$(cat $TUNGSTEN_SB/topology)
+
+if [ "$TOPOLOGY" == "direct" ]
+then
+    multi_trepctl_node2=$TUNGSTEN_SB/${SB_PREFIX}2/tungsten/tungsten-replicator/scripts/multi_trepctl    
+    MASTER_LIST=$($multi_trepctl_node2 --fields service,rmiport,role --hide-headers --output list --paths=$TUNGSTEN_SB/${SB_PREFIX}2)
+else
+    MASTER_LIST=$(multi_trepctl --role master --fields service,rmiport,role --hide-headers --output list)
+fi
+# MASTER_LIST=$(multi_trepctl --fields service,pipelineSource,rmiport,role --hide-headers --output list)
 echo '' > /tmp/used_ports
 for SERVICE_MASTER in $(echo $MASTER_LIST | tr ';' ' ')
 do
     service=$(echo $SERVICE_MASTER | tr ',' ' '| awk '{print $1}')
-    pipeline=$(echo $SERVICE_MASTER | tr ',' ' '| awk '{print $2}')
-    rmiport=$(echo $SERVICE_MASTER | tr ',' ' '| awk '{print $3}')
-    role=$(echo $SERVICE_MASTER | tr ',' ' '| awk '{print $4}')
-    db_port=$(echo $pipeline | perl -nle 'print $1 if m{^jdbc:\w+:[^:]+://[^:]+:(\d+)}')
-    #db_port=$($TREPCTL -port $rmiport -service $service properties -filter replicator.global.db.port | perl -nle 'print $1 if /"(\d+)"$/')
+    #pipeline=$(echo $SERVICE_MASTER | tr ',' ' '| awk '{print $2}')
+    rmiport=$(echo $SERVICE_MASTER | tr ',' ' '| awk '{print $2}')
+    role=$(echo $SERVICE_MASTER | tr ',' ' '| awk '{print $3}')
+    # db_port=$(echo $pipeline | perl -nle 'print $1 if m{^jdbc:\w+:[^:]+://[^:]+:(\d+)}')
+
+    extractor_db_port=$($TREPCTL -port $rmiport -service $service properties -filter replicator.extractor.dbms.port | perl -nle 'print $1 if /"(\d+)"$/')
+    applier_db_port=$($TREPCTL -port $rmiport -service $service properties -filter replicator.applier.dbms.port | perl -nle 'print $1 if /"(\d+)"$/')
+    db_port=$($TREPCTL -port $rmiport -service $service properties -filter replicator.global.db.port | perl -nle 'print $1 if /"(\d+)"$/')
+    if [ "$extractor_db_port" != "$applier_db_port" ]
+    then
+        db_port=$extractor_db_port
+    fi
     #echo "master service $service"
     #echo "master rmiport $rmiport"
     #echo "master db port $db_port"

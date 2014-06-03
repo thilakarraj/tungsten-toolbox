@@ -20,7 +20,7 @@ then
 fi
 
 $sandboxdir/sb_make_sandboxes
-
+check_exit_code
 
 if [ -n "$USE_INI" ]
 then

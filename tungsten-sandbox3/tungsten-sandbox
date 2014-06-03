@@ -76,7 +76,7 @@ my $cli = Sandbox->new(
 $cli->add_option(
     nodes => {
         parse       => 'n|nodes=i',
-        value       => 2,
+        value       => 0,
         must_have   => 1,
         so          => 10,
         help        => ['Defines how many nodes will be in the sandbox'],
@@ -218,7 +218,7 @@ $cli->add_option(
 $cli->add_option(
     heterogenous_master => {
         parse       => 'hm|heterogenous-master',
-        value       => 0,
+        value       => $ENV{HETEROGENOUS_MASTER} || 0,
         must_have   => 0,
         so          => 142,
         help        => ['Sets every master service with heterogenous options'],
@@ -229,7 +229,7 @@ $cli->add_option(
 $cli->add_option(
     heterogenous_slave => {
         parse       => 'hs|heterogenous-slave',
-        value       => 0,
+        value       => $ENV{HETEROGENOUS_SLAVE} || 0,
         must_have   => 0,
         so          => 144,
         help        => ['Sets every slave service with heterogenous options'],
@@ -241,9 +241,9 @@ $cli->add_option(
 $cli->add_option(
     binlog_format => {
         parse       => 'binlog-format=s',
-        value       => 'mixed',
+        value       => $ENV{BINLOG_FORMAT} || 'mixed',
         must_have   => 0,
-        allowed     => [qw(statement mixed row)],
+        allowed     => [qw(STATEMENT MIXED ROW statement mixed row)],
         so          => 150,
         help        => ['Which binlog format shall we use'],
     }
@@ -285,6 +285,23 @@ $cli->{options}{tungsten_sandbox_version} = $Sandbox::VERSION;
 $cli->get_help() if $cli->{options}{help};
 # print Dumper $cli->{options}; exit;
 
+my %min_nodes_by_topology =(
+    master_slave => 2,
+    all_masters  => 2,
+    star         => 3,
+    fanin        => 3,
+    direct       => 2,
+);
+my $topology = $cli->{options}{topology};
+unless ($cli->{options}->{nodes})
+{
+    $cli->{options}->{nodes}= $min_nodes_by_topology{$topology} ;
+    if ($ENV{TEST_ALL_TOPOLOGIES})
+    {
+        $cli->{options}->{nodes} += 1;
+    }
+}
+
 make_dynamic_options($cli->{options});
 
 my $executable_path=Sandbox::get_real_path($PROGRAM_NAME);
@@ -294,8 +311,7 @@ $executable_path=qx(pwd);
 chomp $executable_path;
 chdir $curdir;
 
-my $args =$cli->{options}->{nodes};
-my $topology = $cli->{options}{topology};
+my $args = $cli->{options}->{nodes};
 
 if ($topology eq 'master_slave' or $topology eq 'direct')
 {
@@ -347,6 +363,7 @@ if ($cli->{options}{use_ini_files})
     delete $ENV{DRYRUN};
     $ENV{USE_INI}=1;
 }
+# print "$executable_path/sb_$topology $args\n";
 exec "$executable_path/sb_$topology $args";
 
 sub make_dynamic_options

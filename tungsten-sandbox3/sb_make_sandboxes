@@ -3,6 +3,14 @@ sandboxdir=$(dirname $0)
 . $sandboxdir/sb_vars.sh
 . $sandboxdir/sb_common.sh
 
+
+if [ $HOW_MANY_NODES -lt 2 ]
+then
+    grep HOW_MANY_NODES $sandboxdir/sb_vars.sh
+    echo "Can't create a multiple sandbox with less than 2 nodes"
+    exit 1
+fi
+
 SANDBOX_BINARY=$HOME/opt/mysql
 TARGET=$1
 if [ -n "$TARGET" ] 

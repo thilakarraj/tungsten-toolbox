@@ -4,6 +4,7 @@ sandboxdir=$(dirname $0)
 . $sandboxdir/sb_common.sh
 
 pre_installation direct
+check_exit_code
 
 SERVICE=$1
 [ -z "$SERVICE" ] && SERVICE=directsandbox

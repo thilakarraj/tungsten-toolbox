@@ -32,9 +32,11 @@ do
     echo $DOTS_LINE >> all_operations.log
     echo "# Testing topology $topology" >> all_operations.log
     echo $DOTS_LINE >> all_operations.log
-    $sandboxdir/tungsten-sandbox $USE_INI_FILES --nodes=4 --topology=$topology --verbose -m $MYSQL_VERSION > installation.log 2>&1
+    export TEST_ALL_TOPOLOGIES=1
+    $sandboxdir/tungsten-sandbox $USE_INI_FILES --topology=$topology --verbose -m $MYSQL_VERSION > installation.log 2>&1
     # $sandboxdir/sb_$topology > installation.log 2>&1
     exit_code=$?
+    unset TEST_ALL_TOPOLOGIES
     if [ "$exit_code" != "0" ]
     then
         cat installation.log
