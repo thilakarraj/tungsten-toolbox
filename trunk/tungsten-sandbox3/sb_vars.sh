@@ -70,7 +70,7 @@ VALIDATION_CHECKS="--skip-validation-check=ClusterMasterHost"
 VALIDATION_CHECKS="$VALIDATION_CHECKS --skip-validation-check=MySQLSettingsCheck"
 VALIDATION_CHECKS="$VALIDATION_CHECKS --skip-validation-check=OpenFilesLimitCheck"
 VALIDATION_CHECKS="$VALIDATION_CHECKS --skip-validation-check=OSCheck"
-VALIDATION_CHECKS="$VALIDATION_CHECKS --skip-validation-check=HomeDirectoryCheck"
+#VALIDATION_CHECKS="$VALIDATION_CHECKS --skip-validation-check=HomeDirectoryCheck"
 VALIDATION_CHECKS="$VALIDATION_CHECKS --skip-validation-check=HostsFileCheck"
 
 USERNAME_AND_PASSWORD="--replication-user=$MYSQL_USER --replication-password=$MYSQL_PASSWORD"
@@ -85,3 +85,5 @@ USERNAME_AND_PASSWORD="--replication-user=$MYSQL_USER --replication-password=$MY
 [ -z "$EDITOR" ] && EDITOR=vim
 
 PATH=$SANDBOX_BINARY/$MYSQL_VERSION/bin:$PATH
+# echo "<$PATH>"
+

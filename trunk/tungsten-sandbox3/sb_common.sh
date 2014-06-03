@@ -92,6 +92,11 @@ function configure_defaults
         export INI_NODE=$NODE
         echo "# NODE $NODE - Topology: $current_topology" > $TUNGSTEN_SB/tungsten-node$INI_NODE.ini
     fi
+    DISABLE_RELAY_LOGS=true
+    if [ "$current_topology" == "direct" ]
+    then
+        DISABLE_RELAY_LOGS=false
+    fi
     DELTA=$(($NODE*10))
     print_dry "# Configuring node $NODE"
     MYSQL_SB_PATH=$MYSQL_SB_BASE/node$NODE
@@ -103,6 +108,7 @@ function configure_defaults
         --datasource-mysql-conf=$MYSQL_SB_PATH/my.sandbox.cnf \
         --datasource-boot-script=$MYSQL_SB_PATH/msb \
         --datasource-log-directory=$MYSQL_SB_PATH/data \
+        --repl-disable-relay-logs=$DISABLE_RELAY_LOGS \
         $USERNAME_AND_PASSWORD \
         $VALIDATION_CHECKS $MORE_DEFAULTS_OPTIONS \
         --start=true"
