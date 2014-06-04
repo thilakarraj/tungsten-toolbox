@@ -13,6 +13,26 @@ fi
 # This will remove sandboxes created with the current setup
 $sandboxdir/sb_reset
 
+function check_error_logs
+{
+    for DIR in $( ls -d $TUNGSTEN_SB/${SB_PREFIX}*/ )
+    do
+        LOG=$DIR/tungsten/tungsten-replicator/log/trepsvc.log
+        if [ -f $LOG ]
+        then
+            HAS_ERROR=$(grep ERROR $LOG)
+            if [ -n "$HAS_ERROR" ]
+            then
+                echo $DOTS_LINE
+                echo "# ERROR found in $DIR:"
+                echo $DOTS_LINE
+                perl -ne 'BEGIN{$hold=1} $hold=0 if /ERROR/;  print unless $hold'  $LOG
+                echo $DOTS_LINE
+            fi
+        fi
+    done
+}
+
 total_pass=0
 total_fail=0
 total_tests=0
@@ -20,7 +40,9 @@ echo $DOTS_LINE > all_operations.log
 echo "# START : $(date) " >> all_operations.log
 echo $DOTS_LINE >> all_operations.log
 
-for topology in master_slave fanin all_masters star direct
+# all_topologies='master_slave fanin all_masters star direct'
+all_topologies='star master_slave fanin all_masters direct'
+for topology in $all_topologies
 do
     if [ -n "$USE_INI_FILES" ]
     then
@@ -39,6 +61,11 @@ do
     unset TEST_ALL_TOPOLOGIES
     if [ "$exit_code" != "0" ]
     then
+        UNEXPLAINED=grep 'At least one replication service has experienced an error' installation.log
+        if [ -n "$UNEXPLAINED" ]
+        then
+            check_error_logs
+        fi
         cat installation.log
         exit $exit_code
     fi
