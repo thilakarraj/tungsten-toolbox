@@ -223,9 +223,8 @@ function pre_installation
     fi
     if [ ! -d $TUNGSTEN_SB ]
     then
-        mkdir $TUNGSTEN_SB
+        mkdir -p $TUNGSTEN_SB
     fi
-
 }
 
 function post_installation
