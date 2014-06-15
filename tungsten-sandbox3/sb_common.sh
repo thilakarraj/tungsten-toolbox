@@ -98,8 +98,22 @@ function configure_defaults
         DISABLE_RELAY_LOGS=false
     fi
     DELTA=$(($NODE*10))
+    EXTRA_OPTIONS=''
+    if [ -n "$MORE_NODE_OPTIONS" ]
+    then
+        WANTED_NODE=$(echo $MORE_NODE_OPTIONS | tr ':' ' '| awk '{print $1}' )
+        if [ "$WANTED_NODE" == "$NODE" ]
+        then
+            EXTRA_OPTIONS=$(echo "$MORE_NODE_OPTIONS" | perl -nle 's/^\d+://; print "$_"')
+        fi
+    fi
     print_dry "# Configuring node $NODE"
+    if [ -n "$SET_EXECUTABLE_PREFIX" ]
+    then
+        EXTRA_OPTIONS="$EXTRA_OPTIONS --executable-prefix=${SB_PREFIX}$NODE"
+    fi
     MYSQL_SB_PATH=$MYSQL_SB_BASE/node$NODE
+    
     TPM_COMMAND="./tools/tpm configure defaults --reset \
         --install-directory=$TUNGSTEN_SB/$SB_PREFIX$NODE \
         --repl-rmi-port=$(($RMI_BASE_PORT+$DELTA)) \
@@ -110,7 +124,7 @@ function configure_defaults
         --datasource-log-directory=$MYSQL_SB_PATH/data \
         --repl-disable-relay-logs=$DISABLE_RELAY_LOGS \
         $USERNAME_AND_PASSWORD \
-        $VALIDATION_CHECKS $MORE_DEFAULTS_OPTIONS \
+        $VALIDATION_CHECKS $MORE_DEFAULTS_OPTIONS $EXTRA_OPTIONS \
         --start=true"
     #echo $TPM_COMMAND | perl -pe 's/--/\\\n\t--/g'
     #exit
@@ -142,6 +156,33 @@ function configure_slave
         --thl-port=$THL_PORT \
         --master-thl-host=$LOCALHOST \
         --enable-slave-thl-listener=false $MORE_SLAVE_OPTIONS $3 "
+
+    run_command "$TPM_COMMAND"
+    #check_exit_code
+}
+
+function configure_mongodb_slave
+{
+    SERVICE=$1
+    THL_PORT=$2
+    MASTER_THL_PORT=$3
+    NODE=$4
+    DELTA=$(($NODE*10))
+    print_dry "# Configuring slave for service $SERVICE (thl: $THL_PORT)"
+    TPM_COMMAND="./tools/tpm configure $SERVICE \
+        --slaves=$LOCALHOST \
+        --master=$LOCALHOST \
+        --repl-rmi-port=$(($RMI_BASE_PORT+$DELTA)) \
+        --role=slave \
+        --datasource-type=mongodb \
+        --install-directory=$TUNGSTEN_SB/${SB_PREFIX}$NODE \
+        --replication-port=$MONGODB_PORT \
+        --replication-host=$LOCALHOST \
+        --thl-port=$THL_PORT \
+        --master-thl-port=$MASTER_THL_PORT \
+        --master-thl-host=$LOCALHOST \
+        --enable-slave-thl-listener=false $MORE_SLAVE_OPTIONS \
+        $VALIDATION_CHECKS $MORE_DEFAULTS_OPTIONS $EXTRA_OPTIONS "
 
     run_command "$TPM_COMMAND"
     #check_exit_code
@@ -313,16 +354,61 @@ function ok_equal
     msg=$3
     
     test_status=''
-    errmsg=''
+    if [ "${value}" == "${expected}.0" ]
+    then
+        expected="${expected}.0"
+    fi
+    status_msg="(found <$value> - expected: <$expected>)"
     if [ "$value" == "$expected" ]
     then
         test_status=ok
         pass=$(($pass+1))
     else
         test_status='not ok'
-        errmsg="(found <$value> - expected: <$expected>)"
         fail=$(($fail+1))
     fi
-    echo "$test_status - $msg - found '$value' $errmsg"
+    echo "$test_status - $msg - $status_msg"
     total_tests=$(($total_tests+1))
 }
+
+function mongo_start
+{
+    destination=$1
+    MONGODB_DATA=$destination/mongo_data
+    MONGODB_HOME=$MONGODB_EXPANDED_TARBALLS/$MONGODB_VERSION
+
+    if [ ! -d $MONGODB_HOME ]
+    then
+        echo "$MONGODB_HOME not found"
+        exit 1
+    fi
+    if [ ! -d $MONGODB_DATA ]
+    then
+        mkdir -p $MONGODB_DATA
+    fi
+
+    $MONGODB_HOME/bin/mongod \
+        --logpath=$destination/mongodb.log \
+        --dbpath=$MONGODB_DATA \
+        --fork \
+        --port $MONGODB_PORT \
+        --rest
+}
+
+function mongodb
+{
+    $MONGODB_EXPANDED_TARBALLS/$MONGODB_VERSION/bin/mongo --port $MONGODB_PORT "$@"
+}
+
+function mongodb_stop
+{
+    destination=$1
+    MONGODB_DATA=$destination/mongo_data
+    if [ -d $MONGODB_DATA ]
+    then
+        (echo "use admin" ; echo "db.shutdownServer()" ) | mongodb
+        rm -rf $MONGODB_DATA
+    fi
+}
+
+

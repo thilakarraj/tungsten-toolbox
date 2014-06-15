@@ -1,0 +1,43 @@
+#!/bin/bash
+sandboxdir=$(dirname $0)
+. $sandboxdir/sb_vars.sh
+. $sandboxdir/sb_common.sh
+
+pre_installation mongodb
+
+SERVICE=$1
+[ -z "$SERVICE" ] && SERVICE=mysql2mongodb
+
+export HOW_MANY_NODES=$2
+[ -z "$HOW_MANY_NODES" ] && export HOW_MANY_NODES=2
+
+if [ $HOW_MANY_NODES -lt 2  -o $HOW_MANY_NODES -gt 2 ]
+then
+    echo "2 nodes are required (found $HOW_MANY_NODES)"
+    exit 1
+fi
+
+mongo_start $TUNGSTEN_SB/${SB_PREFIX}2
+check_exit_code
+
+export BINLOG_FORMAT=row
+$sandboxdir/sb_make_sandboxes
+check_exit_code
+
+export MORE_MASTER_OPTIONS='--enable-heterogenous-master=true'
+
+if [ -n "$USE_INI" ]
+then
+    install_with_ini_files
+else
+    # Install master
+    configure_defaults 1
+    configure_master $SERVICE $THL_PORT_NODE1
+    tpm_install
+
+    configure_mongodb_slave $SERVICE $THL_PORT_NODE2 $THL_PORT_NODE1 2
+    tpm_install 
+fi 
+
+post_installation mongodb
+

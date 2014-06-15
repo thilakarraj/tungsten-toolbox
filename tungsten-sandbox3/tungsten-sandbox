@@ -14,7 +14,7 @@ use Data::Dumper;
 {
 package Sandbox;
 # SBVERSION
-our $VERSION = '3.0.11';
+our $VERSION = '3.1.00';
 use English '-no_match_vars';
 use File::Basename;
 
@@ -128,7 +128,7 @@ $cli->add_option(
         parse       => 'topology=s',
         value       => 'master_slave',
         must_have   => 1,
-        allowed     => [qw(master_slave all_masters fanin star direct)],
+        allowed     => [qw(master_slave all_masters fanin star direct mongodb)],
         so          => 60,
         help        => ['Which topology to deploy'],
     }
@@ -206,6 +206,17 @@ $cli->add_option(
 );
 
 $cli->add_option(
+    node_options => {
+        parse       => 'node-options=s',
+        value       => undef,
+        must_have   => 0,
+        so          => 135,
+        help        => ['Options that with be added to "tpm configure" call for a given node',
+                        'Format : "X:options", where "X" is the node number'],
+    }
+);
+
+$cli->add_option(
     install_options => {
         parse       => 'install-options=s',
         value       => undef,
@@ -257,6 +268,16 @@ $cli->add_option(
     }
 );
 
+$cli->add_option(
+    set_executable_prefix => {
+        parse       => 'set-executable-prefix',
+        value       => 0,
+        must_have   => 0,
+        so          => 165,
+        help        => ['Set the executable prefix for each node'],
+    }
+);
+
 
 $cli->add_option(
     dry_run => {
@@ -301,6 +322,7 @@ my %topology_defaults =(
     star         => { nodes => 3, db_port => 6300, rmi_port => 10300, thl_port => 12300, },
     fanin        => { nodes => 3, db_port => 6400, rmi_port => 10400, thl_port => 12400, },
     direct       => { nodes => 2, db_port => 6500, rmi_port => 10500, thl_port => 12500, },
+    mongodb      => { nodes => 2, db_port => 6600, rmi_port => 10600, thl_port => 12600, },
 );
 
 my $topology = $cli->{options}{topology};
@@ -309,7 +331,7 @@ unless ($cli->{options}->{nodes})
     $cli->{options}->{nodes} = $topology_defaults{$topology}{nodes} ;
     if ($ENV{TEST_ALL_TOPOLOGIES})
     {
-        $cli->{options}->{nodes} += 1;
+        $cli->{options}->{nodes} += 1 unless $topology eq 'mongodb';
     }
 }
 
@@ -323,6 +345,11 @@ if ( $cli->{options}{concurrent_sandboxes})
     $cli->{options}->{mysql_port}       = $topology_defaults{$topology}{db_port} ;
     $cli->{options}->{thl_port}         = $topology_defaults{$topology}{thl_port} ;
     $cli->{options}->{rmi_port}         = $topology_defaults{$topology}{rmi_port} ;
+}
+
+if ( $cli->{options}{set_executable_prefix})
+{
+   $ENV{SET_EXECUTABLE_PREFIX}=1;
 }
 
 make_dynamic_options($cli->{options});
@@ -404,9 +431,14 @@ sub make_dynamic_options
         defaults_options         => 'MORE_DEFAULTS_OPTIONS',
         master_options           => 'MORE_MASTER_OPTIONS',
         slave_options            => 'MORE_SLAVE_OPTIONS',
+        node_options             => 'MORE_NODE_OPTIONS',
         install_options          => 'MORE_TPM_INSTALL_OPTIONS',
         binlog_format            => 'BINLOG_FORMAT',
     );
+    if ($options->{topology} eq 'mongodb')
+    {
+        $options->{heterogenous_master} = 1;
+    }
     if ($options->{heterogenous_master})
     {
         $options->{master_options}  = "" unless $options->{master_options};
