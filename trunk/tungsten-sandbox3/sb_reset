@@ -7,6 +7,7 @@ sandboxdir=$(dirname $0)
 for D in $( find  $TUNGSTEN_SB -maxdepth 1 -type d -name "${SB_PREFIX}*"  )
 do
     TUNGSTEN_BIN=$D/tungsten/tungsten-replicator/bin/
+    mongodb_stop $D
     if [ -x $TUNGSTEN_BIN/replicator ]
     then
         $TUNGSTEN_BIN/replicator stop

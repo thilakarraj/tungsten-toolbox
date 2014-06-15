@@ -60,12 +60,25 @@ function write_to_master
     #cat $my_cnf
     #echo "."
     mysql --defaults-file=$my_cnf -e "drop table if exists test.t$rmiport"
-    mysql --defaults-file=$my_cnf -e "create table test.t$rmiport(id int not null primary key, c char(30), b blob, t text, ti time, d date, dt datetime, ts timestamp, f double(20,15), e enum ('one', 'two', 'three'), s set ('yellow','red', 'white','blue')) engine=innodb"
+    mysql --defaults-file=$my_cnf -e "create table test.t$rmiport(_id int not null primary key, c char(30), b blob, t text, ti time, d date, dt datetime, ts timestamp, f double(20,15), e enum ('one', 'two', 'three'), s set ('yellow','red', 'white','blue')) engine=innodb"
     if [ "$?" != "0" ] ; then exit ; fi
     mysql --defaults-file=$my_cnf -e "insert into test.t$rmiport values (1, 'inserted by node #$rmiport', '$SAMPLE_BLOB', '$SAMPLE_T', '$SAMPLE_TIME', '$SAMPLE_D', '$SAMPLE_DT', '$SAMPLE_TS', $SAMPLE_F,'$SAMPLE_ENUM', '$SAMPLE_SET')"
 }
 
-
+# Mongodb sample record
+# { 
+# "_id" : "1", 
+# "c" : "inserted by node #10110", 
+# "b" : "%!+?/.,[]{}()*^&#@-_=abcdefghi0123456789", 
+# "t" : "xyz", 
+# "ti" : "12:13:56", 
+# "d" : "1969-09-01", 
+# "dt" : "2003-04-26 11:15:57.0", 
+# "ts" : "2003-04-26 09:15:58.0", 
+# "f" : "1.012345678901234", 
+# "e" : "two", 
+# "s" : "red,blue" 
+# }
 
 function get_result
 {
@@ -73,8 +86,18 @@ function get_result
     rmiport=$2
     field=$3
     expected=$4
-    value=$(mysql --defaults-file=$my_cnf -BN -e "select $field from test.t$rmiport ")
+    #set -x
+    if [ -n "$USE_MONGODB" ]
+    then
+        values=`(echo 'use test'; echo "db.t$rmiport.find()" ) | mongodb --quiet`
+        export WANTED_FIELD=$field
+        value=$(echo $values | perl -ne 'BEGIN{$f=$ENV{WANTED_FIELD}};print $1 if /"$f"\s+:\s+"([^"]+)"/')
+        unset WANTED_FIELD
+    else
+        value=$(mysql --defaults-file=$my_cnf -BN -e "select $field from test.t$rmiport ")
+    fi
     ok_equal  "$value" "$expected" "field:$field"
+    #set +x
 }
 
 function read_from_slaves
@@ -90,6 +113,10 @@ function read_from_slaves
         SLAVES_LIST=$(multi_trepctl --role slave,direct --fields service,rmiport --hide-headers --output list --service $service)
         echo "# Reading from slaves related to service $service"
     fi
+    if [ "$topology" == "mongodb" ]
+    then
+        export USE_MONGODB=1 
+    fi
     for SERVICE_SLAVE in $(echo $SLAVES_LIST | tr ';' ' ')
     do
         sleep 1
@@ -101,14 +128,22 @@ function read_from_slaves
         MY_CNF=/tmp/myslave_$service.cnf
         make_my_cnf $MY_CNF $db_port
         #mysql --defaults-file=$MY_CNF -e 'select "slave", @@hostname, @@server_id, @@port'
-        numrecs=$(mysql --defaults-file=$MY_CNF -BN -e "select count(*) from test.t$master_rmiport ")
+        if [ -n "$USE_MONGODB" ]
+        then
+            numrecs=1
+        else
+            numrecs=$(mysql --defaults-file=$MY_CNF -BN -e "select count(*) from test.t$master_rmiport ")
+        fi
         ok_equal $numrecs 1 "record count"
         get_result $MY_CNF $master_rmiport c  "inserted by node #$master_rmiport"
         get_result $MY_CNF $master_rmiport b  "$SAMPLE_BLOB"
         get_result $MY_CNF $master_rmiport t  "$SAMPLE_T"
         get_result $MY_CNF $master_rmiport ti "$SAMPLE_TIME"
         get_result $MY_CNF $master_rmiport d  "$SAMPLE_D"
-        get_result $MY_CNF $master_rmiport dt "$SAMPLE_DT"
+        #if [ "$topology" != "mongodb" ]
+        #then
+            get_result $MY_CNF $master_rmiport dt "$SAMPLE_DT"
+        #fi
         get_result $MY_CNF $master_rmiport ts "$SAMPLE_TS"
         get_result $MY_CNF $master_rmiport f  "$SAMPLE_F"
         get_result $MY_CNF $master_rmiport e  "$SAMPLE_ENUM"
