@@ -14,7 +14,7 @@ use Data::Dumper;
 {
 package Sandbox;
 # SBVERSION
-our $VERSION = '3.1.00';
+our $VERSION = '3.1.01';
 use English '-no_match_vars';
 use File::Basename;
 
@@ -128,7 +128,7 @@ $cli->add_option(
         parse       => 'topology=s',
         value       => 'master_slave',
         must_have   => 1,
-        allowed     => [qw(master_slave all_masters fanin star direct mongodb)],
+        allowed     => [qw(master_slave all_masters fanin star direct mongodb fileapplier)],
         so          => 60,
         help        => ['Which topology to deploy'],
     }
@@ -248,6 +248,17 @@ $cli->add_option(
 );
 
 $cli->add_option(
+    schema_change => {
+        parse       => 'sc|schema-change',
+        value       => $ENV{SCHEMA_CHANGE} || 0,
+        must_have   => 0,
+        so          => 146,
+        help        => ['Install the schemachange filter on masters and monitorschemachange filter on slave services'],
+    }
+);
+
+
+$cli->add_option(
     binlog_format => {
         parse       => 'binlog-format=s',
         value       => $ENV{BINLOG_FORMAT} || 'mixed',
@@ -323,6 +334,7 @@ my %topology_defaults =(
     fanin        => { nodes => 3, db_port => 6400, rmi_port => 10400, thl_port => 12400, },
     direct       => { nodes => 2, db_port => 6500, rmi_port => 10500, thl_port => 12500, },
     mongodb      => { nodes => 2, db_port => 6600, rmi_port => 10600, thl_port => 12600, },
+    fileapplier  => { nodes => 3, db_port => 6700, rmi_port => 10700, thl_port => 12700, },
 );
 
 my $topology = $cli->{options}{topology};
@@ -331,7 +343,7 @@ unless ($cli->{options}->{nodes})
     $cli->{options}->{nodes} = $topology_defaults{$topology}{nodes} ;
     if ($ENV{TEST_ALL_TOPOLOGIES})
     {
-        $cli->{options}->{nodes} += 1 unless $topology eq 'mongodb';
+        $cli->{options}->{nodes} += 1 unless $topology =~ /^(?:mongodb|fileapplier)$/;
     }
 }
 
@@ -363,7 +375,7 @@ chdir $curdir;
 
 my $args = $cli->{options}->{nodes};
 
-if ($topology eq 'master_slave' or $topology eq 'direct')
+if (grep { $topology eq $_ } qw( master_slave direct fileapplier mongodb) )
 {
     $args= "$cli->{options}{service} $cli->{options}{nodes}";
 }
@@ -435,34 +447,56 @@ sub make_dynamic_options
         install_options          => 'MORE_TPM_INSTALL_OPTIONS',
         binlog_format            => 'BINLOG_FORMAT',
     );
+    if ( $options->{topology} eq 'fileapplier')
+    {
+        $options->{heterogenous_master} = 1;
+        $options->{heterogenous_slave} = 1;
+        $options->{schema_change} = 1;
+    }
     if ($options->{topology} eq 'mongodb')
     {
         $options->{heterogenous_master} = 1;
+        $options->{heterogenous_slave} = 1;
+    }
+    $options->{master_options} = "" unless $options->{slave_options};
+    $options->{slave_options} = "" unless $options->{slave_options};
+    $options->{defaults_options}  = "" unless $options->{defaults_options};
+    if ($options->{heterogenous_master} or $options->{heterogenous_slave})
+    {
+        $options->{defaults_options} .= " --java-file-encoding=UTF8 --java-user-timezone=GMT";
     }
     if ($options->{heterogenous_master})
     {
-        $options->{master_options}  = "" unless $options->{master_options};
-        $options->{master_options} .= " --enable-heterogenous-service=true";
-        $options->{binlog_format}   = "row";
-        if ($CLI_Utils::VERBOSE)
-        {
-            print qq(# expanded --heterogenous-master into \n),
-                  qq(# --master-options="$options->{master_options}"\n),
-                  qq(# --binlog-format="$options->{binlog_format}"\n);
-        }
+        $options->{master_options}   .= " --enable-heterogenous-service=true " ;
+        $options->{binlog_format}     = "row";
     }
 
     if ($options->{heterogenous_slave})
     {
         $options->{slave_options} = "" unless $options->{slave_options};
         $options->{slave_options} .= " --enable-heterogenous-service=true";
-        if ($CLI_Utils::VERBOSE)
-        {
-            print qq(# expanded --heterogenous-slave into \n),
-                  qq(# --slave-options="$options->{slave_options}"\n);
-        }
     }
-
+    if ($options->{schema_change})
+    {
+        $options->{master_options} .= " --repl-svc-extractor-filters=schemachange" ;
+        $options->{slave_options}  .= " --repl-svc-applier-filters=monitorschemachange --property=replicator.filter.monitorschemachange.notify=true";
+    }
+    if ($options->{defaults_options} && $CLI_Utils::VERBOSE)
+    {
+        print qq(# Setting MORE_DEFAULTS_OPTIONS:\n),
+              qq(# "$options->{defaults_options}"\n);
+    }
+    if ($options->{master_options} && $CLI_Utils::VERBOSE)
+    {
+        print qq(# Setting MORE_MASTER_OPTIONS:\n),
+              qq(# "$options->{master_options}"\n),
+              qq(# Binlog-format="$options->{binlog_format}"\n);
+    }
+    if ($options->{slave_options} && $CLI_Utils::VERBOSE)
+    {
+        print qq(# Setting MORE_SLAVE_OPTIONS: \n),
+              qq(# "$options->{slave_options}"\n);
+    }
 
     my $dynamic_vars_file =  Sandbox::modulepath() . '/sb_dynamic_vars.sh';
     # print "$dynamic_vars_file\n";

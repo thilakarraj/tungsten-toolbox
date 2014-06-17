@@ -161,6 +161,35 @@ function configure_slave
     #check_exit_code
 }
 
+function configure_fileapplier_slave
+{
+    SERVICE=$1
+    THL_PORT=$2
+    MASTER_THL_PORT=$3
+    NODE=$4
+    DELTA=$(($NODE*10))
+    print_dry "# Configuring slave for service $SERVICE (thl: $THL_PORT)"
+    TPM_COMMAND="./tools/tpm configure $SERVICE \
+        --slaves=$LOCALHOST \
+        --master=$LOCALHOST \
+        --repl-rmi-port=$(($RMI_BASE_PORT+$DELTA)) \
+        --role=slave \
+        --batch-enabled=true \
+        --batch-load-language=js \
+        --batch-load-template=donothing \
+        --datasource-type=file \
+        --install-directory=$TUNGSTEN_SB/${SB_PREFIX}$NODE \
+        --thl-port=$THL_PORT \
+        --master-thl-port=$MASTER_THL_PORT \
+        --master-thl-host=$LOCALHOST \
+        --enable-slave-thl-listener=false $MORE_SLAVE_OPTIONS \
+        $VALIDATION_CHECKS $MORE_DEFAULTS_OPTIONS $EXTRA_OPTIONS "
+
+    run_command "$TPM_COMMAND"
+    #check_exit_code
+}
+
+
 function configure_mongodb_slave
 {
     SERVICE=$1
@@ -248,6 +277,21 @@ function pre_installation
         echo "This command requires ./tools/tpm"
         echo "Change directory to a tungsten staging directory and try again"
         exit 1
+    fi
+    if [ "$current_topology" == "fileapplier" ]
+    then
+        NEEDED_VERSION=$(grep tungsten-replicator-3 .manifest)
+        if [ -z "$NEEDED_VERSION" ]
+        then
+            echo "This topology requires Tungsten Replicator 3.0 or later"
+            exit 1
+        fi
+        if [ ! -f ./tungsten-replicator/samples/scripts/batch/donothing.js ]
+        then
+            echo "Needed file not found: ./tungsten-replicator/samples/scripts/batch/donothing.js "
+            echo "The file applier requires the script donothing.js"
+            exit 1
+        fi
     fi
     will_abort=
     for PREV_INSTANCE in $TUNGSTEN_SB_NODE1 $TUNGSTEN_SB_NODE2 $TUNGSTEN_SB_NODE3 $TUNGSTEN_SB_NODE4

@@ -87,6 +87,11 @@ function get_result
     field=$3
     expected=$4
     #set -x
+    if [ -n "$USE_FILEAPPLIER" ]
+    then
+        echo "# test skipped - fileapplier"
+        return
+    fi
     if [ -n "$USE_MONGODB" ]
     then
         values=`(echo 'use test'; echo "db.t$rmiport.find()" ) | mongodb --quiet`
@@ -113,22 +118,31 @@ function read_from_slaves
         SLAVES_LIST=$(multi_trepctl --role slave,direct --fields service,rmiport --hide-headers --output list --service $service)
         echo "# Reading from slaves related to service $service"
     fi
-    if [ "$topology" == "mongodb" ]
-    then
-        export USE_MONGODB=1 
-    fi
     for SERVICE_SLAVE in $(echo $SLAVES_LIST | tr ';' ' ')
     do
         sleep 1
         service=$(echo $SERVICE_SLAVE | tr ',' ' '| awk '{print $1}')
         rmiport=$(echo $SERVICE_SLAVE | tr ',' ' '| awk '{print $2}')
         db_port=$($TREPCTL -port $rmiport -service $service properties -filter replicator.global.db.port | perl -nle 'print $1 if /"(\d+)"$/')
+        if [ "$topology" == "mongodb" -a  "$db_port" == "$MYSQL_PORT_NODE3" ]
+        then
+            export USE_MONGODB=1 
+        else
+            unset USE_MONGODB
+        fi
+        if [ "$topology" == "fileapplier" -a  "$db_port" == "$MYSQL_PORT_NODE3" ]
+        then
+            export USE_FILEAPPLIER=1 
+        else
+            unset USE_FILEAPPLIER
+        fi
+
         #echo "slave service $service"
         echo "# slave <$service> rmiport:$rmiport - dbport: $db_port"
         MY_CNF=/tmp/myslave_$service.cnf
         make_my_cnf $MY_CNF $db_port
         #mysql --defaults-file=$MY_CNF -e 'select "slave", @@hostname, @@server_id, @@port'
-        if [ -n "$USE_MONGODB" ]
+        if [ -n "$USE_MONGODB" -o -n "$USE_FILEAPPLIER" ]
         then
             numrecs=1
         else
