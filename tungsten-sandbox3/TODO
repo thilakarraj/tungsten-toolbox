@@ -1,9 +1,0 @@
-
-1. standalone sandbox, as a master
-2. standalone sandbox, slave of a given replicator (--slaveof=host:hostname,thlport=portN)
-3. standalone sandbox, slave of a given mysql server (--slaveof=host:hostname,user:username,password:pwd,dbport=portN)
-4. Heterogenous MongoDB slave as dedicated topology (MySQL master to MongoDB slave) [DONE]
-5. bristlecone load
-6. Heterogenous MongoDB slave service as an add-on to existing topologies
-7. Heterogenous slave services for Hadoop, Oracle, and generic applier.
-

@@ -1,7 +1,0 @@
-#!/bin/bash
-
-sandboxdir=$(dirname $0)
-. $sandboxdir/sb_vars.sh
-. $sandboxdir/sb_common.sh
-
-multi_trepctl --fields=rmiPort,service,role,state,seqno,latency | perl -pe 's/rmiport/   node/i; @deltas=grep {$_ %10 ==0} (1..100); for $N (@deltas){s{101$N}{"node".($N/10)}e} '
