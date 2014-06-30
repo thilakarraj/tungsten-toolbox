@@ -9,11 +9,11 @@ SERVICE=$1
 [ -z "$SERVICE" ] && SERVICE=mysql2mongodb
 
 export HOW_MANY_NODES=$2
-[ -z "$HOW_MANY_NODES" ] && export HOW_MANY_NODES=2
+[ -z "$HOW_MANY_NODES" ] && export HOW_MANY_NODES=3
 
-if [ $HOW_MANY_NODES -lt 2  -o $HOW_MANY_NODES -gt 2 ]
+if [ $HOW_MANY_NODES -lt 3  -o $HOW_MANY_NODES -gt 3 ]
 then
-    echo "2 nodes are required (found $HOW_MANY_NODES)"
+    echo "3 nodes are required (found $HOW_MANY_NODES)"
     exit 1
 fi
 
@@ -24,7 +24,21 @@ export BINLOG_FORMAT=row
 $sandboxdir/sb_make_sandboxes
 check_exit_code
 
+DS_DIR=./tungsten-replicator/samples/conf/datasources
+
+# Workaround for Issue#943
+if [ -d $DS_DIR ]
+then
+    if [ ! -f $DS_DIR/mongodb.tpl ]
+    then
+        echo "Adding mongodb datasource"
+        cp $DS_DIR/file.tpl $DS_DIR/mongodb.tpl
+    fi
+fi
+
+
 MORE_DEFAULTS_OPTIONS="$MORE_DEFAULTS_OPTIONS --java-file-encoding=UTF8 --java-user-timezone=GMT "
+# MORE_DEFAULTS_OPTIONS="$MORE_DEFAULTS_OPTIONS --java-file-encoding=UTF8 "
 MORE_MASTER_OPTIONS="$MORE_MASTER_OPTIONS --enable-heterogenous-master=true "
 MORE_SLAVE_OPTIONS="$MORE_SLAVE_OPTIONS --enable-heterogenous-slave=true"
 
@@ -42,7 +56,11 @@ else
     configure_master $SERVICE $THL_PORT_NODE1
     tpm_install
 
-    configure_mongodb_slave $SERVICE $THL_PORT_NODE2 $THL_PORT_NODE1 2
+    configure_defaults 2
+    configure_slave $SERVICE $THL_PORT_NODE2 --master-thl-port=$THL_PORT_NODE1
+    tpm_install
+
+    configure_mongodb_slave $SERVICE $THL_PORT_NODE3 $THL_PORT_NODE1 3
     tpm_install 
 fi 
 

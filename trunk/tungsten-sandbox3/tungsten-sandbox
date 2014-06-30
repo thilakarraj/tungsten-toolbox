@@ -14,7 +14,7 @@ use Data::Dumper;
 {
 package Sandbox;
 # SBVERSION
-our $VERSION = '3.1.01';
+our $VERSION = '3.1.02';
 use English '-no_match_vars';
 use File::Basename;
 
@@ -248,6 +248,16 @@ $cli->add_option(
 );
 
 $cli->add_option(
+    java_safe => {
+        parse       => 'js|java-safe',
+        value       => $ENV{JAVA_SAFE} || 0,
+        must_have   => 0,
+        so          => 145,
+        help        => ['Uses character set UTF8 and GMT in the Java wrapper'],
+    }
+);
+
+$cli->add_option(
     schema_change => {
         parse       => 'sc|schema-change',
         value       => $ENV{SCHEMA_CHANGE} || 0,
@@ -333,7 +343,7 @@ my %topology_defaults =(
     star         => { nodes => 3, db_port => 6300, rmi_port => 10300, thl_port => 12300, },
     fanin        => { nodes => 3, db_port => 6400, rmi_port => 10400, thl_port => 12400, },
     direct       => { nodes => 2, db_port => 6500, rmi_port => 10500, thl_port => 12500, },
-    mongodb      => { nodes => 2, db_port => 6600, rmi_port => 10600, thl_port => 12600, },
+    mongodb      => { nodes => 3, db_port => 6600, rmi_port => 10600, thl_port => 12600, },
     fileapplier  => { nodes => 3, db_port => 6700, rmi_port => 10700, thl_port => 12700, },
 );
 
@@ -461,9 +471,10 @@ sub make_dynamic_options
     $options->{master_options} = "" unless $options->{slave_options};
     $options->{slave_options} = "" unless $options->{slave_options};
     $options->{defaults_options}  = "" unless $options->{defaults_options};
-    if ($options->{heterogenous_master} or $options->{heterogenous_slave})
+    if ($options->{heterogenous_master} or $options->{heterogenous_slave} or $options->{java_safe})
     {
         $options->{defaults_options} .= " --java-file-encoding=UTF8 --java-user-timezone=GMT";
+        # $options->{defaults_options} .= " --java-file-encoding=UTF8 ";
     }
     if ($options->{heterogenous_master})
     {

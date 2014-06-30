@@ -185,6 +185,10 @@ function configure_fileapplier_slave
         --enable-slave-thl-listener=false $MORE_SLAVE_OPTIONS \
         $VALIDATION_CHECKS $MORE_DEFAULTS_OPTIONS $EXTRA_OPTIONS "
 
+    # using hive CSV format:
+    #  --property=replicator.datasource.applier.csvType=hive 
+
+
     run_command "$TPM_COMMAND"
     #check_exit_code
 }
@@ -402,6 +406,11 @@ function ok_equal
     then
         expected="${expected}.0"
     fi
+    if [ "${value}" == "$expected.000" ]
+    then
+        expected="${expected}.000"
+    fi
+
     status_msg="(found <$value> - expected: <$expected>)"
     if [ "$value" == "$expected" ]
     then
