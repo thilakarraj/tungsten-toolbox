@@ -27,15 +27,15 @@ check_exit_code
 DS_DIR=./tungsten-replicator/samples/conf/datasources
 
 # Workaround for Issue#943
-if [ -d $DS_DIR ]
-then
-    if [ ! -f $DS_DIR/mongodb.tpl ]
-    then
-        echo "Adding mongodb datasource"
-        cp $DS_DIR/file.tpl $DS_DIR/mongodb.tpl
-    fi
-fi
-
+# (removed, as there is a workaround in trunk)
+#if [ -d $DS_DIR ]
+#then
+#    if [ ! -f $DS_DIR/mongodb.tpl ]
+#    then
+#        echo "Adding mongodb datasource"
+#        cp $DS_DIR/file.tpl $DS_DIR/mongodb.tpl
+#    fi
+#fi
 
 MORE_DEFAULTS_OPTIONS="$MORE_DEFAULTS_OPTIONS --java-file-encoding=UTF8 --java-user-timezone=GMT "
 # MORE_DEFAULTS_OPTIONS="$MORE_DEFAULTS_OPTIONS --java-file-encoding=UTF8 "
