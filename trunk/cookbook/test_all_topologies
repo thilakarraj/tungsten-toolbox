@@ -45,6 +45,8 @@ function install_topology
     then
         echo "# ERROR installing $TOPOLOGY (using $METHOD)"
         # cat $INSTALL_LOG
+        configure_log=$(ls -lotr /tmp/tungsten-configure*log | tail -n 1 | awk '{print $NF}')
+        cat $configure_log
         exit $exit_code
     fi
     if [ -f /tmp/test_log$$ ] ; then rm /tmp/test_log$$ ; fi
