@@ -45,9 +45,9 @@ function clear_node {
 	
 		NODE=$1
 		# MYSQL is defined in BOOTSTRAP.sh
-		ssh $NODE "if [ ! -d $TUNGSTEN_BASE ] ; then mkdir -p $TUNGSTEN_BASE ;  fi" 
-	    ssh $NODE "if [ -x $REPLICATOR ] ; then $REPLICATOR stop;  fi" 
-	    ssh $NODE rm -rf $TUNGSTEN_BASE/*  
+		$SSH $NODE "if [ ! -d $TUNGSTEN_BASE ] ; then mkdir -p $TUNGSTEN_BASE ;  fi" 
+	    $SSH $NODE "if [ -x $REPLICATOR ] ; then $REPLICATOR stop;  fi" 
+	    $SSH $NODE rm -rf $TUNGSTEN_BASE/*  
 	    for D in $($MYSQL -h $NODE -BN -e 'show schemas like "tungsten%"' )
 	    do
 	        $MYSQL -h $NODE -e "drop schema $D"
@@ -129,7 +129,7 @@ function remote_file_exists
     FILENAME=$2
     ATTRIBUTE=$3
     [ -z "$ATTRIBUTE" ] && ATTRIBUTE='-e'
-    EXISTS=$(ssh $NODE "if [ $ATTRIBUTE $FILENAME ] ; then echo 'yes' ; fi ")
+    EXISTS=$($SSH $NODE "if [ $ATTRIBUTE $FILENAME ] ; then echo 'yes' ; fi ")
     echo $EXISTS
 }
 

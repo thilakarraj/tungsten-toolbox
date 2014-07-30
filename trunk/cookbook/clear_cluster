@@ -47,11 +47,11 @@ do
     echo "#!/bin/bash" > $clear_remote_node 
    if [ "$STOP_REPLICATORS" == "1" ]
     then
-        echo "ssh $NODE 'if [ -x $REPLICATOR ] ; then $REPLICATOR stop;  fi'" >> $clear_remote_node
+        echo "$SSH $NODE 'if [ -x $REPLICATOR ] ; then $REPLICATOR stop;  fi'" >> $clear_remote_node
     fi
     if [ "$REMOVE_TUNGSTEN_BASE" == "1" ]
     then
-        echo "ssh $NODE 'rm -rf $TUNGSTEN_BASE/*'" >> $clear_remote_node
+        echo "$SSH $NODE 'rm -rf $TUNGSTEN_BASE/*'" >> $clear_remote_node
     fi  
     if [ "$REMOVE_SERVICE_SCHEMA" == "1" ]
     then
@@ -83,7 +83,7 @@ do
         $MYSQL -h $NODE -e 'set global binlog_format=mixed'
         $MYSQL -h $NODE -e 'reset master'" >> $clear_remote_node_sql
     fi
-    echo "ssh $NODE 'if [ -f $TUNGSTEN_BASE/tungsten/CURRENT_TOPOLOGY ] ; then rm -f $TUNGSTEN_BASE/tungsten/CURRENT_TOPOLOGY ; fi'" >> $clear_remote_node
+    echo "$SSH $NODE 'if [ -f $TUNGSTEN_BASE/tungsten/CURRENT_TOPOLOGY ] ; then rm -f $TUNGSTEN_BASE/tungsten/CURRENT_TOPOLOGY ; fi'" >> $clear_remote_node
     chmod +x $clear_remote_node
     chmod +x $clear_remote_node_sql
     #echo "##############"
@@ -112,6 +112,6 @@ if [ -n "$STAGING_INFO" ]
 then
     for NODE in ${ALL_NODES[*]} 
     do 
-        ssh $NODE "if [ -f $STAGING_INFO ] ; then  rm -f $STAGING_INFO ; fi"
+        $SSH $NODE "if [ -f $STAGING_INFO ] ; then  rm -f $STAGING_INFO ; fi"
     done
 fi

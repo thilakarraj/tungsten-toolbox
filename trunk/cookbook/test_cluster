@@ -107,14 +107,14 @@ function check_executables
         COUNT=0
         for APP in ${APP_PATHS[*]}
         do
-            APP_EXISTS=$(ssh -o StrictHostKeyChecking=no $NODE "if [ -x $APP ] ; then echo OK ;fi" )
+            APP_EXISTS=$($SSH $NODE "if [ -x $APP ] ; then echo OK ;fi" )
             ok_equal "$APP_EXISTS" OK "$NODE: ${APP_NAMES[$COUNT]} executable exists"
             if [ "$FAILED" != "0" ]
             then
                 echo "not all executables found - bailing out"
                 exit 1
             fi
-            APP_RUNS=$(ssh -o StrictHostKeyChecking=no $NODE $APP ${APP_ARGS[$COUNT]} |grep ${APP_NAMES[$COUNT]} )
+            APP_RUNS=$($SSH $NODE $APP ${APP_ARGS[$COUNT]} |grep ${APP_NAMES[$COUNT]} )
             [ -n "$APP_RUNS" ] && APP_RUNS=RUNS
             ok_equal "$APP_RUNS" RUNS "$NODE: ${APP_NAMES[$COUNT]} can run"
             if [ "$FAILED" != "0" ]
@@ -123,7 +123,7 @@ function check_executables
                 exit 1
             fi
 
-            APP_RUNS_WELL=$(ssh -o StrictHostKeyChecking=no $NODE $APP ${APP_ARGS[$COUNT]} |grep "Exception" | head -n 1 2>&1 )
+            APP_RUNS_WELL=$($SSH $NODE $APP ${APP_ARGS[$COUNT]} |grep "Exception" | head -n 1 2>&1 )
             [ -z "$APP_WELL" ] && APP_RUNS_WELL=RUNS
             ok_equal "$APP_RUNS_WELL" RUNS "$NODE: ${APP_NAMES[$COUNT]} can run without throwing an exception"
             if [ "$FAILED" != "0" ]

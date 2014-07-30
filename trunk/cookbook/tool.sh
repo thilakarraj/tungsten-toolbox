@@ -142,17 +142,17 @@ function show_backups
     do
         for NODE in ${ALL_NODES[*]}
         do
-            HOW_MANY=$(ssh $NODE find $DIR -type f | wc -l)
+            HOW_MANY=$($SSH $NODE find $DIR -type f | wc -l)
             echo "# [node: $NODE] $HOW_MANY files found"
             if [ "$HOW_MANY" != "0" ]
             then
-                for SUBDIR in $(ssh $NODE ls -d "$DIR/*")
+                for SUBDIR in $($SSH $NODE ls -d "$DIR/*")
                 do
-                    HOW_MANY=$(ssh $NODE find $SUBDIR -type f | wc -l)
+                    HOW_MANY=$($SSH $NODE find $SUBDIR -type f | wc -l)
                     if [ "$HOW_MANY" != "0" ]
                     then
                         echo "++ $SUBDIR"
-                        ssh $NODE ls -lh $SUBDIR
+                        $SSH $NODE ls -lh $SUBDIR
                     fi
                 done
                 echo ''
@@ -183,7 +183,7 @@ function copy_backup_files
         echo "Backup directory $BACKUP_DIRECTORY not found in $DESTINATION_NODE"
         exit 1
     fi
-    ssh $SOURCE_NODE "scp -pr $BACKUP_DIRECTORY/* $DESTINATION_NODE:$BACKUP_DIRECTORY/"
+    $SSH $SOURCE_NODE "$SCP -pr $BACKUP_DIRECTORY/* $DESTINATION_NODE:$BACKUP_DIRECTORY/"
 }
 
 function insert_retrieve

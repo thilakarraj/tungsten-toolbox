@@ -57,9 +57,9 @@ do
         echo $INSTALL_COMMAND | perl -pe 's/--/\n\t--/g'
     fi
     
-    ssh $NODE "[ ! -d '/tmp/tungsten-install' ] && mkdir /tmp/tungsten-install"
+    $SSH $NODE "[ ! -d '/tmp/tungsten-install' ] && mkdir /tmp/tungsten-install"
     rsync -avzP -e ssh  . $NODE:/tmp/tungsten-install/  > /dev/null 
-    ssh $NODE $INSTALL_COMMAND
+    $SSH $NODE $INSTALL_COMMAND
 
     if [ "$?" != "0"  ]
     then

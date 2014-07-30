@@ -165,7 +165,7 @@ function test_one_topology
     rm /tmp/test_log$$
 }
 
-[ -z "$INSTALLERS" ] && INSTALLERS='tungsten_installer tpm'
+[ -z "$INSTALLERS" ] && INSTALLERS='tpm'
 
 if [ -n "$WITH_SECURITY" ]
 then

@@ -146,7 +146,7 @@ fi
 # remove the sandbox if it already exists
 for HOST in ${NODES[*]} 
 do 
-    ssh $HOST "if [ -d $HOME/sandboxes/$SANDBOX_DIR ] ; then sbtool -o delete -s $HOME/sandboxes/$SANDBOX_DIR > /dev/null ; fi" 
+    $SSH $HOST "if [ -d $HOME/sandboxes/$SANDBOX_DIR ] ; then sbtool -o delete -s $HOME/sandboxes/$SANDBOX_DIR > /dev/null ; fi" 
 done
 
 BUILD_SB=$HOME/build_sb.sh
@@ -173,11 +173,11 @@ do
    SERVER_ID_COUNTER=$(($SERVER_ID_COUNTER+10))
    if [ -n "$TARBALL" ]
    then
-        ssh $HOST 'if [ ! -d $HOME/opt/mysql ] ; then mkdir -p $HOME/opt/mysql ; fi' 
-        scp -p $TARBALL $HOST:~/opt/mysql
+        $SSH $HOST 'if [ ! -d $HOME/opt/mysql ] ; then mkdir -p $HOME/opt/mysql ; fi' 
+        $SCP -p $TARBALL $HOST:~/opt/mysql
    fi
-   scp -p $BUILD_SB $HOST:$BUILD_SB
-   ssh $HOST $BUILD_SB $SERVER_ID_COUNTER
+   $SCP -p $BUILD_SB $HOST:$BUILD_SB
+   $SSH $HOST $BUILD_SB $SERVER_ID_COUNTER
    if [ "$?" != "0" ]
    then
        echo "Error installing sandbox in node $HOST"
@@ -204,7 +204,7 @@ fi
 echo "#!/bin/bash" > $REMOVE_SANDBOXES
 for HOST in ${NODES[*]} 
 do 
-    CMD="ssh $HOST 'if [ -d $HOME/sandboxes/$SANDBOX_DIR ] ; then sbtool -o delete -s $HOME/sandboxes/$SANDBOX_DIR ; fi'"
+    CMD="$SSH $HOST 'if [ -d $HOME/sandboxes/$SANDBOX_DIR ] ; then sbtool -o delete -s $HOME/sandboxes/$SANDBOX_DIR ; fi'"
     echo $CMD >> $REMOVE_SANDBOXES
 done
 echo 'rm -f $0' >> $REMOVE_SANDBOXES
