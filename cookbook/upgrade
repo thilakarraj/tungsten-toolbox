@@ -104,7 +104,7 @@ then
     HOST_LIST=''
     for NODE in ${NODES[*]}
     do
-        # echo "ssh $NODE $TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/replicator stop"
+        # echo "$SSH $NODE $TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/replicator stop"
         if [ -n "$HOST_LIST" ]
         then
             HOST_LIST="$HOST_LIST,"
@@ -117,7 +117,7 @@ then
     # echo "./tools/tpm start"
     for NODE in ${NODES[*]}
     do
-        echo "ssh $NODE 'echo $CURRENT_TOPOLOGY > $TUNGSTEN_BASE/tungsten/CURRENT_TOPOLOGY ' "
+        echo "$SSH $NODE 'echo $CURRENT_TOPOLOGY > $TUNGSTEN_BASE/tungsten/CURRENT_TOPOLOGY ' "
     done
     echo "echo $CURRENT_TOPOLOGY > ./CURRENT_TOPOLOGY "
 
@@ -126,14 +126,14 @@ else
     for NODE in ${NODES[*]}
     do
         echo "# Upgrading node $NODE"
-        echo "ssh $NODE $TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/replicator stop"
+        echo "$SSH $NODE $TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/replicator stop"
 
         echo "./tools/update  --release-directory=$TUNGSTEN_BASE --host=$NODE $MORE_OPTIONS"
         if [ "$CURRENT_TOPOLOGY" != "master_slave" ]
         then
-            echo "ssh $NODE $TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/replicator restart"
+            echo "$SSH $NODE $TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/replicator restart"
         fi
-        echo "ssh $NODE $TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/replicator status"
+        echo "$SSH $NODE $TUNGSTEN_BASE/tungsten/tungsten-replicator/bin/replicator status"
     done
 
     echo "echo $CURRENT_TOPOLOGY > ./CURRENT_TOPOLOGY"

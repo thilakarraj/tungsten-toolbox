@@ -39,24 +39,24 @@ for NODE in ${ALL_NODES[*]}
 do
     mkdir -p $LOGS_DIR/$NODE/log
     mkdir -p $LOGS_DIR/$NODE/conf
-    scp $NODE:"$REPLICATOR_LOGS_DIR/*.log" $LOGS_DIR/$NODE/log
-    scp $NODE:"$REPLICATOR_CONF_DIR/static*.properties" $LOGS_DIR/$NODE/conf
-    scp $NODE:$TUNGSTEN_BASE/tungsten/cookbook/{USER_VALUES,COMMON_NODES}.sh $LOGS_DIR/$NODE/conf
-    scp $NODE:$TUNGSTEN_BASE/tungsten/cookbook/NODES_{ALL_MASTERS,MASTER_SLAVE,FAN_IN,STAR}.sh $LOGS_DIR/$NODE/conf
-    scp $NODE:$TUNGSTEN_BASE/tungsten/cookbook/current_install.{log,summary} $LOGS_DIR/$NODE/conf
+    $SCP $NODE:"$REPLICATOR_LOGS_DIR/*.log" $LOGS_DIR/$NODE/log
+    $SCP $NODE:"$REPLICATOR_CONF_DIR/static*.properties" $LOGS_DIR/$NODE/conf
+    $SCP $NODE:$TUNGSTEN_BASE/tungsten/cookbook/{USER_VALUES,COMMON_NODES}.sh $LOGS_DIR/$NODE/conf
+    $SCP $NODE:$TUNGSTEN_BASE/tungsten/cookbook/NODES_{ALL_MASTERS,MASTER_SLAVE,FAN_IN,STAR}.sh $LOGS_DIR/$NODE/conf
+    $SCP $NODE:$TUNGSTEN_BASE/tungsten/cookbook/current_install.{log,summary} $LOGS_DIR/$NODE/conf
     for CNF in $REPLICATOR_CONFIG1 $REPLICATOR_CONFIG2 $REPLICATOR_CONFIG_TPM
     do
-        FILE_EXISTS=$(ssh $NODE "if [ -f $CNF ] ; then echo yes; fi")
+        FILE_EXISTS=$($SSH $NODE "if [ -f $CNF ] ; then echo yes; fi")
         if [ "$FILE_EXISTS" == "yes" ]
         then
-            scp $NODE:"$CNF" $LOGS_DIR/$NODE/conf
+            $SCP $NODE:"$CNF" $LOGS_DIR/$NODE/conf
         fi
     done
     for SERVICE in $($TREPCTL -host $NODE services | grep serviceName| awk '{print $3}') 
     do
         $TREPCTL -host $NODE -service $SERVICE status > $LOGS_DIR/$NODE/trepctl_status_$SERVICE.txt
-        ssh $NODE $THL -service $SERVICE info > $LOGS_DIR/$NODE/thl_info_$SERVICE.txt
-        ssh $NODE $THL -service $SERVICE index > $LOGS_DIR/$NODE/thl_index_$SERVICE.txt
+        $SSH $NODE $THL -service $SERVICE info > $LOGS_DIR/$NODE/thl_info_$SERVICE.txt
+        $SSH $NODE $THL -service $SERVICE index > $LOGS_DIR/$NODE/thl_index_$SERVICE.txt
     done
 done
 LOGS_ARCHIVE="$LOGS_DIR.tar.gz"

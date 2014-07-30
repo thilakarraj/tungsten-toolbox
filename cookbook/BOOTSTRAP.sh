@@ -6,6 +6,8 @@ cookbook_dir=$(dirname $0)
 cd "$cookbook_dir/.."
 STAGING_DIRECTORY=$PWD
 
+SSH='ssh -o StrictHostKeyChecking=no'
+SCP='scp -o StrictHostKeyChecking=no'
 DASHLINE="## -------------------------------------------------------------------------------------"
 NODES=$1
 if [ -z "$NODES" ]
@@ -229,7 +231,7 @@ then
     then
         for NODE in ${ALL_NODES[*]}
         do
-            DIR_EXISTS=$(ssh $NODE "if [ -d $WRITE_STAGING_INFO ] ; then echo yes ; fi")
+            DIR_EXISTS=$($SSH $NODE "if [ -d $WRITE_STAGING_INFO ] ; then echo yes ; fi")
             if [ "$DIR_EXISTS" != "yes" ]
             then
                 echo "###  Directory '$WRITE_STAGING_INFO' does not exist in node $NODE"
@@ -293,10 +295,10 @@ function check_installed
             then
                 staging_host=$(perl -ne 'print $1 if /Staging server\s+: (\S+)/' $STAGING_INFO)
                 staging_dir=$(perl -ne 'print $1 if /Staging directory\s+: (\S+)/' $STAGING_INFO)
-                uninstall_exist=$(ssh -o StrictHostKeyChecking=no $staging_host "if [ -x $staging_dir/cookbook/clear_cluster ] ; then echo yes ; fi")
+                uninstall_exist=$($SSH $staging_host "if [ -x $staging_dir/cookbook/clear_cluster ] ; then echo yes ; fi")
                 if [ -n "$uninstall_exist" ]
                 then
-                    ssh -o StrictHostKeyChecking=no $staging_host "I_WANT_TO_UNINSTALL=1 $staging_dir/cookbook/clear_cluster"
+                    $SSH $staging_host "I_WANT_TO_UNINSTALL=1 $staging_dir/cookbook/clear_cluster"
                 fi
             else
                 echo "Found file $STAGING_INFO"
@@ -500,18 +502,18 @@ function post_installation
         MY_REMOTE_CNF=/tmp/my_template$$.cnf
         cp $MY_COOKBOOK_CNF $MY_REMOTE_CNF
         perl -i -pe "s/__HOST__/$NODE/" $MY_REMOTE_CNF
-        DEPLOYED=$(ssh $NODE "if [ -d $TUNGSTEN_BASE ] ; then echo 'yes' ; fi")
+        DEPLOYED=$($SSH $NODE "if [ -d $TUNGSTEN_BASE ] ; then echo 'yes' ; fi")
         if [ "$DEPLOYED" == "yes" ]
         then
-            scp -q $CURRENT_TOPOLOGY $NODE:$TUNGSTEN_BASE/tungsten/  
-            scp -q $MY_REMOTE_CNF $NODE:$TUNGSTEN_BASE/tungsten/cookbook/$MY_BARE_CNF
-            scp -q $INSTALL_LOG $NODE:$TUNGSTEN_BASE/tungsten/cookbook/
-            scp -q $INSTALL_SUMMARY $NODE:$TUNGSTEN_BASE/tungsten/cookbook/
+            $SCP -q $CURRENT_TOPOLOGY $NODE:$TUNGSTEN_BASE/tungsten/  
+            $SCP -q $MY_REMOTE_CNF $NODE:$TUNGSTEN_BASE/tungsten/cookbook/$MY_BARE_CNF
+            $SCP -q $INSTALL_LOG $NODE:$TUNGSTEN_BASE/tungsten/cookbook/
+            $SCP -q $INSTALL_SUMMARY $NODE:$TUNGSTEN_BASE/tungsten/cookbook/
             if [ -n "$WRITE_STAGING_INFO" ]
             then
-                scp -q $INSTALL_SUMMARY $NODE:$STAGING_INFO
+                $SCP -q $INSTALL_SUMMARY $NODE:$STAGING_INFO
             fi
-            scp -q $DB_USE $NODE:$TUNGSTEN_BASE/tungsten/cookbook/
+            $SCP -q $DB_USE $NODE:$TUNGSTEN_BASE/tungsten/cookbook/
         fi
         rm $MY_REMOTE_CNF
     done

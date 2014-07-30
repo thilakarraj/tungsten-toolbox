@@ -27,11 +27,11 @@ do
     fi
     if [ "$STOP_REPLICATORS" == "1" ]
     then
-        ssh $NODE "if [ -x $REPLICATOR ] ; then $REPLICATOR stop;  fi" 
+        $SSH $NODE "if [ -x $REPLICATOR ] ; then $REPLICATOR stop;  fi" 
     fi
     if [ "$REMOVE_TUNGSTEN_BASE" == "1" ]
     then
-        ssh $NODE rm -rf $TUNGSTEN_BASE/*
+        $SSH $NODE rm -rf $TUNGSTEN_BASE/*
     fi  
     if [ "$REMOVE_SERVICE_SCHEMA" == "1" ]
     then
