@@ -7,6 +7,8 @@ cookbook_dir=$(dirname $0)
 [ -z "$MYSQL_VERSION" ] && MYSQL_VERSION=5.5.30
 [ -z "$MYSQL_PORT" ]    && MYSQL_PORT=17100
 [ -z "$SANDBOX_DIR" ]   && SANDBOX_DIR=tungsten_deployment
+SSH='ssh -o StrictHostKeyChecking=no'
+SCP='scp -o StrictHostKeyChecking=no'
 UPDATE_USER_VALUES=1
 NODES_LIST=
 REMOVE_SANDBOXES=$cookbook_dir/remove_sandboxes

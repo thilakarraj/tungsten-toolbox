@@ -4,6 +4,8 @@
 
 cookbook_dir=$(dirname $0)
 
+SSH='ssh -o StrictHostKeyChecking=no'
+SCP='scp -o StrictHostKeyChecking=no'
 export USE_TPM=1
 if [ -n "$USE_OLD_INSTALLER" ]
 then
