@@ -149,7 +149,7 @@ function read_from_slaves
         sleep 1
         service=$(echo $SERVICE_SLAVE | tr ',' ' '| awk '{print $1}')
         rmiport=$(echo $SERVICE_SLAVE | tr ',' ' '| awk '{print $2}')
-        db_port=$($TREPCTL -port $rmiport -service $service properties -filter replicator.global.db.port | perl -nle 'print $1 if /"(\d+)"$/')
+        db_port=$($TREPCTL -port $rmiport -service $service properties -filter replicator.global.db.port | perl -nle 'print $1 if /"(\d+)"}?$/')
         # echo "SSLAVE $SERVICE_SLAVE"
         # echo "service $service"
         # echo "rmiport $rmiport"
@@ -221,9 +221,9 @@ do
     role=$(echo $SERVICE_MASTER | tr ',' ' '| awk '{print $3}')
     # db_port=$(echo $pipeline | perl -nle 'print $1 if m{^jdbc:\w+:[^:]+://[^:]+:(\d+)}')
 
-    extractor_db_port=$($TREPCTL -port $rmiport -service $service properties -filter replicator.extractor.dbms.port | perl -nle 'print $1 if /"(\d+)"$/')
-    applier_db_port=$($TREPCTL -port $rmiport -service $service properties -filter replicator.applier.dbms.port | perl -nle 'print $1 if /"(\d+)"$/')
-    db_port=$($TREPCTL -port $rmiport -service $service properties -filter replicator.global.db.port | perl -nle 'print $1 if /"(\d+)"$/')
+    extractor_db_port=$($TREPCTL -port $rmiport -service $service properties -filter replicator.extractor.dbms.port | perl -nle 'print $1 if /"(\d+)"}?$/')
+    applier_db_port=$($TREPCTL -port $rmiport -service $service properties -filter replicator.applier.dbms.port | perl -nle 'print $1 if /"(\d+)"}?$/')
+    db_port=$($TREPCTL -port $rmiport -service $service properties -filter replicator.global.db.port | perl -nle 'print $1 if /"(\d+)"}?$/')
     if [ "$extractor_db_port" != "$applier_db_port" ]
     then
         db_port=$extractor_db_port
