@@ -204,9 +204,11 @@ then
     echo "error detecting MySQL version"
     exit 1
 fi
-if [ "$MYSQL_VERSION" == "5.7" ]
+
+FRACTIONAL_TIME=OFF
+if [ "$MYSQL_VERSION" == "5.6" -o "$MYSQL_VERSION" == "5.7" -o "$MYSQL_VERSION" == "10.0" ]
 then
-    MYSQL_VERSION='5.6'
+    FRACTIONAL_TIME=ON
 fi
 
 ITERATIONS=1
@@ -215,7 +217,7 @@ DATA_MIN_POSTFIXES=('')
 DATA_MAX_POSTFIXES=('')
 DDL_POSTFIXES=('')
 
-if [ "$MYSQL_VERSION" == "5.6" ]
+if [ "$FRACTIONAL_TIME" == "ON" ]
 then
     DATA_POSTFIXES=(    '.1' '.01'  '.012' '.0123' '.01234' '.012345')
     DATA_MIN_POSTFIXES=('.1' '.01'  '.001' '.0001' '.00001' '.000001')
