@@ -14,7 +14,7 @@ use Data::Dumper;
 {
 package Sandbox;
 # SBVERSION
-our $VERSION = '3.1.02';
+our $VERSION = '3.1.03';
 use English '-no_match_vars';
 use File::Basename;
 
@@ -338,13 +338,13 @@ $cli->get_help() if $cli->{options}{help};
 # print Dumper $cli->{options}; exit;
 
 my %topology_defaults =(
-    master_slave => { nodes => 2, db_port => 6100, rmi_port => 10100, thl_port => 12100, },
-    all_masters  => { nodes => 2, db_port => 6200, rmi_port => 10200, thl_port => 12200, },
-    star         => { nodes => 3, db_port => 6300, rmi_port => 10300, thl_port => 12300, },
-    fanin        => { nodes => 3, db_port => 6400, rmi_port => 10400, thl_port => 12400, },
-    direct       => { nodes => 2, db_port => 6500, rmi_port => 10500, thl_port => 12500, },
-    mongodb      => { nodes => 3, db_port => 6600, rmi_port => 10600, thl_port => 12600, },
-    fileapplier  => { nodes => 3, db_port => 6700, rmi_port => 10700, thl_port => 12700, },
+    master_slave => { nodes => 2, db_port => 6100, rmi_port => 10200, thl_port => 12200, },
+    all_masters  => { nodes => 2, db_port => 6200, rmi_port => 10300, thl_port => 12300, },
+    star         => { nodes => 3, db_port => 6300, rmi_port => 10400, thl_port => 12400, },
+    fanin        => { nodes => 3, db_port => 6400, rmi_port => 10500, thl_port => 12500, },
+    direct       => { nodes => 2, db_port => 6500, rmi_port => 10600, thl_port => 12600, },
+    mongodb      => { nodes => 3, db_port => 6600, rmi_port => 10700, thl_port => 12700, },
+    fileapplier  => { nodes => 3, db_port => 6700, rmi_port => 10800, thl_port => 12800, },
 );
 
 my $topology = $cli->{options}{topology};
