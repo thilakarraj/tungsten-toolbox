@@ -468,7 +468,7 @@ sub make_dynamic_options
         $options->{heterogenous_master} = 1;
         $options->{heterogenous_slave} = 1;
     }
-    $options->{master_options} = "" unless $options->{slave_options};
+    $options->{master_options} = "" unless $options->{master_options};
     $options->{slave_options} = "" unless $options->{slave_options};
     $options->{defaults_options}  = "" unless $options->{defaults_options};
     if ($options->{heterogenous_master} or $options->{heterogenous_slave} or $options->{java_safe})
