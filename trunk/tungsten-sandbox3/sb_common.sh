@@ -186,7 +186,7 @@ function configure_fileapplier_slave
         $VALIDATION_CHECKS $MORE_DEFAULTS_OPTIONS $EXTRA_OPTIONS "
 
     # using hive CSV format:
-    #  --property=replicator.datasource.applier.csvType=hive 
+    #  --property=replicator.datasource.global.csvType=hive 
 
 
     run_command "$TPM_COMMAND"

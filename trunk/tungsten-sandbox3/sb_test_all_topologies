@@ -42,14 +42,18 @@ echo $DOTS_LINE >> all_operations.log
 
 # all_topologies='master_slave fanin all_masters star direct'
 # all_topologies='star master_slave fanin all_masters direct mongodb fileapplier'
-all_topologies='star master_slave fanin all_masters direct'
-if [ -d $MONGODB_EXPANDED_TARBALLS/$MONGODB_VERSION ]
+
+if [ -z "$all_topologies" ]
 then
-    all_topologies="$all_topologies mongodb"
-fi
-if [ -f ./tungsten-replicator/samples/conf/datasources/file.tpl ]
-then
-    all_topologies="$all_topologies fileapplier"
+    all_topologies='master_slave fanin all_masters direct star'
+    if [ -d $MONGODB_EXPANDED_TARBALLS/$MONGODB_VERSION ]
+    then
+        all_topologies="$all_topologies mongodb"
+    fi
+    if [ -f ./tungsten-replicator/samples/conf/datasources/file.tpl ]
+    then
+        all_topologies="$all_topologies fileapplier"
+    fi
 fi
 
 for topology in $all_topologies
