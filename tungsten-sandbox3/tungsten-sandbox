@@ -14,7 +14,7 @@ use Data::Dumper;
 {
 package Sandbox;
 # SBVERSION
-our $VERSION = '3.1.03';
+our $VERSION = '3.1.04';
 use English '-no_match_vars';
 use File::Basename;
 
@@ -228,31 +228,52 @@ $cli->add_option(
 
 $cli->add_option(
     heterogenous_master => {
-        parse       => 'hm|heterogenous-master',
-        value       => $ENV{HETEROGENOUS_MASTER} || 0,
+        parse       => 'hm|heterogenous-master|heterogeneous-master',
+        value       => $ENV{HETEROGENOUS_MASTER} || $ENV{HETEROGENEOUS_MASTER} || 0,
         must_have   => 0,
         so          => 142,
-        help        => ['Sets every master service with heterogenous options'],
+        help        => ['Sets every master service with heterogeneous options'],
+    }
+);
+
+$cli->add_option(
+    batch_master => {
+        parse       => 'bm|batch-master',
+        value       => $ENV{BATCH_MASTER} || 0,
+        must_have   => 0,
+        so          => 143,
+        help        => ['Sets every master service with batch options'],
     }
 );
 
 
 $cli->add_option(
     heterogenous_slave => {
-        parse       => 'hs|heterogenous-slave',
-        value       => $ENV{HETEROGENOUS_SLAVE} || 0,
+        parse       => 'hs|heterogenous-slave|heterogeneous-slave',
+        value       => $ENV{HETEROGENOUS_SLAVE} || $ENV{HETEROGENEOUS_SLAVE} || 0,
         must_have   => 0,
         so          => 144,
-        help        => ['Sets every slave service with heterogenous options'],
+        help        => ['Sets every slave service with heterogeneous options'],
     }
 );
+
+$cli->add_option(
+    batch_slave => {
+        parse       => 'bs|batch-slave',
+        value       => $ENV{BATCH_SLAVE} || 0,
+        must_have   => 0,
+        so          => 145,
+        help        => ['Sets every slave service with batch options'],
+    }
+);
+
 
 $cli->add_option(
     java_safe => {
         parse       => 'js|java-safe',
         value       => $ENV{JAVA_SAFE} || 0,
         must_have   => 0,
-        so          => 145,
+        so          => 147,
         help        => ['Uses character set UTF8 and GMT in the Java wrapper'],
     }
 );
@@ -262,7 +283,7 @@ $cli->add_option(
         parse       => 'sc|schema-change',
         value       => $ENV{SCHEMA_CHANGE} || 0,
         must_have   => 0,
-        so          => 146,
+        so          => 148,
         help        => ['Install the schemachange filter on masters and monitorschemachange filter on slave services'],
     }
 );
@@ -459,8 +480,8 @@ sub make_dynamic_options
     );
     if ( $options->{topology} eq 'fileapplier')
     {
-        $options->{heterogenous_master} = 1;
-        $options->{heterogenous_slave} = 1;
+        $options->{batch_master} = 1;
+        $options->{batch_slave} = 1;
         $options->{schema_change} = 1;
     }
     if ($options->{topology} eq 'mongodb')
@@ -471,22 +492,36 @@ sub make_dynamic_options
     $options->{master_options} = "" unless $options->{master_options};
     $options->{slave_options} = "" unless $options->{slave_options};
     $options->{defaults_options}  = "" unless $options->{defaults_options};
-    if ($options->{heterogenous_master} or $options->{heterogenous_slave} or $options->{java_safe})
+    if ($options->{heterogenous_master} or $options->{heterogenous_slave} or $options->{batch_master} or $options->{batch_slave} or $options->{java_safe})
     {
         $options->{defaults_options} .= " --java-file-encoding=UTF8 --java-user-timezone=GMT";
         # $options->{defaults_options} .= " --java-file-encoding=UTF8 ";
     }
     if ($options->{heterogenous_master})
     {
-        $options->{master_options}   .= " --enable-heterogenous-service=true " ;
+        $options->{master_options}   .= " --enable-heterogenous-master=true " ;
         $options->{binlog_format}     = "row";
     }
 
     if ($options->{heterogenous_slave})
     {
         $options->{slave_options} = "" unless $options->{slave_options};
-        $options->{slave_options} .= " --enable-heterogenous-service=true";
+        $options->{slave_options} .= " --enable-heterogenous-slave=true";
     }
+
+    if ($options->{batch_master})
+    {
+        $options->{master_options}   .= " --enable-batch-master=true " ;
+        $options->{binlog_format}     = "row";
+    }
+
+    if ($options->{batch_slave})
+    {
+        $options->{slave_options} = "" unless $options->{slave_options};
+        $options->{slave_options} .= " --enable-batch-slave=true";
+    }
+
+
     if ($options->{schema_change})
     {
         $options->{master_options} .= " --repl-svc-extractor-filters=schemachange" ;

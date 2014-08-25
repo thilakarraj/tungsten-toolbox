@@ -16,7 +16,7 @@
     --batch-load-template=donothing \
     --datasource-type=file \
     --install-directory=$$CONTINUENT_ROOT \
-    --enable-heterogenous-service=true \
+    --enable-batch-service=true \
     --property=replicator.filter.monitorschemachange.notify=true \
     --repl-svc-applier-filters=monitorschemachange \
     --java-file-encoding=UTF8 \
