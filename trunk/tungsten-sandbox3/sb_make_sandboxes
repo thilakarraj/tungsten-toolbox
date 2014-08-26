@@ -78,6 +78,7 @@ then
 fi
 NODE_OPTIONS="-c innodb-thread-concurrency=0"
 NODE_OPTIONS="$NODE_OPTIONS -c sync_binlog=1"
+NODE_OPTIONS="$NODE_OPTIONS -c skip-name-resolve"
 NODE_OPTIONS="$NODE_OPTIONS -c innodb-log-buffer-size=50M"
 NODE_OPTIONS="$NODE_OPTIONS -c max-connections=150"
 NODE_OPTIONS="$NODE_OPTIONS -c max_allowed_packet=52M"
