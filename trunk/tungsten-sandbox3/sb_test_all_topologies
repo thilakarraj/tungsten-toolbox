@@ -75,7 +75,7 @@ do
     unset TEST_ALL_TOPOLOGIES
     if [ "$exit_code" != "0" ]
     then
-        UNEXPLAINED=grep 'At least one replication service has experienced an error' installation.log
+        UNEXPLAINED=$(grep 'At least one replication service has experienced an error' installation.log)
         if [ -n "$UNEXPLAINED" ]
         then
             check_error_logs
