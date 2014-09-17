@@ -168,6 +168,7 @@ function configure_fileapplier_slave
     MASTER_THL_PORT=$3
     NODE=$4
     DELTA=$(($NODE*10))
+    [ -z "$file_template" ] && file_template=donothing
     print_dry "# Configuring slave for service $SERVICE (thl: $THL_PORT)"
     TPM_COMMAND="./tools/tpm configure $SERVICE \
         --slaves=$LOCALHOST \
@@ -176,7 +177,7 @@ function configure_fileapplier_slave
         --role=slave \
         --batch-enabled=true \
         --batch-load-language=js \
-        --batch-load-template=donothing \
+        --batch-load-template=$file_template \
         --datasource-type=file \
         --install-directory=$TUNGSTEN_SB/${SB_PREFIX}$NODE \
         --thl-port=$THL_PORT \

@@ -14,7 +14,7 @@ use Data::Dumper;
 {
 package Sandbox;
 # SBVERSION
-our $VERSION = '3.1.04';
+our $VERSION = '3.1.05';
 use English '-no_match_vars';
 use File::Basename;
 
@@ -128,7 +128,7 @@ $cli->add_option(
         parse       => 'topology=s',
         value       => 'master_slave',
         must_have   => 1,
-        allowed     => [qw(master_slave all_masters fanin star direct mongodb fileapplier)],
+        allowed     => [qw(master_slave all_masters fanin star direct mongodb fileapplier sqlite)],
         so          => 60,
         help        => ['Which topology to deploy'],
     }
@@ -366,6 +366,7 @@ my %topology_defaults =(
     direct       => { nodes => 2, db_port => 6500, rmi_port => 10600, thl_port => 12600, },
     mongodb      => { nodes => 3, db_port => 6600, rmi_port => 10700, thl_port => 12700, },
     fileapplier  => { nodes => 3, db_port => 6700, rmi_port => 10800, thl_port => 12800, },
+    sqlite       => { nodes => 3, db_port => 6800, rmi_port => 10900, thl_port => 12900, },
 );
 
 my $topology = $cli->{options}{topology};
@@ -374,7 +375,7 @@ unless ($cli->{options}->{nodes})
     $cli->{options}->{nodes} = $topology_defaults{$topology}{nodes} ;
     if ($ENV{TEST_ALL_TOPOLOGIES})
     {
-        $cli->{options}->{nodes} += 1 unless $topology =~ /^(?:mongodb|fileapplier)$/;
+        $cli->{options}->{nodes} += 1 unless $topology =~ /^(?:mongodb|fileapplier|sqlite)$/;
     }
 }
 
@@ -406,7 +407,7 @@ chdir $curdir;
 
 my $args = $cli->{options}->{nodes};
 
-if (grep { $topology eq $_ } qw( master_slave direct fileapplier mongodb) )
+if (grep { $topology eq $_ } qw( master_slave direct fileapplier mongodb sqlite) )
 {
     $args= "$cli->{options}{service} $cli->{options}{nodes}";
 }
@@ -478,6 +479,40 @@ sub make_dynamic_options
         install_options          => 'MORE_TPM_INSTALL_OPTIONS',
         binlog_format            => 'BINLOG_FORMAT',
     );
+    if ( $options->{topology} eq 'sqlite')
+    {
+        $topology               = 'fileapplier';
+        $options->{topology}    = 'fileapplier';
+        $ENV{file_template}     = 'tosqlite';
+
+        print "# Topology changed to <fileapplier> - But SQLite will run on top of it \n";
+        if (($ENV{DB_USER} && $ENV{DB_PASSWORD}) or $ENV{MY_CNF})
+        {
+            # OK. We can run the sqlite applier
+            my $source_directory    = Sandbox::get_real_path($PROGRAM_NAME);
+            $source_directory       = "$source_directory/experimental";
+
+            my $dest_directory      = $options->{staging_dir} || $ENV{PWD};
+            $dest_directory         = "$dest_directory/tungsten-replicator/samples/scripts/batch/";
+            die "can't access $dest_directory\n" unless -d $dest_directory;
+
+            for my $file (('insert_to_sqlite.pl', 'tosqlite.js'))
+            {
+                if ( -f "$source_directory/$file")
+                {
+                    system("cp $source_directory/$file $dest_directory");
+                }
+                else
+                {
+                    die "can't find source file $source_directory/$file\n";
+                }
+            }
+        }
+        else
+        {
+            die "The SQLite applier requires that either the variable MY_CNF or both DB_USER and DB_PASSWORD be set\n";
+        }
+    }
     if ( $options->{topology} eq 'fileapplier')
     {
         $options->{batch_master} = 1;
