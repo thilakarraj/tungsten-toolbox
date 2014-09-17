@@ -155,8 +155,6 @@ function timer
         echo ''
 }
 
-
-
 function check_if_installer_is_in_cluster
 {
     for HOST in ${ALL_NODES[*]}
@@ -170,19 +168,19 @@ function check_if_installer_is_in_cluster
             do
                 if [ "$CURRENT_HOST_IP" != '127.0.0.1' ]
                 then
-		    # Check if the IP for the hostname is associated with
-		    # one of the hosts defined for this cluster
-		    for LINE in $(grep $CURRENT_HOST_IP /etc/hosts | grep -v '^#')
-		    do
-			for ITEM in $LINE
-			do
-			    if [ "$ITEM" == "$HOST" ]
-			    then
-				INSTALLER_IN_CLUSTER=1
-				return
-			    fi
-			done 
-		    done
+                    # Check if the IP for the hostname is associated with
+                    # one of the hosts defined for this cluster
+                    for LINE in $(grep $CURRENT_HOST_IP /etc/hosts | grep -v '^#')
+                    do
+                        for ITEM in $LINE
+                        do
+                            if [ "$ITEM" == "$CURRENT_HOST" ]
+                            then
+                            INSTALLER_IN_CLUSTER=1
+                            return
+                            fi
+                        done 
+                    done
                 fi
             done
         fi
@@ -193,9 +191,16 @@ check_if_installer_is_in_cluster
 
 if [ "$INSTALLER_IN_CLUSTER" != "1" ]
 then
-    echo "This framework is designed to act within the cluster that is installing"
-    echo "The current host ($CURRENT_HOST) is not among the designated servers (${ALL_NODES[*]})"
-    exit 1
+    if [ -z "$IGNORE_INSTALLER_NOT_IN_CLUSTER" ]
+    then
+        echo "This framework is designed to act within the cluster that is installing"
+        echo "The current host ($CURRENT_HOST) is not among the designated servers (${ALL_NODES[*]})"
+        echo ""
+        echo "You can override this check by setting the variable IGNORE_INSTALLER_NOT_IN_CLUSTER."
+        echo "But if you do, be warned that, even though the installation **may** succeed,"
+        echo "some tools in the cookbook toolkit will not work at all"
+        exit 1
+    fi
 fi
 
 . $cookbook_dir/USER_VALUES.sh
