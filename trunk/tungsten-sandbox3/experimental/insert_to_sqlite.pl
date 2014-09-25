@@ -145,6 +145,15 @@ for my $change (@CDC)
         $insert .= ');';  
         print $TMP_BATCH "$insert \n";
         $queued++;
+        # 
+        # *stunt* to replicate to Apple Reminders
+        #
+        #if (($db_name eq 'reminders') 
+        #    && (lc($db_table) eq 'shoppingsfo') 
+        #    && ( -e "$ENV{HOME}/Desktop/new_reminder.workflow"))
+        #{
+        #    system (qq(automator -i "$change->[1]" $ENV{HOME}/Desktop/new_reminder.workflow ));
+        #}
     }
     elsif($op eq 'D')
     {

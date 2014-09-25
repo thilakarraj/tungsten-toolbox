@@ -317,6 +317,38 @@ function pre_installation
     fi
 }
 
+function set_mongodb_options
+{
+    MORE_DEFAULTS_OPTIONS="$MORE_DEFAULTS_OPTIONS --java-file-encoding=UTF8 --java-user-timezone=GMT "
+    # MORE_DEFAULTS_OPTIONS="$MORE_DEFAULTS_OPTIONS --java-file-encoding=UTF8 "
+    MORE_MASTER_OPTIONS="$MORE_MASTER_OPTIONS --enable-heterogenous-master=true "
+    MORE_SLAVE_OPTIONS="$MORE_SLAVE_OPTIONS --enable-heterogenous-slave=true"
+
+    export MORE_DEFAULTS_OPTIONS=$(echo $MORE_DEFAULTS_OPTIONS | tr ' ' '\n' | sort | uniq | xargs echo)
+    export MORE_MASTER_OPTIONS=$(echo $MORE_MASTER_OPTIONS     | tr ' ' '\n' | sort | uniq | xargs echo)
+    export MORE_SLAVE_OPTIONS=$(echo $MORE_SLAVE_OPTIONS       | tr ' ' '\n' | sort | uniq | xargs echo)
+}
+
+function set_fileapplier_options
+{
+    MORE_DEFAULTS_OPTIONS="$MORE_DEFAULTS_OPTIONS --java-file-encoding=UTF8 --java-user-timezone=GMT "
+    # MORE_DEFAULTS_OPTIONS="$MORE_DEFAULTS_OPTIONS --java-file-encoding=UTF8 "
+
+    MORE_MASTER_OPTIONS="$MORE_MASTER_OPTIONS --enable-batch-master=true --repl-svc-extractor-filters=schemachange"
+
+    MORE_SLAVE_OPTIONS="$MORE_SLAVE_OPTIONS --enable-batch-slave=true "
+    MORE_SLAVE_OPTIONS="$MORE_SLAVE_OPTIONS --repl-svc-applier-filters=monitorschemachange "
+    MORE_SLAVE_OPTIONS="$MORE_SLAVE_OPTIONS --property=replicator.filter.monitorschemachange.notify=true "
+    MORE_SLAVE_OPTIONS="$MORE_SLAVE_OPTIONS --property=replicator.datasource.global.csv.useHeaders=true "
+    MORE_SLAVE_OPTIONS="$MORE_SLAVE_OPTIONS --property=replicator.datasource.global.csvType=custom "
+    MORE_SLAVE_OPTIONS="$MORE_SLAVE_OPTIONS '--property=replicator.datasource.global.csv.fieldSeparator=|'"
+
+    export MORE_DEFAULTS_OPTIONS=$(echo $MORE_DEFAULTS_OPTIONS | tr ' ' '\n' | sort | uniq | xargs echo)
+    export MORE_MASTER_OPTIONS=$(echo $MORE_MASTER_OPTIONS     | tr ' ' '\n' | sort | uniq | xargs echo)
+    export MORE_SLAVE_OPTIONS=$(echo $MORE_SLAVE_OPTIONS       | tr ' ' '\n' | sort | uniq | xargs echo)
+}
+
+
 function post_installation
 {
     topology=$1 
@@ -324,6 +356,7 @@ function post_installation
     then
         return
     fi 
+    
     make_paths
     #MULTI_TREPCTL="$TUNGSTEN_SB_NODE2/tungsten/tungsten-replicator/scripts/multi_trepctl --paths=$PATHS"
     #echo '#!/bin/bash' > $TUNGSTEN_SB/multi_trepctl 
