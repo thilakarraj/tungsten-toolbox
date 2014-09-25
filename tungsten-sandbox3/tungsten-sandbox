@@ -486,6 +486,11 @@ sub make_dynamic_options
         $ENV{file_template}     = 'tosqlite';
 
         print "# Topology changed to <fileapplier> - But SQLite will run on top of it \n";
+        my $mysql_cmd = CLI_Utils::which('mysql');
+        unless ($mysql_cmd)
+        {
+            die "The SQLite applier requires MySQL command line client in the \$PATH\n";
+        }
         if (($ENV{DB_USER} && $ENV{DB_PASSWORD}) or $ENV{MY_CNF})
         {
             # OK. We can run the sqlite applier

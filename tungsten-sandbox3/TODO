@@ -6,4 +6,4 @@
 5. bristlecone load
 6. Heterogenous MongoDB slave service as an add-on to existing topologies
 7. Heterogenous slave services for Hadoop, Oracle, and generic applier.
-
+8. Multiple sandboxes, same topology, different options

@@ -24,28 +24,7 @@ export BINLOG_FORMAT=row
 $sandboxdir/sb_make_sandboxes
 check_exit_code
 
-DS_DIR=./tungsten-replicator/samples/conf/datasources
-
-# Workaround for Issue#943
-# (removed, as there is a workaround in trunk)
-#if [ -d $DS_DIR ]
-#then
-#    if [ ! -f $DS_DIR/mongodb.tpl ]
-#    then
-#        echo "Adding mongodb datasource"
-#        cp $DS_DIR/file.tpl $DS_DIR/mongodb.tpl
-#    fi
-#fi
-
-MORE_DEFAULTS_OPTIONS="$MORE_DEFAULTS_OPTIONS --java-file-encoding=UTF8 --java-user-timezone=GMT "
-# MORE_DEFAULTS_OPTIONS="$MORE_DEFAULTS_OPTIONS --java-file-encoding=UTF8 "
-MORE_MASTER_OPTIONS="$MORE_MASTER_OPTIONS --enable-heterogenous-master=true "
-MORE_SLAVE_OPTIONS="$MORE_SLAVE_OPTIONS --enable-heterogenous-slave=true"
-
-export MORE_DEFAULTS_OPTIONS=$(echo $MORE_DEFAULTS_OPTIONS | tr ' ' '\n' | sort | uniq | xargs echo)
-export MORE_MASTER_OPTIONS=$(echo $MORE_MASTER_OPTIONS     | tr ' ' '\n' | sort | uniq | xargs echo)
-export MORE_SLAVE_OPTIONS=$(echo $MORE_SLAVE_OPTIONS       | tr ' ' '\n' | sort | uniq | xargs echo)
-
+set_mongodb_options 
 
 if [ -n "$USE_INI" ]
 then
