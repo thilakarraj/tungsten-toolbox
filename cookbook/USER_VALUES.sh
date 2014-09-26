@@ -20,6 +20,7 @@ export MY_CNF=/etc/my.cnf
 
 # Database credentials
 export DATABASE_USER=tungsten
+export DATABASE_SUPER_USER=tungsten
 export DATABASE_PASSWORD=secret
 export DATABASE_PORT=3306
 

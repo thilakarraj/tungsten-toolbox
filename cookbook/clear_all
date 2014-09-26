@@ -19,6 +19,11 @@ then
 fi
 
 # MYSQL="mysql -u $DATABASE_USER -p$DATABASE_PASSWORD -P $DATABASE_PORT"
+if [ -n "$DATABASE_SUPER_USER" ]
+then
+    MYSQL="$MYSQL --user=$DATABASE_SUPER_USER"
+fi
+
 for NODE in ${ALL_NODES[*]} 
 do 
     if [ -f $cookbook_dir/data_loading ]
