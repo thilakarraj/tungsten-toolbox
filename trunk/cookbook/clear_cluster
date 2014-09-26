@@ -40,6 +40,10 @@ fi
  
 TMPDIR=$PWD
 # MYSQL is defined in BOOTSTRAP.sh
+if [ -n "$DATABASE_SUPER_USER" ]
+then
+    MYSQL="$MYSQL --user=$DATABASE_SUPER_USER"
+fi
 for NODE in ${ALL_NODES[*]} 
 do 
     clear_remote_node=$TMPDIR/clear_node_$NODE.sh
