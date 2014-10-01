@@ -150,6 +150,10 @@ function read_from_slaves
         service=$(echo $SERVICE_SLAVE | tr ',' ' '| awk '{print $1}')
         rmiport=$(echo $SERVICE_SLAVE | tr ',' ' '| awk '{print $2}')
         db_port=$($TREPCTL -port $rmiport -service $service properties -filter replicator.global.db.port | perl -nle 'print $1 if /"(\d+)"}?$/')
+        if [ -z "$db_port" ]
+        then
+            db_port=$($TREPCTL -port $rmiport -service $service properties -filter replicator.datasource.extractor.connectionSpec.port | perl -nle 'print $1 if /"(\d+)"}?$/')
+        fi
         # echo "SSLAVE $SERVICE_SLAVE"
         # echo "service $service"
         # echo "rmiport $rmiport"
