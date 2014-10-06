@@ -225,12 +225,48 @@ do
     role=$(echo $SERVICE_MASTER | tr ',' ' '| awk '{print $3}')
     # db_port=$(echo $pipeline | perl -nle 'print $1 if m{^jdbc:\w+:[^:]+://[^:]+:(\d+)}')
 
-    extractor_db_port=$($TREPCTL -port $rmiport -service $service properties -filter replicator.extractor.dbms.port | perl -nle 'print $1 if /"(\d+)"}?$/')
+    extractor_db_port=$($TREPCTL -port $rmiport -service $service properties -filter replicator.global.extract.db.port | perl -nle 'print $1 if /"(\d+)"}?$/')
+    if [ -z "$extractor_db_port" ]
+    then
+        echo "error retrieving the extractor port"
+        exit 1
+    fi
     applier_db_port=$($TREPCTL -port $rmiport -service $service properties -filter replicator.applier.dbms.port | perl -nle 'print $1 if /"(\d+)"}?$/')
+    if [ -z "$applier_db_port" ]
+    then
+        applier_db_port=$($TREPCTL -port $rmiport -service $service properties -filter replicator.datasource.global.connectionSpec.port | perl -nle 'print $1 if /"(\d+)"}?$/')
+    fi
+    if [ -z "$applier_db_port" ]
+    then
+        echo "error retrieving the applier port"
+        exit 1
+    fi
     db_port=$($TREPCTL -port $rmiport -service $service properties -filter replicator.global.db.port | perl -nle 'print $1 if /"(\d+)"}?$/')
+    if [ -z "$db_port" ]
+    then
+        db_port=$($TREPCTL -port $rmiport -service $service properties -filter replicator.datasource.global.connectionSpec.port | perl -nle 'print $1 if /"(\d+)"}?$/')
+    fi
+    if [ -z "$db_port" ]
+    then
+        echo "error retrieving the global db port"
+        exit 1
+    fi
     if [ "$extractor_db_port" != "$applier_db_port" ]
     then
         db_port=$extractor_db_port
+    fi
+    if [ -n "$TEST_EXIT_CODE" ]
+    then
+        echo "Testing exit code <$TEST_EXIT_CODE>"
+        exit $TEST_EXIT_CODE
+    fi
+    if [ -n "$TEST_FAILURE_NUM" ]
+    then
+        echo "ok - fake pass for testing"
+        echo "not ok - fake failure for testing"
+        echo "ok - another fake pass for testing"
+        echo "not ok - more fake failure for testing"
+        exit 0
     fi
     #echo "master service $service"
     #echo "master rmiport $rmiport"

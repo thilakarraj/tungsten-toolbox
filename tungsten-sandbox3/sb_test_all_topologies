@@ -73,6 +73,12 @@ do
     # $sandboxdir/sb_$topology > installation.log 2>&1
     exit_code=$?
     unset TEST_ALL_TOPOLOGIES
+    if [ -n "$TEST_INSTALLATION_FAILURE" -a "$exit_code" == "0" ]
+    then
+        echo "Testing installation failure"
+        echo "Installation succeeded, but we are simulating a failure"
+        exit_code=111
+    fi
     if [ "$exit_code" != "0" ]
     then
         UNEXPLAINED=$(grep 'At least one replication service has experienced an error' installation.log)
@@ -84,17 +90,29 @@ do
         exit $exit_code
     fi
     rm -f testing.log
-    $TUNGSTEN_SB/sb_test_sandbox | tee testing.log
+    $TUNGSTEN_SB/sb_test_sandbox >> testing.log 2>&1
     exit_code=$?
     pass=$(grep '^ok' testing.log | wc -l)
     fail=$(grep '^not ok' testing.log | wc -l)
+    fail=$(($fail+0))
+    pass=$(($pass+0))
     tests=$(($pass+$fail))
     total_pass=$(($total_pass+$pass))
     total_fail=$(($total_fail+$fail))
     total_tests=$(($total_tests+$tests))
     if [ "$exit_code" != "0" ]
     then
+        cat testing.log
+        echo "exit code: <$exit_code>"
         exit $exit_code
+    fi
+    # echo "pass:<$pass>"
+    # echo "fail:<$fail>"
+    cat testing.log
+    if [ "$fail" != "0" ]
+    then
+        echo "<$fail> failures detected"
+        exit 1
     fi
     echo "# Cleaning up ..."
     $TUNGSTEN_SB/sb_erase_sandbox > uninstall.log 2>&1
