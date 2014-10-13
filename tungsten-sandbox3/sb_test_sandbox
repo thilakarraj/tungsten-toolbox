@@ -56,6 +56,10 @@ function make_my_cnf
     echo "password=$MYSQL_PASSWORD" >> $my_cnf
     echo "port=$port" >> $my_cnf
     echo "host=127.0.0.1" >> $my_cnf
+    if [ -n "$USE_SSL" ]
+    then
+        echo "$CLIENT_OPTIONS" >> $my_cnf
+    fi
 }
 
 function write_to_master

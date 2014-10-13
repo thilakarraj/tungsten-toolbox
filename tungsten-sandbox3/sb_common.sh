@@ -114,6 +114,12 @@ function configure_defaults
     fi
     MYSQL_SB_PATH=$MYSQL_SB_BASE/node$NODE
     
+    if [ -n "$USE_SSL" ]
+    then
+        SSL_OPTIONS="--datasource-enable-ssl=true"
+        SSL_OPTIONS="$SSL_OPTIONS --java-keystore-path=$sandboxdir/ssl/tungsten_keystore.jks "
+        SSL_OPTIONS="$SSL_OPTIONS --java-truststore-path=$sandboxdir/ssl/tungsten_truststore.ts "
+    fi
     TPM_COMMAND="./tools/tpm configure defaults --reset \
         --install-directory=$TUNGSTEN_SB/$SB_PREFIX$NODE \
         --repl-rmi-port=$(($RMI_BASE_PORT+$DELTA)) \
@@ -124,7 +130,7 @@ function configure_defaults
         --datasource-log-directory=$MYSQL_SB_PATH/data \
         --repl-disable-relay-logs=$DISABLE_RELAY_LOGS \
         $USERNAME_AND_PASSWORD \
-        $VALIDATION_CHECKS $MORE_DEFAULTS_OPTIONS $EXTRA_OPTIONS \
+        $VALIDATION_CHECKS $MORE_DEFAULTS_OPTIONS $EXTRA_OPTIONS $SSL_OPTIONS \
         --start=true"
     #echo $TPM_COMMAND | perl -pe 's/--/\\\n\t--/g'
     #exit
