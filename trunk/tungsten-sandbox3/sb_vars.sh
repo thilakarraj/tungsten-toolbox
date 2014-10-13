@@ -20,7 +20,7 @@ export DOTS_LINE='# ---------------------------------------------------'
 # VERBOSE=1
 MYSQL_EXPANDED_TARBALLS=$HOME/opt/mysql
 MONGODB_EXPANDED_TARBALLS=$HOME/opt/mongodb
-[ -z "$TUNGSTEN_SANDBOX_VERSION" ] && TUNGSTEN_SANDBOX_VERSION=3.1.05
+[ -z "$TUNGSTEN_SANDBOX_VERSION" ] && TUNGSTEN_SANDBOX_VERSION=3.1.06
 LOCALHOST=$(hostname)
 [ -z "$MYSQL_VERSION" ] && MYSQL_VERSION=5.5.37
 [ -z "$MONGODB_VERSION" ] && MONGODB_VERSION=2.6.4
@@ -91,4 +91,18 @@ USERNAME_AND_PASSWORD="--replication-user=$MYSQL_USER --replication-password=$MY
 PATH=$MYSQL_EXPANDED_TARBALLS/$MYSQL_VERSION/bin:$MONGODB_EXPANDED_TARBALLS/$MONGODB_VERSION/bin:$PATH
 # PATH=$MYSQL_EXPANDED_TARBALLS/$MYSQL_VERSION/bin:$PATH
 # echo "<$PATH>"
+
+if [ -n "$USE_SSL" ]
+then
+export CLIENT_OPTIONS="
+ssl-ca   = $HOME/sandboxes/$SB_DIRECTORY/ssl/ca-cert.pem
+ssl-cert = $HOME/sandboxes/$SB_DIRECTORY/ssl/client-cert.pem
+ssl-key  = $HOME/sandboxes/$SB_DIRECTORY/ssl/client-key.pem"
+
+export SERVER_OPTIONS="
+ssl-ca   = $HOME/sandboxes/$SB_DIRECTORY/ssl/ca-cert.pem
+ssl-cert = $HOME/sandboxes/$SB_DIRECTORY/ssl/server-cert.pem
+ssl-key  = $HOME/sandboxes/$SB_DIRECTORY/ssl/server-key.pem"
+fi
+
 

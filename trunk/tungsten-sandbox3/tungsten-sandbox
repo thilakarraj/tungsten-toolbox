@@ -14,7 +14,7 @@ use Data::Dumper;
 {
 package Sandbox;
 # SBVERSION
-our $VERSION = '3.1.05';
+our $VERSION = '3.1.06';
 use English '-no_match_vars';
 use File::Basename;
 
@@ -352,6 +352,17 @@ $cli->add_option(
 );
 
 
+$cli->add_option(
+    use_ssl => {
+        parse       => 'use-ssl',
+        value       => 0,
+        must_have   => 0,
+        so          => 200,
+        help        => ['Enables SSL connection for replication'],
+    }
+);
+
+
 
 $cli->getoptions();
 $cli->{options}{tungsten_sandbox_version} = $Sandbox::VERSION;
@@ -394,6 +405,11 @@ if ( $cli->{options}{concurrent_sandboxes})
 if ( $cli->{options}{set_executable_prefix})
 {
    $ENV{SET_EXECUTABLE_PREFIX}=1;
+}
+
+if ( $cli->{options}{use_ssl})
+{
+   $ENV{USE_SSL}=1;
 }
 
 make_dynamic_options($cli->{options});
@@ -478,6 +494,7 @@ sub make_dynamic_options
         node_options             => 'MORE_NODE_OPTIONS',
         install_options          => 'MORE_TPM_INSTALL_OPTIONS',
         binlog_format            => 'BINLOG_FORMAT',
+        use_ssl                  => 'USE_SSL',
     );
     if ( $options->{topology} eq 'sqlite')
     {

@@ -105,10 +105,32 @@ make_multiple_sandbox \
     --node_options="$NODE_OPTIONS" \
     --sandbox_base_port=$MYSQL_BASE_PORT $MYSQL_VERSION
 
+if [ -n "$USE_SSL" ]
+then
+    mkdir $HOME/sandboxes/$SB_DIRECTORY/ssl
+    cp $sandboxdir/ssl/*.pem $HOME/sandboxes/$SB_DIRECTORY/ssl
+
+    for N in $(seq 1 $HOW_MANY_NODES)
+    do
+        perl -i -pe 's/(\[client\])/$1\n$ENV{CLIENT_OPTIONS}\n/' $HOME/sandboxes/$SB_DIRECTORY/node$N/my.sandbox.cnf
+        perl -i -pe 's/(\[mysqld\])/$1\n$ENV{SERVER_OPTIONS}\n/' $HOME/sandboxes/$SB_DIRECTORY/node$N/my.sandbox.cnf  
+        $HOME/sandboxes/$SB_DIRECTORY/node$N/restart
+        #mkdir -p $TUNGSTEN_SB/$SB_PREFIX$N/share
+        #cp $sandboxdir/ssl/tungsten_truststore.ts $TUNGSTEN_SB/$SB_PREFIX$N/share
+        #cp $sandboxdir/ssl/tungsten_keystore.jks $TUNGSTEN_SB/$SB_PREFIX$N/share
+    done
+fi
+
 for N in $(seq 1 $HOW_MANY_NODES)
 do
     echo "# Node $N - Creating replication user '$MYSQL_USER' "
-    $HOME/sandboxes/$SB_DIRECTORY/n$N -u root -e "grant all on *.* to $MYSQL_USER identified by '$MYSQL_PASSWORD' with grant option"
+    SSL_OPTIONS=''
+    if [ -n "$USE_SSL" ]
+    then
+        SSL_OPTIONS='require ssl'    
+    fi
+    #echo $HOME/sandboxes/$SB_DIRECTORY/n$N -u root -e "grant all on *.* to $MYSQL_USER identified by '$MYSQL_PASSWORD' $SSL_OPTIONS with grant option"
+    $HOME/sandboxes/$SB_DIRECTORY/n$N -u root -e "grant all on *.* to $MYSQL_USER identified by '$MYSQL_PASSWORD' $SSL_OPTIONS with grant option"
     if [ -n "$BINLOG_FORMAT" ]
     then
         echo "# Node $N - Setting binlog_format to $BINLOG_FORMAT"
