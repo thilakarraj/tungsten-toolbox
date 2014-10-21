@@ -64,6 +64,7 @@ do
     fi
     echo $DOTS_LINE
     echo "# Testing topology $topology"
+    # echo "#SSL: <$USE_SSL>"
     echo $DOTS_LINE
     echo $DOTS_LINE >> all_operations.log
     echo "# Testing topology $topology" >> all_operations.log

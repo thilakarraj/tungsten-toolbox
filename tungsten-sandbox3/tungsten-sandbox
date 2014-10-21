@@ -355,7 +355,7 @@ $cli->add_option(
 $cli->add_option(
     use_ssl => {
         parse       => 'use-ssl',
-        value       => 0,
+        value       => undef,
         must_have   => 0,
         so          => 200,
         help        => ['Enables SSL connection for replication'],
@@ -409,7 +409,7 @@ if ( $cli->{options}{set_executable_prefix})
 
 if ( $cli->{options}{use_ssl})
 {
-   $ENV{USE_SSL}=1;
+    $ENV{USE_SSL}=1;
 }
 
 make_dynamic_options($cli->{options});
