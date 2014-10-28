@@ -56,6 +56,11 @@ then
     fi
 fi
 
+if [ -n "$UNPRIVILEGED_USERS" ]
+then
+    all_topologies="master_slave"
+fi
+
 for topology in $all_topologies
 do
     if [ -n "$USE_INI_FILES" ]

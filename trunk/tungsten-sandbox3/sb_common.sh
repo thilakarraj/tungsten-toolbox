@@ -84,6 +84,19 @@ function print_dry
     fi
 }
 
+function define_extra_options
+{
+    EXTRA_OPTIONS=''
+    if [ -n "$MORE_NODE_OPTIONS" ]
+    then
+        WANTED_NODE=$(echo $MORE_NODE_OPTIONS | tr ':' ' '| awk '{print $1}' )
+        if [ "$WANTED_NODE" == "$NODE" ]
+        then
+            EXTRA_OPTIONS=$(echo "$MORE_NODE_OPTIONS" | perl -nle 's/^\d+://; print "$_"')
+        fi
+    fi
+}
+
 function configure_defaults
 {
     NODE=$1   
@@ -98,15 +111,7 @@ function configure_defaults
         DISABLE_RELAY_LOGS=false
     fi
     DELTA=$(($NODE*10))
-    EXTRA_OPTIONS=''
-    if [ -n "$MORE_NODE_OPTIONS" ]
-    then
-        WANTED_NODE=$(echo $MORE_NODE_OPTIONS | tr ':' ' '| awk '{print $1}' )
-        if [ "$WANTED_NODE" == "$NODE" ]
-        then
-            EXTRA_OPTIONS=$(echo "$MORE_NODE_OPTIONS" | perl -nle 's/^\d+://; print "$_"')
-        fi
-    fi
+    define_extra_options
     print_dry "# Configuring node $NODE"
     if [ -n "$SET_EXECUTABLE_PREFIX" ]
     then
@@ -175,6 +180,7 @@ function configure_fileapplier_slave
     NODE=$4
     DELTA=$(($NODE*10))
     [ -z "$file_template" ] && file_template=donothing
+    define_extra_options
     print_dry "# Configuring slave for service $SERVICE (thl: $THL_PORT)"
     TPM_COMMAND="./tools/tpm configure $SERVICE \
         --slaves=$LOCALHOST \
@@ -283,6 +289,11 @@ function install_with_ini_files
 function pre_installation
 {
     export current_topology=$1
+    if [ "$current_topology" != "master_slave" -a -n "$UNPRIVILEGED_USERS" ]
+    then
+        echo "The option UNPRIVILEGED_USERS can only be used with master_slave topology"
+        exit 0
+    fi
     if [ ! -x ./tools/tpm ]
     then
         echo "This command requires ./tools/tpm"
