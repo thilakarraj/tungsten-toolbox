@@ -131,6 +131,12 @@ do
         echo $HOME/sandboxes/$SB_DIRECTORY/n$N -u root -e "grant all on *.* to $MYSQL_USER identified by '$MYSQL_PASSWORD' $SSL_OPTIONS with grant option"
     fi
     $HOME/sandboxes/$SB_DIRECTORY/n$N -u root -e "grant all on *.* to $MYSQL_USER identified by '$MYSQL_PASSWORD' $SSL_OPTIONS with grant option"
+    if [ -n "$UNPRIVILEGED_USERS" ]
+    then
+        $HOME/sandboxes/$SB_DIRECTORY/n$N -u root -e "grant all on *.* to ${MYSQL_USER}_lite identified by '$MYSQL_PASSWORD' $SSL_OPTIONS "
+        $HOME/sandboxes/$SB_DIRECTORY/n$N -u root -e "revoke SUPER on *.* from ${MYSQL_USER}_lite "
+    fi
+
     if [ -n "$BINLOG_FORMAT" ]
     then
         if [ -n "$VERBOSE" ]

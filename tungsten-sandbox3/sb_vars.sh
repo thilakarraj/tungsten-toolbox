@@ -79,6 +79,12 @@ VALIDATION_CHECKS="$VALIDATION_CHECKS --skip-validation-check=HostsFileCheck"
 
 USERNAME_AND_PASSWORD="--replication-user=$MYSQL_USER --replication-password=$MYSQL_PASSWORD"
 
+if [ -n "$UNPRIVILEGED_USERS" ]
+then
+    USERNAME_AND_PASSWORD="--replication-user=${MYSQL_USER}_lite --replication-password=$MYSQL_PASSWORD "
+    USERNAME_AND_PASSWORD="$USERNAME_AND_PASSWORD --privileged-master=false --privileged-slave=false --skip-validation-check=MySQLPermissionsCheck"
+fi
+
 [ -z "$MM_SERVICES" ] && MM_SERVICES=(alpha bravo charlie delta echo foxtrot golf hotel india lima mike)
 #Alternate values:
 # MM_SERVICES=(Doc Grumpy Happy Sleepy Bashful Sneezy Dopey)
