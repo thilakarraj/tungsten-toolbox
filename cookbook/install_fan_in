@@ -42,7 +42,7 @@ INSTALL_COMMAND="./tools/tpm install fan_in \
     --slaves=$FAN_IN_SLAVE \
     --master-services=$MASTER_SERVICES_LIST \
     --topology=fan-in \
-    $MORE_OPTIONS $MORE_TPM_OPTIONS $SECURITY_OPTIONS --$START_OPTION"
+    $MORE_OPTIONS $MORE_TPM_OPTIONS $VERBOSITY $SECURITY_OPTIONS --$START_OPTION"
 
 run_command $INSTALL_COMMAND 
 #set +x
