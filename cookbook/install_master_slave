@@ -59,7 +59,7 @@ INSTALL_COMMAND="./tools/tpm install $TUNGSTEN_SERVICE \
 --rmi-port=$RMI_PORT \
 --thl-port=$THL_PORT \
 --topology=master-slave \
-$MORE_OPTIONS $MORE_TPM_OPTIONS $VERBOSITY $SECURITY_OPTIONS --$START_OPTION"     
+$MORE_OPTIONS $MORE_TPM_OPTIONS $SECURITY_OPTIONS --$START_OPTION"     
 
 # echo $INSTALL_COMMAND | perl -pe 's/--/\\\n\t--/g' >> $INSTALL_LOG
 # $INSTALL_COMMAND

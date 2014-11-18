@@ -1,6 +1,0 @@
-
-sandboxdir=$(dirname $0)
-. $sandboxdir/sb_vars.sh
-. $sandboxdir/sb_common.sh
-
-multi_trepctl "$@"
