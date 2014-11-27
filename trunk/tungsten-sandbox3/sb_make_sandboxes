@@ -86,10 +86,24 @@ NODE_OPTIONS="$NODE_OPTIONS -c innodb_buffer_pool_size=64M"
 NODE_OPTIONS="$NODE_OPTIONS -c innodb-log-file-size=50M"
 NODE_OPTIONS="$NODE_OPTIONS -c default_storage_engine=innodb"
 NODE_OPTIONS="$NODE_OPTIONS -c innodb-flush-method=O_DIRECT"
-NODE_OPTIONS="$NODE_OPTIONS -c default-time-zone='+00:00'"
-NODE_OPTIONS="$NODE_OPTIONS --remote_access=%"
+# NODE_OPTIONS="$NODE_OPTIONS --remote_access=%"
 
-SB_COMMAND="make_multiple_sandbox --group_directory=$SB_DIRECTORY --how_many_nodes=$HOW_MANY_NODES --node_options='$NODE_OPTIONS' --sandbox_base_port=$MYSQL_BASE_PORT $MYSQL_VERSION"
+if [ -n "$MULTIPLE_TIMEZONE" ]
+then
+    MORE_TZ_OPTIONS=""
+    NODE_NUM=1
+    for TZ_NUM in $(seq 0 $(($HOW_MANY_NODES-1)))
+    do
+        MORE_TZ_OPTIONS="$MORE_TZ_OPTIONS --one_node_options='$NODE_NUM:-c default-time-zone=+0$TZ_NUM:00'"
+        NODE_NUM=$(($NODE_NUM+1))
+    done
+else
+    [ -z "$DBTIMEZONE" ] && DBTIMEZONE="+00:00"
+    NODE_OPTIONS="$NODE_OPTIONS -c default-time-zone=$DBTIMEZONE"
+fi
+
+
+SB_COMMAND="make_multiple_sandbox --group_directory=$SB_DIRECTORY --how_many_nodes=$HOW_MANY_NODES --node_options='$NODE_OPTIONS' $MORE_TZ_OPTIONS --sandbox_base_port=$MYSQL_BASE_PORT $MYSQL_VERSION"
 
 if [ -n "$DRYRUN" -o -n "$VERBOSE" ]
 then
@@ -99,11 +113,15 @@ then
     [ -n "$DRYRUN" ] && exit 
 fi
 
-make_multiple_sandbox \
-    --group_directory=$SB_DIRECTORY \
-    --how_many_nodes=$HOW_MANY_NODES \
-    --node_options="$NODE_OPTIONS" \
-    --sandbox_base_port=$MYSQL_BASE_PORT $MYSQL_VERSION
+sb_exec=$TUNGSTEN_SB/sb_cmd
+echo $SB_COMMAND > $sb_exec
+if [ ! -f $sb_exec ]
+then
+    echo "error  creating $sb_exec"
+    exit 1
+fi
+chmod +x $sb_exec
+$sb_exec
 
 if [ -n "$USE_SSL" ]
 then
