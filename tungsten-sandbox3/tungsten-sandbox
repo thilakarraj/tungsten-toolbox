@@ -14,7 +14,7 @@ use Data::Dumper;
 {
 package Sandbox;
 # SBVERSION
-our $VERSION = '3.1.06';
+our $VERSION = '3.1.07';
 use English '-no_match_vars';
 use File::Basename;
 
@@ -301,6 +301,26 @@ $cli->add_option(
 );
 
 $cli->add_option(
+    time_zone => {
+        parse       => 'time-zone=s',
+        value       => $ENV{DBTIMEZONE} || '+00:00',
+        must_have   => 0,
+        so          => 155,
+        help        => ['Which time zone the database should be set to'],
+    }
+);
+
+$cli->add_option(
+    multiple_time_zone => {
+        parse       => 'multiple-time-zone',
+        value       => undef,
+        must_have   => 0,
+        so          => 156,
+        help        => ['Use different time zones for each node'],
+    }
+);
+
+$cli->add_option(
     use_ini_files => {
         parse       => 'use-ini-files',
         value       => 0,
@@ -494,6 +514,8 @@ sub make_dynamic_options
         node_options             => 'MORE_NODE_OPTIONS',
         install_options          => 'MORE_TPM_INSTALL_OPTIONS',
         binlog_format            => 'BINLOG_FORMAT',
+        time_zone                => 'DBTIMEZONE',
+        multiple_time_zone       => 'MULTIPLE_TIMEZONE',
         use_ssl                  => 'USE_SSL',
     );
     if ( $options->{topology} eq 'sqlite')
