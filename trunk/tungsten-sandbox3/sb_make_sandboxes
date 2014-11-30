@@ -86,7 +86,7 @@ NODE_OPTIONS="$NODE_OPTIONS -c innodb_buffer_pool_size=64M"
 NODE_OPTIONS="$NODE_OPTIONS -c innodb-log-file-size=50M"
 NODE_OPTIONS="$NODE_OPTIONS -c default_storage_engine=innodb"
 NODE_OPTIONS="$NODE_OPTIONS -c innodb-flush-method=O_DIRECT"
-# NODE_OPTIONS="$NODE_OPTIONS --remote_access=%"
+NODE_OPTIONS="$NODE_OPTIONS --remote_access=%"
 
 if [ -n "$MULTIPLE_TIMEZONE" ]
 then
@@ -101,7 +101,6 @@ else
     [ -z "$DBTIMEZONE" ] && DBTIMEZONE="+00:00"
     NODE_OPTIONS="$NODE_OPTIONS -c default-time-zone=$DBTIMEZONE"
 fi
-
 
 SB_COMMAND="make_multiple_sandbox --group_directory=$SB_DIRECTORY --how_many_nodes=$HOW_MANY_NODES --node_options='$NODE_OPTIONS' $MORE_TZ_OPTIONS --sandbox_base_port=$MYSQL_BASE_PORT $MYSQL_VERSION"
 
