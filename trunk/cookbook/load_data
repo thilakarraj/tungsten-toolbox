@@ -141,6 +141,13 @@ do
         if [ -z "$SKIP" ]
         then
             $CMD
+            if [ "$?" != "0" ]
+            then
+                echo "# An error occurred - Showing log file"
+                echo "# $DASHLINE"
+                cat $JOB_INFO_PATH/$db/*.log 
+                echo "# $DASHLINE"
+            fi
         fi
     fi
 done
