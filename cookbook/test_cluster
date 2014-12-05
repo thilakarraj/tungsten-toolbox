@@ -140,9 +140,9 @@ function check_if_replicators_are_running
 {
     msg=$1
     echo "# Testing for running replicators - $msg"
-    EXPECTED_PROPERTIES_STATUS=40
+    EXPECTED_PROPERTIES_STATUS=41
     EXPECTED_PROPERTIES_SERVICE=7
-    EXPECTED_PROPERTIES_SERVICE_FULL=41
+    EXPECTED_PROPERTIES_SERVICE_FULL=42
 
     all_running=yes
     for RNODE in ${ALL_NODES[*]}
