@@ -301,6 +301,17 @@ $cli->add_option(
 );
 
 $cli->add_option(
+    rbr => {
+        parse       => 'rbr|RBR',
+        value       => 0,
+        must_have   => 0,
+        expands_to  => { binlog_format => 'row' }, 
+        so          => 151,
+        help        => ['Shortcut to --binlog-format=row'],
+    }
+);
+
+$cli->add_option(
     time_zone => {
         parse       => 'time-zone=s',
         value       => $ENV{DBTIMEZONE} || '+00:00',
@@ -327,6 +338,17 @@ $cli->add_option(
         must_have   => 0,
         so          => 160,
         help        => ['Uses .INI files instead of staging directory to run the installation'],
+    }
+);
+
+$cli->add_option(
+    parallel_replication => {
+        parse       => 'pr|parallel-replication=n',
+        value       => 0,
+        must_have   => 0,
+        expands_to  => { slave_options => '--svc-parallelization-type=disk --channels=%%value%%' },
+        so          => 162,
+        help        => ['Enables parallel replication in all nodes'],
     }
 );
 
@@ -382,12 +404,44 @@ $cli->add_option(
     }
 );
 
+$cli->add_option(
+    filter_in => {
+        parse       => 'filter-in=s',
+        value       => undef,
+        must_have   => 0,
+        expands_to  => { slave_options => '--svc-applier-filters=replicate --property=replicator.filter.replicate.do=%%value%%' },
+        so          => 210,
+        help        => ['Enable replicate filter to include one or more objects'],
+    }
+);
+
+
+$cli->add_option(
+    filter_out => {
+        parse       => 'filter-out=s',
+        value       => undef,
+        must_have   => 0,
+        expands_to  => { slave_options => '--svc-applier-filters=replicate --property=replicator.filter.replicate.ignore=%%value%%' },
+        so          => 220,
+        help        => ['Enable replicate filter to ignore one or more objects'],
+    }
+);
 
 
 $cli->getoptions();
 $cli->{options}{tungsten_sandbox_version} = $Sandbox::VERSION;
 $cli->get_help() if $cli->{options}{help};
 # print Dumper $cli->{options}; exit;
+
+
+#if ( $cli->{options}{rbr} )
+#{
+#    if ($CLI_Utils::VERBOSE)
+#    {
+#        print "# option 'rbr' expanded to 'binlog-format=row'\n";
+#    }
+#    $cli->{options}{binlog_format} ='row';
+#}
 
 my %topology_defaults =(
     master_slave => { nodes => 2, db_port => 6100, rmi_port => 10200, thl_port => 12200, },
@@ -600,6 +654,11 @@ sub make_dynamic_options
         $options->{slave_options} .= " --enable-batch-slave=true";
     }
 
+    #if ($options->{parallel_replication})
+    #{
+    #    $options->{slave_options} = "" unless $options->{slave_options};
+    #    $options->{slave_options} .= " --svc-parallelization-type=disk --channels=$options->{parallel_replication}";
+    #}
 
     if ($options->{schema_change})
     {
