@@ -288,6 +288,7 @@ sub getoptions
     ) or $self->get_help('');
 
     $self->{options}= \%options;
+    $self->expand_shortcuts();
     if ($options{cgi})
     {
         $self->process_cgi();
@@ -312,18 +313,19 @@ sub getoptions
 
 my %options_fields = 
 (
-    parse       => 1, 
-    help        => 1,
-    so          => 1,
-    value       => 0,
-    short       => 0,
-    long        => 0,
-    must_have   => 0,
-    allowed     => 0,
-    groups      => 0,
-    display     => 0,
-    hide        => 0,
+    parse           => 1, 
+    help            => 1,
+    so              => 1,
+    value           => 0,
+    short           => 0,
+    long            => 0,
+    must_have       => 0,
+    allowed         => 0,
+    groups          => 0,
+    display         => 0,
+    hide            => 0,
     require_version => 0, 
+    expands_to      => 0,
 );
 
 sub add_option 
@@ -403,6 +405,23 @@ sub add_option
             $option->{allowed} = { $allowed => 1};
         }
     }
+    if ($option->{expands_to})
+    {
+        #
+        # The clause expands_to contains a HASH
+        # where the key is another option
+        # and the value is the argument for such option
+        #
+        my $expansion = $option->{expands_to};
+        if ((!ref $expansion) || (ref $expansion ne 'HASH'))
+        {
+            die "parameter 'expands_to' should be a HASH\n";
+        }
+        # 
+        # for example, the option 'rbr'
+        # can be defined with
+        # expands_to => { binlog_format => 'row' },
+    }
     my %parse_elements = map { s/=\w+//; $_=> 1} split(/\|/, $option->{parse});
     my @clashing_elements = ();
     for my $opt (keys %{$self->{parse_options}} )
@@ -428,6 +447,88 @@ sub add_option
         confess "There were clashing items - halting the program\n";
     }
     $self->{parse_options}{$option_name} = $option;
+    return $self;
+}
+
+sub merge_structures
+{
+    my ($label,$old_value, $addition) = @_;
+    my $old_type = ref $old_value; 
+    my $new_type = ref $addition;
+    if ($new_type && ($new_type ne $old_type))
+    {
+        die "Value for option <$label> must be of type '$old_type'\n";
+    }
+    if ($old_type eq 'ARRAY')
+    {
+        if ($new_type) # if undefined, it is a scalar
+        {
+            $addition = [ $addition ]; 
+        }
+        push @$old_value , $addition;
+    }
+    elsif ($old_type eq 'HASH')
+    {
+        if ($new_type) # if undefined, it is a scalar
+        {
+            die "Can't add a scalar to option <$label> : It must be a HASH\n";
+        }
+        for my $key (keys %{ $addition})
+        {
+            $old_value->{$key} = $addition->{$key};
+        }
+    }
+    else
+    {
+        die "Unhandled type for option <$label> : $old_type\n";
+    }
+    return $old_value;
+}
+
+sub expand_shortcuts
+{
+    my ($self) = @_;
+    my $options = $self->{options};
+    my $parse_options = $self->{parse_options};
+    # print Dumper $parse_options, $options; exit;
+    for my $op (keys %{ $parse_options })
+    {
+        if ($parse_options->{$op}{expands_to} && $options->{$op})
+        {
+            my $shortcuts = $parse_options->{$op}{expands_to};
+            # print Dumper $shortcuts, $options;
+            if ($options->{verbose})
+            {
+                print "# Expanding option $op to : \n"
+            }
+            for my $expanded_option ( keys %{$shortcuts})
+            {
+                my $value = $shortcuts->{$expanded_option};
+                $value =~ s/\%\%value\%\%/$options->{$op}/g;
+                if ($options->{verbose})
+                {
+                    print "# $expanded_option => $value \n"
+                }
+                if ($options->{$expanded_option} )
+                {
+                    if (ref $options->{expanded_option})
+                    {
+                        $options->{expanded_option} = merge_structures($op, $options->{expanded_option}, $value);
+                    }
+                    else
+                    {
+                        $options->{$expanded_option} = $value;
+                    }
+                }
+                else
+                {
+                    $options->{$expanded_option} = $value;
+                }
+            }
+        }
+    }
+    # print Dumper $options;
+    $self->{options} = $options;
     return $self;
 }
 
