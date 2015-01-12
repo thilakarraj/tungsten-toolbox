@@ -173,6 +173,11 @@ function read_from_slaves
         if [ "$topology" == "fileapplier" -a  "$rmiport" == "$RMI_PORT_NODE3" ]
         then
             export USE_FILEAPPLIER=1 
+            DELAY=$($TUNGSTEN_SB/${SB_PREFIX}3/trepctl properties -filter replicator.stage.q-to-dbms.blockCommitInterval | perl -lne 'print $1 if /"(\d+)s?"/')
+            if [ -n "$DELAY" ]
+                echo "# Sleeping $DELAY seconds according to property 'replicator.stage.q-to-dbms.blockCommitInterval' in node 3"
+                sleep $DELAY
+            fi
             CSV_DIR=$TUNGSTEN_SB/${SB_PREFIX}3/tungsten/tungsten-replicator/data/$service/test
             CSV_FILE=$( ls -otr $CSV_DIR/t$master_rmiport*.csv | awk '{print $NF}' | tail -n 1 )
             # echo "### <$CSV_FILE>"
