@@ -302,7 +302,7 @@ function pre_installation
     fi
     if [ "$current_topology" == "fileapplier" ]
     then
-        NEEDED_VERSION=$(grep tungsten-replicator-3 .manifest)
+        NEEDED_VERSION=$(grep 'tungsten-replicator-[34]' .manifest)
         if [ -z "$NEEDED_VERSION" ]
         then
             echo "This topology requires Tungsten Replicator 3.0 or later"
