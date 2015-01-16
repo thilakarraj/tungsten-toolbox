@@ -36,6 +36,7 @@ function show_help {
     echo "-P port          => MySQL port  ($MYSQL_PORT)"
     echo "-d sandbox dir   => sandbox directory name ($SANDBOX_DIR)"
     echo "-m version       => MySQL version ($MYSQL_VERSION)"
+    echo "-b binlog_mode   => binlog format (accepted: {row|mixed|statement} default:none)"
     echo "-n nodes file    => NODES file to load ($NODES_FILE)"
     echo "-l list of nodes =>list of nodes to use instead of the ones in the NODES file"
     echo '-t tarball       => MySQL tarball to install remotely (none)'
@@ -47,7 +48,7 @@ function show_help {
     exit 1
 }
 
-args=$(getopt hUP:m:n:d:l:t: $*)
+args=$(getopt hUP:m:n:d:l:t:b: $*)
 
 if [ $? != 0 ]
 then
@@ -63,7 +64,18 @@ do
         -h)
             show_help
             ;;
-        -d)
+        -b)
+            export BINLOG_FORMAT=$2
+            accepted=$(perl -le '$B=shift; print "ok" if $B =~/(row|mixed|statement)/i' $BINLOG_FORMAT ) 
+            if [ "$accepted" != "ok" ]
+            then
+                echo "Binlog format <$BINLOG_FORMAT> not recognized. - Accepted: row,mixed,statement"
+                exit 1
+            fi
+            shift
+            shift
+            ;;
+         -d)
             export SANDBOX_DIR=$2
             shift
             shift
@@ -159,6 +171,11 @@ echo 'if [ -z "$SANDBOX_EXISTS" ] ; then hostname; echo "make_sandbox not found 
 
 echo 'SANDBOX_OPTIONS="--no_confirm  --no_show -c server-id=$1 -c log-bin=mysql-bin -c log-slave-updates -c innodb_flush_log_at_trx_commit=1"' >> $BUILD_SB
 echo 'export SANDBOX_OPTIONS="$SANDBOX_OPTIONS -c open_files_limit=65535 -c default-storage-engine=innodb -c max_allowed_packet=52M -c sync-binlog=1 --remote_access=%"' >> $BUILD_SB
+
+if [ -n "$BINLOG_FORMAT" ]
+then
+    echo "export SANDBOX_OPTIONS=\"\$SANDBOX_OPTIONS -c binlog-format=$BINLOG_FORMAT\" " >> $BUILD_SB
+fi
 if [ -n "$TARBALL" ]
 then
     BASE_TARBALL=$(basename $TARBALL)
