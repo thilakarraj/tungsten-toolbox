@@ -88,6 +88,14 @@ NODE_OPTIONS="$NODE_OPTIONS -c default_storage_engine=innodb"
 NODE_OPTIONS="$NODE_OPTIONS -c innodb-flush-method=O_DIRECT"
 NODE_OPTIONS="$NODE_OPTIONS --remote_access=%"
 
+if [ -n "$BINLOG_FORMAT" ]
+then
+    if [ -n "$VERBOSE" ]
+    then
+        echo "# Setting binlog_format to $BINLOG_FORMAT"
+    fi
+    NODE_OPTIONS="$NODE_OPTIONS -c binlog-format=$BINLOG_FORMAT"
+fi
 if [ -n "$MULTIPLE_TIMEZONE" ]
 then
     MORE_TZ_OPTIONS=""
@@ -154,13 +162,9 @@ do
         $HOME/sandboxes/$SB_DIRECTORY/n$N -u root -e "revoke SUPER on *.* from ${MYSQL_USER}_lite "
     fi
 
-    if [ -n "$BINLOG_FORMAT" ]
-    then
-        if [ -n "$VERBOSE" ]
-        then
-            echo "# Node $N - Setting binlog_format to $BINLOG_FORMAT"
-        fi
-        $HOME/sandboxes/$SB_DIRECTORY/n$N -u root -e "set global binlog_format=$BINLOG_FORMAT"
-    fi
+    #if [ -n "$BINLOG_FORMAT" ]
+    #then
+    #    $HOME/sandboxes/$SB_DIRECTORY/n$N -u root -e "set global binlog_format=$BINLOG_FORMAT"
+    #fi
 done
 
